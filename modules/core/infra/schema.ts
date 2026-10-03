@@ -6,6 +6,8 @@ export const clients = core.table("clients", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  /** The Better Auth organization that holds this client's users. Set by linkClientOrganization. */
+  organizationId: text("organization_id").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
