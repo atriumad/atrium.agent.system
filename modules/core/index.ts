@@ -12,5 +12,7 @@ export type { Auth, AuthConfig } from "./infra/auth";
 export { createAuth } from "./infra/auth";
 export type { Database, Tx } from "./infra/db";
 export { createDatabase, withAgency, withTenant } from "./infra/db";
+export type { EventBus, EventHandler, RetryPolicy, SubscribeOptions } from "./infra/event-bus";
+export { createEventBus, DEAD_LETTER_QUEUE, DEFAULT_RETRY, deliver } from "./infra/event-bus";
 export type { NewClient, NewLocation } from "./infra/tenancy-repository";
 export { createClient, createLocation, listLocations } from "./infra/tenancy-repository";
