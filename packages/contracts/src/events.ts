@@ -40,8 +40,15 @@ export const ConsentChangedV1 = defineEvent("consent.changed", 1, {
   granted: z.boolean(),
 });
 
+export const GuestErasedV1 = defineEvent("guest.erased", 1, { guestId: z.string().uuid() });
+
 /** Every event the system knows. Add it here and to the catalog in the docs. */
-export const EVENT_SCHEMAS = [SignalsIngestedV1, GuestIdentifiedV1, ConsentChangedV1] as const;
+export const EVENT_SCHEMAS = [
+  SignalsIngestedV1,
+  GuestIdentifiedV1,
+  GuestErasedV1,
+  ConsentChangedV1,
+] as const;
 
 export type AtriumEvent = z.infer<(typeof EVENT_SCHEMAS)[number]>;
 export type EventType = AtriumEvent["type"];
