@@ -11,8 +11,10 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check:deps": "depcruise apps modules packages --config packages/config/dependency-cruiser.cjs",
+    "check:deps": "depcruise apps/api apps/worker apps/agents apps/platform apps/manager apps/hub apps/mobile modules packages --config packages/config/dependency-cruiser.cjs",
     "test": "bun test",
+    "docs:dev": "bun run --filter @atrium/docs dev",
+    "docs:build": "bun run --filter @atrium/docs build",
     "ci": "bun run lint && bun run check:deps && bun run typecheck && bun run test"
   },
   "devDependencies": {

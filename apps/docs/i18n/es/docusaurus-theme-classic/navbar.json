@@ -1,0 +1,46 @@
+{
+  "title": {
+    "message": "Atrium",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Atrium",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.System": {
+    "message": "Sistema",
+    "description": "Navbar item with label System"
+  },
+  "item.label.Agents": {
+    "message": "Agentes",
+    "description": "Navbar item with label Agents"
+  },
+  "item.label.Architecture": {
+    "message": "Arquitectura",
+    "description": "Navbar item with label Architecture"
+  },
+  "item.label.Modules": {
+    "message": "Módulos",
+    "description": "Navbar item with label Modules"
+  },
+  "item.label.Plan": {
+    "message": "Plan",
+    "description": "Navbar item with label Plan"
+  },
+  "item.label.Decisions": {
+    "message": "Decisiones",
+    "description": "Navbar item with label Decisions"
+  },
+  "item.label.Guides": {
+    "message": "Guías",
+    "description": "Navbar item with label Guides"
+  },
+  "item.label.Data": {
+    "message": "Datos",
+    "description": "Navbar item with label Data"
+  },
+  "item.label.Product": {
+    "message": "Producto",
+    "description": "Navbar item with label Product"
+  }
+}

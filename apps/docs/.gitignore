@@ -1,0 +1,20 @@
+# dependencies and build output
+node_modules
+build
+.docusaurus
+.cache-loader
+
+# env and local state
+.env
+.env.*
+!.env.example
+.vercel
+*.log
+.DS_Store
+
+# not publishable: source prototypes and local backups from the rewrite
+guides-rules/
+_old-*/
+
+# raw 2x captures of the social images
+design/og/_raw/

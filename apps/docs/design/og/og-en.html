@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{background:#ffffff;color:#16232b;font-family:'Inter Tight',system-ui,sans-serif;position:relative}
+.glow{position:absolute;inset:-40% -12% auto 40%;height:140%;pointer-events:none;
+  background:radial-gradient(50% 50% at 60% 26%,rgba(184,232,154,.42) 0%,rgba(184,232,154,.14) 40%,transparent 70%)}
+h1{position:absolute;left:64px;top:70px;width:1060px;font-weight:400;font-size:96px;line-height:1.02;letter-spacing:-.04em;color:#16232b}
+h1 em{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:1.1em;letter-spacing:-.01em;color:#0e6e64;
+  background:linear-gradient(transparent 70%,rgba(255,201,51,.5) 70%);padding:0 .04em}
+.row{position:absolute;left:64px;right:64px;bottom:60px;display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.card{position:relative;height:228px;border-radius:24px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(4,47,52,.08)}
+.av{position:absolute;left:2%;top:-4px;width:96%}
+.av svg{display:block;width:100%;height:auto}
+.nm{position:absolute;left:18px;bottom:38px;font-size:25px;letter-spacing:-.02em}
+.rl{position:absolute;left:18px;bottom:16px;font-size:13px;opacity:.72}
+</style></head><body>
+<div class="glow"></div>
+<h1>A system that turns strangers into <em>regulars</em>.</h1>
+<div class="row">
+  <div class="card" style="background:#cfe7e1;color:#042f34">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(0 -0.4)"><g fill="#0b5d55"><circle cx="35.84" cy="50.11" r="21.96"/><circle cx="65.87" cy="50.11" r="21.96"/><path d="M35.84 28.15H65.87V72.08H35.84Z"/></g><g fill="#cfe7e1"><path d="M40.99 52.01C40.99 56.43 40.86 56.57 36.74 56.57C32.63 56.57 32.5 56.43 32.5 52.01C32.5 47.58 32.63 47.44 36.74 47.44C40.86 47.44 40.99 47.58 40.99 52.01Z"/><path d="M66.79 43.6C66.79 48.45 66.67 48.6 62.9 48.6C59.14 48.6 59.02 48.45 59.02 43.6C59.02 38.76 59.14 38.6 62.9 38.6C66.67 38.6 66.79 38.76 66.79 43.6Z"/></g></g></svg></div>
+    <div class="nm">Concierge</div>
+    <div class="rl">Discoverability</div>
+  </div>
+  <div class="card" style="background:#042f34;color:#f3efe4">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(0 -2.2)"><g fill="#ffc933"><path d="M45.41 19.36Q50.03 16.71 54.72 19.24L76.76 31.13Q81.45 33.66 81.52 38.83L81.84 63.13Q81.91 68.3 77.28 70.94L55.57 83.36Q50.95 86.01 46.26 83.48L24.22 71.59Q19.53 69.06 19.46 63.89L19.14 39.59Q19.07 34.42 23.7 31.78L45.41 19.36Z"/></g><g fill="#042f34"><path d="M44.59 45.79C44.96 48.38 44.4 48.79 39.6 49.46C34.79 50.14 34.15 49.9 33.78 47.31C33.42 44.72 33.97 44.31 38.78 43.64C43.58 42.96 44.23 43.2 44.59 45.79Z"/><path d="M66.64 45.94C67.03 48.74 66.53 49.16 62.04 49.79C57.56 50.42 56.95 50.16 56.56 47.36C56.16 44.56 56.67 44.13 61.16 43.5C65.64 42.87 66.25 43.14 66.64 45.94Z"/></g></g></svg></div>
+    <div class="nm">Herald</div>
+    <div class="rl">Acquisition</div>
+  </div>
+  <div class="card" style="background:#f3efe4;color:#042f34">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(0 -1.1)"><g fill="#1e8c7c"><circle cx="39" cy="50.8" r="23.15"/><circle cx="58.71" cy="50.8" r="23.15"/><path d="M39 27.66H58.71V73.95H39Z"/></g><g fill="#f3efe4"><path d="M42.91 47.21C43.33 52.04 43.33 52.04 39.63 52.37C35.93 52.69 35.93 52.69 35.51 47.86C35.09 43.04 35.09 43.04 38.79 42.71C42.49 42.39 42.49 42.39 42.91 47.21Z"/><path d="M67.19 47.37C67.37 49.11 67.37 49.11 62.04 49.67C56.71 50.23 56.71 50.23 56.53 48.49C56.35 46.75 56.35 46.75 61.68 46.19C67 45.63 67 45.63 67.19 47.37Z"/></g></g></svg></div>
+    <div class="nm">Host</div>
+    <div class="rl">Reputation</div>
+  </div>
+  <div class="card" style="background:#f7d7c4;color:#4a2412">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(0 0.9)"><g fill="#d27168"><path d="M82.15 50.66C82.15 69.36 68.68 83.68 51.1 83.68C33.51 83.68 20.05 69.36 20.05 50.66C20.05 31.96 33.51 17.65 51.1 17.65C68.68 17.65 82.15 31.96 82.15 50.66Z"/></g><g fill="#514f4b"><path d="M45.79 53.02C46.43 56.63 46.36 56.93 44.82 57.2C43.28 57.47 43.12 57.22 42.48 53.6C41.84 49.98 41.91 49.69 43.45 49.42C44.99 49.14 45.15 49.4 45.79 53.02Z"/><path d="M62.68 53.76C62.56 57.18 62.44 57.44 60.99 57.39C59.54 57.34 59.44 57.07 59.56 53.66C59.68 50.24 59.8 49.98 61.25 50.03C62.7 50.08 62.8 50.35 62.68 53.76Z"/></g></g></svg></div>
+    <div class="nm">Sommelier</div>
+    <div class="rl">Retention</div>
+  </div>
+  <div class="card" style="background:#fff1c2;color:#3d2c05">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(0 -1)"><g fill="#8a6410"><path d="M87.37 48.95C87.37 73.13 75.36 85.25 51.41 85.25C27.46 85.25 15.45 73.13 15.45 48.95C15.45 24.77 27.46 12.65 51.41 12.65C75.36 12.65 87.37 24.77 87.37 48.95Z"/></g><g fill="#fff1c2"><path d="M45.77 48.31C46.66 51.07 46.66 51.07 42.67 52.37C38.67 53.67 38.67 53.67 37.78 50.91C36.88 48.15 36.88 48.15 40.88 46.85C44.87 45.55 44.87 45.55 45.77 48.31Z"/><path d="M70.78 48.2C71.47 50.33 71.47 50.33 67.98 51.47C64.49 52.6 64.49 52.6 63.8 50.47C63.11 48.35 63.11 48.35 66.6 47.21C70.09 46.08 70.09 46.08 70.78 48.2Z"/></g></g></svg></div>
+    <div class="nm">Steward</div>
+    <div class="rl">Growth</div>
+  </div>
+  <div class="card" style="background:#042f34;color:#f3efe4">
+    <div class="av"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g fill="#b8e89a"><path d="M77.99 58.44C71.45 84.89 69.77 85.89 42.99 79.27C16.21 72.64 15.18 70.97 21.72 44.52C28.26 18.08 29.95 17.07 56.73 23.7C83.51 30.32 84.53 31.99 77.99 58.44Z"/></g><g fill="#042f34"><path d="M42.27 46.38C43.7 53.68 43.69 53.75 41.12 54.26C38.54 54.76 38.51 54.7 37.08 47.4C35.65 40.11 35.66 40.04 38.23 39.53C40.81 39.03 40.84 39.09 42.27 46.38Z"/><path d="M58.57 47.27C60.17 56.93 60.16 57.03 57.07 57.54C53.99 58.05 53.95 57.96 52.34 48.31C50.74 38.65 50.76 38.55 53.84 38.04C56.92 37.53 56.97 37.62 58.57 47.27Z"/></g></svg></div>
+    <div class="nm">Maître</div>
+    <div class="rl">Orchestrator</div>
+  </div></div>
+</body></html>

@@ -1,0 +1,19 @@
+Copyright (c) 2026 Atrium Agency. All rights reserved.
+
+This repository and everything in it (documentation text, diagrams, data models,
+pricing, scoring methods, designs, configuration and source code) is proprietary
+and confidential to Atrium Agency.
+
+No license is granted. You may not copy, reproduce, modify, translate, publish,
+distribute, sublicense, sell, or use any part of this material, in whole or in
+part, for any purpose, without prior written permission from Atrium Agency.
+
+Access to this repository, or to the website built from it, does not grant any
+right to use it. Viewing is permitted only to people Atrium Agency has
+authorized.
+
+Third-party software and fonts used by this project (for example Docusaurus,
+React and Blobatar under the MIT License, and fonts under the SIL Open Font
+License) remain under their own licenses. See THIRD_PARTY_NOTICES.md.
+
+THE MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
