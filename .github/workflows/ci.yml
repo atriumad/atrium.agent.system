@@ -17,7 +17,8 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U atrium" --health-interval 5s --health-retries 10
     env:
-      DATABASE_URL: postgres://atrium:atrium@localhost:5432/atrium
+      DATABASE_URL: postgres://atrium_app:atrium_app@localhost:5432/atrium
+      DATABASE_ADMIN_URL: postgres://atrium:atrium@localhost:5432/atrium
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -27,4 +28,5 @@ jobs:
       - run: bun run lint
       - run: bun run check:deps
       - run: bun run typecheck
+      - run: bun run db:migrate
       - run: bun run test

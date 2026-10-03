@@ -15,7 +15,7 @@ services:
     image: n8nio/n8n:latest
     ports: ["5678:5678"]
     environment:
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set in .env.local}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-dev-only-change-me}
     volumes: [n8ndata:/home/node/.n8n]
 volumes:
   pgdata:
