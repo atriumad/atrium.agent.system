@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { isValidTimeZone } from "../domain/location";
 import type { Tx } from "./db";
 import { clients, locations } from "./schema";
@@ -26,4 +26,20 @@ export async function createLocation(tx: Tx, clientId: string, input: NewLocatio
     .returning();
   if (!row) throw new Error("location was not created");
   return row;
+}
+
+/**
+ * Which client owns each location. Read under the caller's scope: a location the scope cannot see
+ * is simply absent, which callers treat the same as a location that does not exist.
+ */
+export async function findLocationClients(
+  tx: Tx,
+  locationIds: string[],
+): Promise<Map<string, string>> {
+  if (locationIds.length === 0) return new Map();
+  const rows = await tx
+    .select({ id: locations.id, clientId: locations.clientId })
+    .from(locations)
+    .where(inArray(locations.id, locationIds));
+  return new Map(rows.map((row) => [row.id, row.clientId]));
 }

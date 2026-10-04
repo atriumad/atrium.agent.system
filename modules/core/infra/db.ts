@@ -43,6 +43,27 @@ export function withTenant<T>(
   });
 }
 
+/**
+ * One transaction that visits several clients: the scope is switched to each client before `fn`
+ * runs for it, so RLS applies per client while everything commits or rolls back together.
+ */
+export function withEachTenant<T>(
+  db: Database,
+  clientIds: string[],
+  fn: (tx: Tx, clientId: string) => Promise<T>,
+) {
+  if (clientIds.some((id) => !UUID.test(id)))
+    throw new Error("withEachTenant requires client uuids");
+  return db.transaction(async (tx) => {
+    const results: T[] = [];
+    for (const clientId of clientIds) {
+      await tx.execute(sql`select set_config('app.client_id', ${clientId}, true)`);
+      results.push(await fn(tx, clientId));
+    }
+    return results;
+  });
+}
+
 /** Runs `fn` for a user who sees only the clients assigned to them. */
 export function withAssigned<T>(db: Database, userId: string, fn: (tx: Tx) => Promise<T>) {
   if (!userId) throw new Error("withAssigned requires a user id");

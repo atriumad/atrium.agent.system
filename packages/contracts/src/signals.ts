@@ -94,20 +94,30 @@ const LocalDate = z.string().refine((value) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }, "Expected a real date as YYYY-MM-DD");
 
+/** Free-form context (utm, button, zone, method). Small on purpose: it is stored on every row. */
+const Meta = z
+  .record(z.string(), z.unknown())
+  .refine((value) => JSON.stringify(value).length <= 2048, "meta is limited to 2 KB");
+
 /**
  * One row of `signals_daily`: the atom. Money is integer cents; counts are plain numbers.
- * `clientId` is not part of the row: the ingestion API derives it from the token.
+ * `clientId` is not part of the row: the ingestion API derives it from the location.
  */
 export const SignalRow = z.object({
   date: LocalDate,
   locationId: z.string().uuid(),
   source: SignalSource,
   platform: SignalPlatform.nullable().default(null),
-  elementId: z.string().min(1).nullable().default(null),
+  elementId: z
+    .string()
+    .regex(/^[A-Za-z0-9_.:-]{1,128}$/, "element ids are 1-128 of letters, digits and _ . : -")
+    .nullable()
+    .default(null),
   signalType: SignalType,
-  value: z.number().finite().nonnegative(),
-  meta: z.record(z.string(), z.unknown()).nullable().default(null),
-  guestId: z.string().min(1).nullable().default(null),
+  value: z.number().finite().nonnegative().max(1e12),
+  meta: Meta.nullable().default(null),
+  /** The stitched identity from Core, so one guest counts once across sources. */
+  guestId: z.string().uuid().nullable().default(null),
 });
 export type SignalRow = z.infer<typeof SignalRow>;
 export type SignalRowInput = z.input<typeof SignalRow>;

@@ -1,0 +1,17 @@
+{
+  "name": "@atrium/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts"
+  },
+  "dependencies": {
+    "@atrium/contracts": "workspace:*",
+    "@atrium/core": "workspace:*",
+    "@atrium/signals": "workspace:*",
+    "@hono/zod-openapi": "^1.6.3",
+    "hono": "^4.13.12"
+  }
+}
