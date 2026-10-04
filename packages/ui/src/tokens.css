@@ -1,0 +1,208 @@
+/* Copied from atrium-docs/src/css/atrium-tokens.css, which is generated from src/design/tokens.ts there.
+ * Change the tokens in that file and copy the result here. See docs: Design / Tokens. */
+:root {
+  /* ---- Raw palette ---- */
+  --charcoal-900: #1c1f1d; /* The deepest charcoal: headlines, large dark fields */
+  --charcoal-800: #242726; /* Charcoal: the dark anchor. Text, rules, the primary button */
+  --charcoal-700: #333734; /* A raised dark surface */
+  --charcoal-500: #5a605b; /* Secondary text, lines on dark */
+  --charcoal-400: #8c918c; /* Tertiary text on dark, disabled */
+  --sage-500: #546054; /* The sage the charcoal texture resolves to */
+  --sage-300: #8a968a; /* Muted sage */
+  --lime-600: #aedc33; /* Pressed lime */
+  --lime-500: #c6f24e; /* Lime: the signal. One lime field per view */
+  --lime-300: #dff89c; /* Lime wash */
+  --lime-100: #f1fcd4; /* The faintest lime tint */
+  --clay-700: #9a3817; /* Product addition: clay text on a clay tint, and the clay button pressed */
+  --clay-600: #b8421f; /* Pressed clay; the clay button fill; clay text on a light field */
+  --clay-500: #d9542b; /* Clay: warm secondary, focus ring, errors */
+  --clay-300: #eda58c; /* Clay wash */
+  --clay-200: #f6d8cc; /* Clay tint */
+  --cream-100: #fbf8f1; /* The lightest cream: card surfaces. There is no pure white */
+  --cream-200: #f4eee2; /* Cream: the page paper */
+  --cream-300: #e9e1d1; /* Sunken cream: wells, table headers */
+  --cream-400: #d4cab6; /* Hairline on light */
+
+  /* ---- Semantic: surfaces, text, lines ---- */
+  --surface-page: var(--cream-200); /* The page paper */
+  --surface-card: var(--cream-100); /* Cards, fields, popovers */
+  --surface-sunken: var(--cream-300); /* Wells, table headers, quoted text */
+  --surface-dark: var(
+    --charcoal-800
+  ); /* Dark fields: the footer, a proof band, the Manager chrome */
+  --surface-dark-raised: var(--charcoal-700); /* Cards on a dark field */
+  --surface-lime: var(--lime-500); /* The one lime field of a view */
+  --surface-clay: var(--clay-500); /* A clay field: a quote or a warning, never a button */
+  --text-strong: var(--charcoal-900); /* Headlines */
+  --text-body: var(--charcoal-800); /* Body */
+  --text-muted: var(--charcoal-500); /* Secondary text and caps labels */
+  --text-on-dark: var(--cream-300); /* Body on a dark field */
+  --text-on-dark-strong: var(--lime-500); /* Headlines and figures on a dark field */
+  --text-on-lime: var(--charcoal-900); /* Text on lime */
+  --text-on-clay: var(--cream-100); /* Text on clay (large sizes only) */
+  --border-light: var(--cream-400); /* The 1px hairline on light */
+  --border-strong: var(--charcoal-800); /* A 1px ink border, for emphasis */
+  --border-on-dark: var(--charcoal-500); /* The hairline on a dark field */
+  --rule: var(--charcoal-800); /* The 3px section rule */
+  --accent: var(--lime-500);
+  --accent-warm: var(--clay-500);
+  --highlight: var(--lime-500); /* the flat marker block behind a word */
+  --field-border: var(
+    --charcoal-500
+  ); /* product: a field edge must clear 3:1; the cream hairline does not */
+
+  /* ---- Semantic: status. Fill, rule and mark, never hue alone ---- */
+  --status-positive-fg: #242726;
+  --status-positive-bg: #f1fcd4;
+  --status-positive-line: #aedc33;
+  --status-warning-fg: #1c1f1d;
+  --status-warning-bg: #e9e1d1;
+  --status-warning-line: #d9542b;
+  --status-danger-fg: #9a3817;
+  --status-danger-bg: #f6d8cc;
+  --status-danger-line: #d9542b;
+  --status-info-fg: #5a605b;
+  --status-info-bg: #e9e1d1;
+  --status-info-line: #d4cab6;
+  --status-neutral-fg: #5a605b;
+  --status-neutral-bg: #fbf8f1;
+  --status-neutral-line: #d4cab6;
+
+  /* ---- Data palette, in the order series are used ---- */
+  --data-1: #242726;
+  --data-2: #d9542b;
+  --data-3: #aedc33;
+  --data-4: #546054;
+  --data-5: #eda58c;
+  --data-6: #8c918c;
+
+  /* ---- Focus ---- */
+  --focus-ring: var(--clay-500);
+
+  /* ---- Typography ---- */
+  --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-display: var(--font-sans);
+  --font-accent: var(--font-serif);
+  --text-display-xl: clamp(3.25rem, 8.5vw, 7rem);
+  --text-display-lg: clamp(2.5rem, 5.5vw, 4.5rem);
+  --text-display-md: clamp(2rem, 4vw, 3.25rem);
+  --text-6xl: 4.5rem; /* 72px */
+  --text-5xl: 3.5rem; /* 56px */
+  --text-4xl: 2.75rem; /* 44px */
+  --text-3xl: 2rem; /* 32px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-base: 1rem; /* 16px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-2xs: 0.6875rem; /* 11px */
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600; /* not used by the system */
+  --weight-bold: 700; /* not used by the system */
+  --leading-tight: 0.92;
+  --leading-snug: 1.05;
+  --leading-heading: 1.15;
+  --leading-body: 1.6;
+  --leading-relaxed: 1.75;
+  --tracking-tighter: -0.035em;
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.16em;
+  --tracking-widest: 0.28em;
+
+  /* ---- Spacing: a 4px grid ---- */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.5rem; /* 24px */
+  --space-6: 2rem; /* 32px */
+  --space-7: 2.5rem; /* 40px */
+  --space-8: 3rem; /* 48px */
+  --space-10: 4rem; /* 64px */
+  --space-12: 5.5rem; /* 88px */
+  --space-16: 8rem; /* 128px */
+
+  /* ---- Shape: squared-off. Chips alone go round ---- */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --border-width: 1px;
+  --border-width-bold: 2px;
+  --border-width-rule: 3px;
+  --container-max: 1240px;
+  --container-wide: 1440px;
+  --container-text: 68ch;
+  --gutter: clamp(1.25rem, 4vw, 3.5rem);
+
+  /* ---- Elevation: drawn, not shaded ---- */
+  --shadow-none: none;
+  --shadow-card: 0 1px 0 rgba(36, 39, 38, 0.06);
+  --shadow-raised: 0 2px 0 var(--charcoal-800);
+  --shadow-pop: 0 10px 30px rgba(36, 39, 38, 0.12);
+  --shadow-dark: 0 20px 60px rgba(0, 0, 0, 0.4);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 110ms;
+  --dur-base: 200ms;
+  --dur-slow: 380ms;
+  --press-shift: 1px;
+
+  /* ---- Layers ---- */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-popover: 30;
+  --z-dialog: 40;
+  --z-toast: 50;
+}
+
+/* Dark theme: any charcoal field, and the Manager chrome. Opt in with data-atr-theme="dark". */
+[data-atr-theme="dark"] {
+  --surface-page: var(--charcoal-900);
+  --surface-card: var(--charcoal-800);
+  --surface-sunken: var(--charcoal-700);
+  --text-strong: var(--cream-100);
+  --text-body: var(--cream-300);
+  --text-muted: var(--charcoal-400);
+  --border-light: var(--charcoal-500);
+  --border-strong: var(--cream-300);
+  --rule: var(--cream-300);
+  --field-border: var(--charcoal-400);
+  --status-positive-fg: var(--lime-500);
+  --status-positive-bg: rgba(198, 242, 78, 0.1);
+  --status-positive-line: var(--lime-500);
+  --status-warning-fg: var(--cream-200);
+  --status-warning-bg: rgba(228, 226, 209, 0.08);
+  --status-warning-line: var(--clay-500);
+  --status-danger-fg: var(--clay-300);
+  --status-danger-bg: rgba(217, 84, 43, 0.18);
+  --status-danger-line: var(--clay-500);
+  --status-info-fg: var(--cream-400);
+  --status-info-bg: rgba(212, 202, 182, 0.08);
+  --status-info-line: var(--charcoal-500);
+  --status-neutral-fg: var(--cream-400);
+  --status-neutral-bg: transparent;
+  --status-neutral-line: var(--charcoal-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --press-shift: 0px;
+  }
+}

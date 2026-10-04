@@ -1,0 +1,4 @@
+# These tests need a DOM. It lives here, in this package, so the rest of the repository's tests
+# (the API, the worker, the modules) keep their own globals.
+[test]
+preload = ["./tests/setup.ts"]

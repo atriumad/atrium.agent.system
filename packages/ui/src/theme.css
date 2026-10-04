@@ -1,26 +1,155 @@
 @import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.css";
 
 /*
- * Provisional tokens. Decision 15 (brand system versus product theme) is still open, so these
- * are the product theme from ADR 0004: cream, ink, lime and amber. Replace the values here and
- * every surface follows.
+ * The ATRIUM AD design system as a Tailwind v4 theme.
+ *
+ * Components read ROLES (surface, text, line, status), never raw hexes, so a surface re-themes by
+ * setting data-atr-theme="dark" on any ancestor. The colors below point at the CSS variables in
+ * tokens.css with `inline`, so a utility such as bg-surface-card follows the theme at runtime.
+ *
+ * Naming: surface-*, fg-* (text), line-* (borders), status-*-{fg,bg,line}, data-1..6, and the raw
+ * palette (charcoal-800, cream-200, lime-500, clay-500, sage-500).
+ * Do not add --spacing-N tokens: in Tailwind v4 that would redefine p-4 and friends.
  */
-@theme {
-  --color-cream: #f6f1e7;
-  --color-paper: #fbf8f1;
-  --color-ink: #14130f;
-  --color-ink-soft: #55524a;
-  --color-line: #ddd5c4;
-  --color-lime: #c6f24e;
-  --color-amber: #e8a317;
-  --color-alert: #c2410c;
-  --color-ok: #3f6212;
-  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+/* `dark:` follows the design system's theme switch, not the OS: data-atr-theme="dark" on any ancestor. */
+@custom-variant dark (&:where([data-atr-theme="dark"], [data-atr-theme="dark"] *));
+
+@theme inline {
+  --color-charcoal-900: var(--charcoal-900);
+  --color-charcoal-800: var(--charcoal-800);
+  --color-charcoal-700: var(--charcoal-700);
+  --color-charcoal-500: var(--charcoal-500);
+  --color-charcoal-400: var(--charcoal-400);
+  --color-sage-500: var(--sage-500);
+  --color-sage-300: var(--sage-300);
+  --color-lime-600: var(--lime-600);
+  --color-lime-500: var(--lime-500);
+  --color-lime-300: var(--lime-300);
+  --color-lime-100: var(--lime-100);
+  --color-clay-700: var(--clay-700);
+  --color-clay-600: var(--clay-600);
+  --color-clay-500: var(--clay-500);
+  --color-clay-300: var(--clay-300);
+  --color-clay-200: var(--clay-200);
+  --color-cream-100: var(--cream-100);
+  --color-cream-200: var(--cream-200);
+  --color-cream-300: var(--cream-300);
+  --color-cream-400: var(--cream-400);
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-dark: var(--surface-dark);
+  --color-surface-dark-raised: var(--surface-dark-raised);
+  --color-surface-lime: var(--surface-lime);
+  --color-surface-clay: var(--surface-clay);
+  --color-fg-strong: var(--text-strong);
+  --color-fg-body: var(--text-body);
+  --color-fg-muted: var(--text-muted);
+  --color-fg-on-dark: var(--text-on-dark);
+  --color-fg-on-dark-strong: var(--text-on-dark-strong);
+  --color-fg-on-lime: var(--text-on-lime);
+  --color-fg-on-clay: var(--text-on-clay);
+  --color-line: var(--border-light);
+  --color-line-strong: var(--border-strong);
+  --color-line-dark: var(--border-on-dark);
+  --color-rule: var(--rule);
+  --color-field: var(--field-border);
+  --color-accent: var(--accent);
+  --color-focus: var(--focus-ring);
+  --color-status-positive-fg: var(--status-positive-fg);
+  --color-status-positive-bg: var(--status-positive-bg);
+  --color-status-positive-line: var(--status-positive-line);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-line: var(--status-warning-line);
+  --color-status-danger-fg: var(--status-danger-fg);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-line: var(--status-danger-line);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-line: var(--status-info-line);
+  --color-status-neutral-fg: var(--status-neutral-fg);
+  --color-status-neutral-bg: var(--status-neutral-bg);
+  --color-status-neutral-line: var(--status-neutral-line);
+  --color-data-1: var(--data-1);
+  --color-data-2: var(--data-2);
+  --color-data-3: var(--data-3);
+  --color-data-4: var(--data-4);
+  --color-data-5: var(--data-5);
+  --color-data-6: var(--data-6);
 }
 
-body {
-  background: var(--color-cream);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
+@theme {
+  /* Squared off. Chips alone are round (rounded-full). */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-card: 0 1px 0 rgba(36, 39, 38, 0.06);
+  --shadow-raised: 0 2px 0 var(--charcoal-800);
+  --shadow-pop: 0 10px 30px rgba(36, 39, 38, 0.12);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* The ramp of the system, 11 to 72. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.2;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.05;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 1.05;
+  --text-5xl: 3.5rem;
+  --text-5xl--line-height: 0.95;
+  --text-6xl: 4.5rem;
+  --text-6xl--line-height: 0.92;
+
+  --tracking-tighter: -0.035em;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.16em;
+  --tracking-widest: 0.28em;
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 90rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    margin: 0;
+    background: var(--surface-page);
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: 400;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--lime-500);
+    color: var(--charcoal-900);
+  }
+  /* Clay on cream is 3.5:1 and on charcoal 3.8:1: enough for an interface part. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* The wide-caps label: eyebrows, nav, captions, metadata. */
+@utility label-caps {
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
 }

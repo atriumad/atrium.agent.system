@@ -1,7 +1,14 @@
 "use client";
 
+import { Star } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { Button } from "./actions/button";
 import { ApiError, api, type CaseDetail, type CaseSummary, type Me } from "./api";
+import { Card } from "./data/card";
+import { DescriptionList, Skeleton } from "./data/misc";
+import { Badge, StatusBadge } from "./feedback/badge";
+import { Banner } from "./feedback/banner";
+import { EmptyState, ErrorState } from "./feedback/states";
 import {
   ago,
   answerLabel,
@@ -12,31 +19,26 @@ import {
   TABS,
   type Tab,
 } from "./format";
+import { TextareaField, TextField } from "./forms/input";
+import { Container, PageHeader } from "./layout/layout";
+import { Tabs } from "./navigation/tabs";
 
 export type Surface = "manager" | "platform";
 
-const COPY: Record<Surface, { title: string; blurb: string }> = {
+const COPY: Record<Surface, { title: string; blurb: string; eyebrow: string }> = {
   manager: {
+    eyebrow: "Reputation",
     title: "Recovery cases",
     blurb: "Guests who had a bad visit. Reach out within 24 hours.",
   },
   platform: {
+    eyebrow: "Reputation",
     title: "Guest feedback to follow up",
     blurb: "Your team is on these. You are told when one opens and when it closes.",
   },
 };
 
-const SEVERITY_STYLE: Record<string, string> = {
-  high: "bg-alert text-white",
-  medium: "bg-amber text-ink",
-  low: "bg-line text-ink",
-};
-
-const TONE_STYLE = {
-  ok: "text-ink-soft",
-  soon: "text-amber font-semibold",
-  overdue: "text-alert font-semibold",
-};
+const SEVERITY_BADGE = { high: "clay", medium: "ink", low: "quiet" } as const;
 
 export function CasesApp({ surface }: { surface: Surface }) {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
@@ -54,33 +56,23 @@ export function CasesApp({ surface }: { surface: Surface }) {
 
   if (unreachable) {
     return (
-      <Shell>
-        <p role="alert" className="mt-16 text-center text-alert">
-          Cannot reach the server. Check that the API is running, then reload.
-        </p>
-      </Shell>
+      <Container className="py-16">
+        <Banner status="danger" title="Cannot reach the server">
+          Check that the API is running, then reload.
+        </Banner>
+      </Container>
     );
   }
-
-  if (me === undefined) return <Shell>{null}</Shell>;
-  if (me === null)
-    return (
-      <Shell>
-        <SignIn surface={surface} onDone={() => location.reload()} />
-      </Shell>
-    );
+  if (me === undefined) return <Container className="py-8" />;
+  if (me === null) return <SignIn surface={surface} />;
   return (
-    <Shell>
+    <Container className="py-8">
       <Workspace surface={surface} me={me} />
-    </Shell>
+    </Container>
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>;
-}
-
-function SignIn({ surface, onDone }: { surface: Surface; onDone: () => void }) {
+function SignIn({ surface }: { surface: Surface }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -91,7 +83,7 @@ function SignIn({ surface, onDone }: { surface: Surface; onDone: () => void }) {
     setError(null);
     try {
       await api.signIn(String(form.get("email")), String(form.get("password")));
-      onDone();
+      location.reload();
     } catch {
       setError("That email and password do not match.");
       setBusy(false);
@@ -99,49 +91,24 @@ function SignIn({ surface, onDone }: { surface: Surface; onDone: () => void }) {
   }
 
   return (
-    <form
-      // POST, so a submit before the page has hydrated never puts the password in the URL.
-      method="post"
-      onSubmit={submit}
-      className="mx-auto mt-16 max-w-sm rounded-2xl border border-line bg-paper p-6"
-    >
-      <p className="text-sm text-ink-soft">{surface === "manager" ? "Atrium Manager" : "Atrium"}</p>
-      <h1 className="mt-1 font-serif text-3xl">Sign in</h1>
-      <label className="mt-6 block text-sm font-medium" htmlFor="email">
-        Email
-      </label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autoComplete="username"
-        className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2"
-      />
-      <label className="mt-4 block text-sm font-medium" htmlFor="password">
-        Password
-      </label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        required
-        autoComplete="current-password"
-        className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2"
-      />
-      {error ? (
-        <p role="alert" className="mt-3 text-sm text-alert">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={busy}
-        className="mt-6 w-full rounded-lg bg-ink px-4 py-2 font-medium text-cream disabled:opacity-50"
-      >
-        {busy ? "Signing in…" : "Sign in"}
-      </button>
-    </form>
+    <Container className="py-16">
+      {/* POST, so a submit before the page has hydrated never puts the password in the URL. */}
+      <form method="post" onSubmit={submit} className="mx-auto flex max-w-sm flex-col gap-5">
+        <PageHeader eyebrow={surface === "manager" ? "Atrium Manager" : "Atrium"} title="Sign in" />
+        <TextField label="Email" name="email" type="email" required autoComplete="username" />
+        <TextField
+          label="Password"
+          name="password"
+          type="password"
+          required
+          autoComplete="current-password"
+          error={error}
+        />
+        <Button type="submit" loading={busy} fullWidth>
+          Sign in
+        </Button>
+      </form>
+    </Container>
   );
 }
 
@@ -182,58 +149,71 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
   }
 
   return (
-    <>
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-4xl">{COPY[surface].title}</h1>
-          <p className="mt-1 text-ink-soft">{COPY[surface].blurb}</p>
-        </div>
-        <div className="text-right text-sm">
-          <p className="font-medium">{me.name}</p>
-          <p className="text-ink-soft">{me.role.replaceAll("_", " ")}</p>
-          <button type="button" onClick={signOut} className="mt-1 underline">
-            Sign out
-          </button>
-        </div>
-      </header>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow={COPY[surface].eyebrow}
+        title={COPY[surface].title}
+        description={COPY[surface].blurb}
+        actions={
+          <div className="text-right text-sm">
+            <p className="m-0">{me.name}</p>
+            <p className="m-0 text-fg-muted">{me.role.replaceAll("_", " ")}</p>
+            <button
+              type="button"
+              onClick={signOut}
+              className="cursor-pointer underline underline-offset-4 hover:text-clay-600"
+            >
+              Sign out
+            </button>
+          </div>
+        }
+      />
 
       {overdue > 0 ? (
-        <p
-          role="status"
-          className="mt-6 rounded-lg bg-alert px-4 py-2 text-sm font-medium text-white"
-        >
-          {overdue} {overdue === 1 ? "case is" : "cases are"} past the 24-hour target.
-        </p>
+        <Banner
+          status="warning"
+          title={`${overdue} ${overdue === 1 ? "case is" : "cases are"} past the 24-hour target`}
+        />
       ) : null}
-
-      <nav aria-label="Filter by status" className="mt-6 flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={tab === t}
-            onClick={() => setTab(t)}
-            className={`rounded-full border px-3 py-1 text-sm capitalize ${
-              tab === t ? "border-ink bg-ink text-cream" : "border-line bg-paper"
-            }`}
-          >
-            {t} <span className="opacity-60">{count(t)}</span>
-          </button>
-        ))}
-      </nav>
-
       {failed ? (
-        <p role="alert" className="mt-6 text-alert">
-          Could not load cases. Retrying.
-        </p>
+        <ErrorState title="Could not load cases" onRetry={load}>
+          We will keep trying.
+        </ErrorState>
       ) : null}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <ul className="space-y-2">
-          {cases === null ? <li className="text-ink-soft">Loading…</li> : null}
+      <Tabs
+        label="Filter by status"
+        value={tab}
+        onValueChange={(v) => setTab(v as Tab)}
+        items={TABS.map((t) => ({ value: t, label: t, count: count(t) }))}
+      />
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+        <ul
+          className="m-0 flex list-none flex-col gap-2 p-0"
+          aria-label="Cases"
+          aria-busy={cases === null || undefined}
+        >
+          {cases === null
+            ? [0, 1, 2].map((i) => (
+                <li key={i}>
+                  <Card padding="sm">
+                    <div className="flex flex-col gap-2.5">
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="w-3/4" />
+                      <Skeleton className="w-1/2" />
+                    </div>
+                  </Card>
+                </li>
+              ))
+            : null}
           {cases !== null && visible.length === 0 ? (
-            <li className="rounded-xl border border-dashed border-line p-6 text-ink-soft">
-              {tab === "active" ? "Nothing needs follow-up right now." : "No cases here."}
+            <li>
+              <EmptyState
+                title={tab === "active" ? "Nothing needs follow-up right now." : "No cases here."}
+              >
+                New cases appear here the moment a guest leaves a low rating.
+              </EmptyState>
             </li>
           ) : null}
           {visible.map((c) => (
@@ -247,7 +227,7 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
             />
           ))}
         </ul>
-        <div className="lg:sticky lg:top-6 lg:self-start">
+        <div className="lg:sticky lg:top-6">
           {selected ? (
             <Detail
               key={selected}
@@ -258,13 +238,46 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
               onClose={() => setSelected(null)}
             />
           ) : (
-            <p className="hidden rounded-xl border border-dashed border-line p-6 text-ink-soft lg:block">
+            <p className="m-0 hidden rounded-md border border-dashed border-charcoal-400 p-6 text-fg-muted lg:block">
               Pick a case to read what the guest said.
             </p>
           )}
         </div>
       </div>
-    </>
+    </div>
+  );
+}
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <span
+      className="inline-flex gap-0.5 text-charcoal-800 dark:text-cream-200"
+      role="img"
+      aria-label={`Rating ${rating} of 5`}
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={14}
+          strokeWidth={1.5}
+          fill={n <= rating ? "currentColor" : "none"}
+          className={n <= rating ? "" : "opacity-30"}
+          aria-hidden="true"
+        />
+      ))}
+    </span>
+  );
+}
+
+function DueBadge({ status, dueAt, now }: { status: string; dueAt: string; now: Date }) {
+  const due = dueLabel(status, dueAt, now);
+  if (!due) return null;
+  return (
+    <StatusBadge
+      status={due.tone === "overdue" ? "danger" : due.tone === "soon" ? "warning" : "neutral"}
+    >
+      {due.text}
+    </StatusBadge>
   );
 }
 
@@ -276,37 +289,34 @@ function CaseRow(props: {
   onSelect: () => void;
 }) {
   const { item, now } = props;
-  const due = dueLabel(item.status, item.dueAt, now);
   return (
     <li>
       <button
         type="button"
         onClick={props.onSelect}
         aria-current={props.active}
-        className={`w-full rounded-xl border p-4 text-left ${
-          props.active ? "border-ink bg-white" : "border-line bg-paper hover:border-ink-soft"
-        }`}
+        className="block w-full cursor-pointer text-left"
       >
-        <div className="flex items-center justify-between gap-3">
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${SEVERITY_STYLE[item.severity]}`}
-          >
-            {SEVERITY_LABEL[item.severity]}
-          </span>
-          <span className="text-sm" aria-label={`Rating ${item.rating} of 5`}>
-            {"★".repeat(item.rating)}
-            <span className="opacity-25">{"★".repeat(5 - item.rating)}</span>
-          </span>
-        </div>
-        <p className="mt-2 font-medium">
-          {props.showClient ? `${item.clientName} · ` : ""}
-          {item.locationName}
-        </p>
-        <p className="mt-1 flex flex-wrap gap-x-3 text-sm text-ink-soft">
-          <span>{STATUS_LABEL[item.status]}</span>
-          <span>opened {ago(item.openedAt, now)}</span>
-          {due ? <span className={TONE_STYLE[due.tone]}>{due.text}</span> : null}
-        </p>
+        <Card
+          padding="sm"
+          tone={props.active ? "ruled" : "paper"}
+          elevation={props.active ? "offset" : "flat"}
+          interactive={!props.active}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <Badge variant={SEVERITY_BADGE[item.severity]}>{SEVERITY_LABEL[item.severity]}</Badge>
+            <Stars rating={item.rating} />
+          </div>
+          <p className="mt-2.5 mb-1 text-base">
+            {props.showClient ? `${item.clientName} · ` : ""}
+            {item.locationName}
+          </p>
+          <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
+            <span>{STATUS_LABEL[item.status]}</span>
+            <span>opened {ago(item.openedAt, now)}</span>
+            <DueBadge status={item.status} dueAt={item.dueAt} now={now} />
+          </p>
+        </Card>
       </button>
     </li>
   );
@@ -350,81 +360,82 @@ function Detail(props: {
   }
 
   if (!item) {
-    return (
-      <p role={error ? "alert" : undefined} className="rounded-xl border border-line bg-paper p-6">
-        {error ?? "Loading…"}
-      </p>
+    return error ? (
+      <Banner status="danger" title={error} />
+    ) : (
+      <Card>
+        <Skeleton className="w-1/2" />
+      </Card>
     );
   }
-  const due = dueLabel(item.status, item.dueAt, props.now);
   const { response } = item;
   return (
-    <article className="rounded-2xl border border-line bg-paper p-6">
+    <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif text-2xl">
+          <h2 className="m-0 text-2xl leading-[1.05] font-normal tracking-tight text-fg-strong">
             {item.clientName} · {item.locationName}
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
-            {STATUS_LABEL[item.status]} · opened {ago(item.openedAt, props.now)}
-            {due ? <span className={`ml-2 ${TONE_STYLE[due.tone]}`}>{due.text}</span> : null}
+          <p className="mt-2 mb-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
+            <span>
+              {STATUS_LABEL[item.status]} · opened {ago(item.openedAt, props.now)}
+            </span>
+            <DueBadge status={item.status} dueAt={item.dueAt} now={props.now} />
           </p>
         </div>
-        <button type="button" onClick={props.onClose} className="text-sm underline lg:hidden">
+        <Button variant="ghost" size="sm" onClick={props.onClose} className="lg:hidden">
           Close
-        </button>
+        </Button>
       </div>
 
-      <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-        <dt className="text-ink-soft">Rating</dt>
-        <dd>{item.rating} of 5</dd>
-        {response.bestPart ? (
-          <>
-            <dt className="text-ink-soft">Liked</dt>
-            <dd>{answerLabel(response.bestPart)}</dd>
-          </>
-        ) : null}
-        {response.improve ? (
-          <>
-            <dt className="text-ink-soft">To improve</dt>
-            <dd>{answerLabel(response.improve)}</dd>
-          </>
-        ) : null}
-      </dl>
+      <DescriptionList
+        className="mt-5"
+        items={[
+          { term: "Rating", detail: `${item.rating} of 5` },
+          ...(response.bestPart ? [{ term: "Liked", detail: answerLabel(response.bestPart) }] : []),
+          ...(response.improve
+            ? [{ term: "To improve", detail: answerLabel(response.improve) }]
+            : []),
+        ]}
+      />
 
       {response.comment ? (
-        <figure className="mt-5">
-          <figcaption className="text-xs uppercase tracking-wide text-ink-soft">
-            What the guest wrote
-          </figcaption>
-          {/* Third-party text: React renders it as text. It is never markup or an instruction. */}
-          <blockquote className="mt-1 whitespace-pre-wrap rounded-lg border-l-4 border-line bg-white p-3">
+        <figure className="m-0 mt-5">
+          <figcaption className="label-caps text-fg-muted">What the guest wrote</figcaption>
+          {/* Third-party text: React renders it as text. It is never markup and never an instruction. */}
+          <blockquote className="mt-1.5 mb-0 border-l-[3px] border-line bg-surface-sunken px-3.5 py-2.5 whitespace-pre-wrap">
             {response.comment}
           </blockquote>
         </figure>
       ) : null}
 
       <section className="mt-5">
-        <h3 className="text-xs uppercase tracking-wide text-ink-soft">How to reach them</h3>
+        <h3 className="label-caps m-0 text-fg-muted">How to reach them</h3>
         {item.contact ? (
-          <ul className="mt-1 space-y-1">
+          <ul className="mt-1.5 mb-0 list-none space-y-1 p-0">
             {item.contact.email ? (
               <li>
-                <a className="underline" href={`mailto:${item.contact.email}`}>
+                <a
+                  className="underline underline-offset-4 hover:text-clay-600"
+                  href={`mailto:${item.contact.email}`}
+                >
                   {item.contact.email}
                 </a>
               </li>
             ) : null}
             {item.contact.phone ? (
               <li>
-                <a className="underline" href={`tel:${item.contact.phone}`}>
+                <a
+                  className="underline underline-offset-4 hover:text-clay-600"
+                  href={`tel:${item.contact.phone}`}
+                >
                   {item.contact.phone}
                 </a>
               </li>
             ) : null}
           </ul>
         ) : (
-          <p className="mt-1 text-ink-soft">
+          <p className="mt-1.5 mb-0 text-fg-muted">
             {item.wantsContact
               ? "They asked to be contacted but left no details we can use."
               : "They did not ask to be contacted. Do not reach out; use this to improve."}
@@ -434,59 +445,44 @@ function Detail(props: {
 
       {item.note ? (
         <section className="mt-5">
-          <h3 className="text-xs uppercase tracking-wide text-ink-soft">Team note</h3>
-          <p className="mt-1 whitespace-pre-wrap">{item.note}</p>
+          <h3 className="label-caps m-0 text-fg-muted">Team note</h3>
+          <p className="mt-1.5 mb-0 whitespace-pre-wrap">{item.note}</p>
         </section>
       ) : null}
 
       {item.status === "resolved" ? (
-        <p className="mt-5 text-sm text-ok">
-          Resolved {ago(item.resolvedAt ?? item.openedAt, props.now)}.
-        </p>
+        <div className="mt-5">
+          <StatusBadge status="positive" dot>
+            Resolved {ago(item.resolvedAt ?? item.openedAt, props.now)}
+          </StatusBadge>
+        </div>
       ) : props.me.canWorkCases ? (
-        <section className="mt-6 border-t border-line pt-5">
-          <label htmlFor="note" className="text-sm font-medium">
-            Note for the record (optional)
-          </label>
-          <textarea
-            id="note"
-            value={note}
-            maxLength={1000}
-            onChange={(e) => setNote(e.target.value)}
+        <section className="mt-6 flex flex-col gap-3 border-t-[3px] border-rule pt-5">
+          <TextareaField
+            label="Note for the record"
+            optional
             rows={3}
-            className="mt-1 w-full rounded-lg border border-line bg-white p-2"
+            maxLength={1000}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {item.status === "open" ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => move("contacted")}
-                className="rounded-lg border border-ink px-4 py-2 font-medium disabled:opacity-50"
-              >
+              <Button variant="outline" disabled={busy} onClick={() => move("contacted")}>
                 Mark contacted
-              </button>
+              </Button>
             ) : null}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => move("resolved")}
-              className="rounded-lg bg-lime px-4 py-2 font-medium text-ink disabled:opacity-50"
-            >
+            <Button disabled={busy} onClick={() => move("resolved")}>
               Resolve
-            </button>
+            </Button>
           </div>
-          {error ? (
-            <p role="alert" className="mt-3 text-sm text-alert">
-              {error}
-            </p>
-          ) : null}
+          {error ? <Banner status="danger" title={error} /> : null}
         </section>
       ) : (
-        <p className="mt-6 border-t border-line pt-4 text-sm text-ink-soft">
+        <p className="mt-6 mb-0 border-t-[3px] border-rule pt-4 text-sm text-fg-muted">
           Your account manager works this case and will close it.
         </p>
       )}
-    </article>
+    </Card>
   );
 }

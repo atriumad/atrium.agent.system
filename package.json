@@ -12,7 +12,7 @@
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "check:deps": "depcruise apps/api apps/worker apps/agents apps/platform apps/manager apps/hub apps/mobile modules packages --config packages/config/dependency-cruiser.cjs",
-    "test": "bun test",
+    "test": "bun test apps modules packages/config && bun run --filter @atrium/ui test",
     "docs:dev": "bun run --filter @atrium/docs dev",
     "docs:build": "bun run --filter @atrium/docs build",
     "db:migrate": "bun scripts/migrate.ts",
