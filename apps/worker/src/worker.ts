@@ -1,20 +1,59 @@
+import { createGateway } from "@atrium/agents";
 import {
   type ConsumerDefinition,
   coreJobs,
   type Database,
   type EventBus,
   type JobDefinition,
+  type NotificationTransport,
 } from "@atrium/core";
+import {
+  askAgent,
+  loadHostManifests,
+  recoveryAgent,
+  erasureConsumer as reputationErasure,
+  reputationTools,
+} from "@atrium/reputation";
 import { ensureFuturePartitions, signalsConsumers, signalsJobs } from "@atrium/signals";
+
+export type WorkerConfig = {
+  /** Where survey links point: the public address of the API. */
+  publicBaseUrl: string;
+  /** Where case alerts point the team. Optional. */
+  adminBaseUrl?: string;
+  /** Replaces the development transport. Tests use it; Twilio will. */
+  transport?: NotificationTransport;
+  /** Injectable clock for the agents, for tests. */
+  now?: () => Date;
+};
 
 /**
  * Everything the worker runs. A module adds its consumers and jobs here, and nowhere else:
- * the worker is the one place that knows which modules exist.
+ * the worker is the one place that knows which modules exist. Agents act through the gateway,
+ * which is built here from their manifests and the module's tools.
  */
-export function registry(db: Database): { consumers: ConsumerDefinition[]; jobs: JobDefinition[] } {
+export function registry(
+  db: Database,
+  bus: Pick<EventBus, "publish">,
+  config: WorkerConfig,
+): { consumers: ConsumerDefinition[]; jobs: JobDefinition[] } {
+  const gateway = createGateway({
+    db,
+    manifests: loadHostManifests(),
+    tools: reputationTools({
+      publicBaseUrl: config.publicBaseUrl,
+      ...(config.adminBaseUrl ? { adminBaseUrl: config.adminBaseUrl } : {}),
+      publish: (event, tx) => bus.publish(event, tx),
+      ...(config.transport ? { transport: config.transport } : {}),
+    }),
+    ...(config.now ? { now: config.now } : {}),
+  });
+  const ask = askAgent(gateway, db, config.now);
+  const recovery = recoveryAgent(gateway);
+
   return {
-    consumers: [...signalsConsumers],
-    jobs: [...coreJobs(db), ...signalsJobs(db)],
+    consumers: [...signalsConsumers, reputationErasure, ...ask.consumers, ...recovery.consumers],
+    jobs: [...coreJobs(db), ...signalsJobs(db), ...ask.jobs],
   };
 }
 
@@ -35,16 +74,16 @@ export function describeDeadLetter(payload: unknown): Record<string, unknown> {
   return { type, version, id, clientId };
 }
 
-export type WorkerDeps = { db: Database; bus: EventBus; log?: Logger };
+export type WorkerDeps = { db: Database; bus: EventBus; config: WorkerConfig; log?: Logger };
 
 /**
  * Starts the bus, subscribes every consumer, schedules every job and watches the dead-letter
  * queue. Subscriptions are stored in the database, so the API can publish as soon as a worker
  * has started once; do not take traffic from a fresh database before this has run.
  */
-export async function startWorker({ db, bus, log = jsonLogger }: WorkerDeps) {
+export async function startWorker({ db, bus, config, log = jsonLogger }: WorkerDeps) {
   await bus.start();
-  const { consumers, jobs } = registry(db);
+  const { consumers, jobs } = registry(db, bus, config);
 
   for (const consumer of consumers) {
     await bus.subscribe(consumer.name, consumer.event, consumer.handler, consumer.options);

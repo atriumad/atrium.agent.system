@@ -1,0 +1,15 @@
+id: host.recovery
+version: 1
+engine: reputation
+goal: "Measure the experience and win back dissatisfied guests"
+tools:
+  reputation.classify_response: { level: 4 }
+  reputation.open_case: { level: 4, max_per_day: 200 }
+scopes: [reputation:read, reputation:write]
+never:
+  - make the review link depend on the rating
+  - open a case from a public review guessed to belong to a guest
+untrusted_input: [response.comment]
+escalate_to: account_manager
+kill_switch: per_client
+evals: evals/recovery/*.yaml

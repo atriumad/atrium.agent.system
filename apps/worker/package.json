@@ -10,6 +10,8 @@
   "dependencies": {
     "@atrium/contracts": "workspace:*",
     "@atrium/core": "workspace:*",
-    "@atrium/signals": "workspace:*"
+    "@atrium/signals": "workspace:*",
+    "@atrium/agents": "workspace:*",
+    "@atrium/reputation": "workspace:*"
   }
 }

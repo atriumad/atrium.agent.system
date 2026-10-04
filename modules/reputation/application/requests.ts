@@ -199,3 +199,20 @@ export function listReviewRequests(tx: Tx, clientId: string, limit = 50) {
     .orderBy(asc(reviewRequests.sendAt))
     .limit(Math.min(limit, 200));
 }
+
+/**
+ * Drops a scheduled request without sending it. Used when the agent that would send it is off,
+ * so switching Ask back on later does not release a backlog of stale requests at once.
+ */
+export async function skipReviewRequest(
+  tx: Tx,
+  requestId: string,
+  reason: string,
+): Promise<boolean> {
+  const skipped = await tx
+    .update(reviewRequests)
+    .set({ status: "skipped", skippedReason: reason })
+    .where(and(eq(reviewRequests.id, requestId), eq(reviewRequests.status, "scheduled")))
+    .returning({ id: reviewRequests.id });
+  return skipped.length > 0;
+}

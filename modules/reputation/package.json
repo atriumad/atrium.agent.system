@@ -9,6 +9,8 @@
   "dependencies": {
     "@atrium/contracts": "workspace:*",
     "@atrium/core": "workspace:*",
-    "drizzle-orm": "^0.45.3"
+    "drizzle-orm": "^0.45.3",
+    "@atrium/policy": "workspace:*",
+    "zod": "^4.6.5"
   }
 }

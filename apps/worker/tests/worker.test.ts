@@ -22,6 +22,7 @@ const APP_URL =
   process.env.DATABASE_URL ?? "postgres://atrium_app:atrium_app@localhost:5432/atrium";
 
 const suffix = crypto.randomUUID().slice(0, 8);
+const CONFIG = { publicBaseUrl: "https://survey.example.test" };
 const SCHEMA = `queue_worker_${suffix}`;
 const { db, close } = createDatabase(APP_URL);
 const admin = new SQL(ADMIN_URL);
@@ -75,7 +76,7 @@ beforeAll(async () => {
     schema: SCHEMA,
     retry: { limit: 1, delaySeconds: 1, maxDelaySeconds: 1 },
   });
-  worker = await startWorker({ db, bus, log });
+  worker = await startWorker({ db, bus, config: CONFIG, log });
 });
 
 afterAll(async () => {
@@ -90,7 +91,7 @@ afterAll(async () => {
 
 describe("startup", () => {
   test("registers every consumer and job the modules offer, and says so", () => {
-    const { consumers, jobs } = registry(db);
+    const { consumers, jobs } = registry(db, bus, CONFIG);
     const started = logs.find((l) => l.message === "worker.started");
     expect(started?.fields?.consumers).toEqual(consumers.map((c) => c.name));
     expect(started?.fields?.jobs).toEqual(jobs.map((j) => j.name));
@@ -100,7 +101,7 @@ describe("startup", () => {
 
   test("schedules each job once, on its cron", async () => {
     const schedules = await bus.boss.getSchedules();
-    for (const job of registry(db).jobs) {
+    for (const job of registry(db, bus, CONFIG).jobs) {
       const found = schedules.filter((s) => s.name === job.name);
       expect(found).toHaveLength(1);
       expect(found[0]?.cron).toBe(job.cron);
@@ -109,7 +110,7 @@ describe("startup", () => {
 
   test("registering again, as a second worker would, does not duplicate a schedule", async () => {
     const second = createEventBus(db, { url: APP_URL, schema: SCHEMA });
-    const other = await startWorker({ db, bus: second, log });
+    const other = await startWorker({ db, bus: second, config: CONFIG, log });
     const names = (await bus.boss.getSchedules()).map((s) => s.name);
     expect(new Set(names).size).toBe(names.length);
     await other.stop();

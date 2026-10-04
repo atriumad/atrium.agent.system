@@ -30,7 +30,7 @@ export {
   unassignLocation,
 } from "./application/assignments";
 export type { AuditFilter } from "./application/audit";
-export { listAudit, writeAudit } from "./application/audit";
+export { countAuditSince, listAudit, writeAudit } from "./application/audit";
 export type { GuestDeps, GuestInput, Publish } from "./application/guests";
 export {
   canContact,

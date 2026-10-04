@@ -1,0 +1,16 @@
+{
+  "name": "@atrium/agents",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@atrium/contracts": "workspace:*",
+    "@atrium/core": "workspace:*",
+    "@atrium/policy": "workspace:*",
+    "@atrium/reputation": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}

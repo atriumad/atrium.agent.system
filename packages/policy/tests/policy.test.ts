@@ -149,6 +149,19 @@ describe("rules need checks", () => {
     ).toEqual(["write to a guest without recorded consent"]);
   });
 
+  test("a rule enforced inside the tool counts as covered, and is never run by the engine", () => {
+    const inside = [
+      {
+        name: "reputation.open_case",
+        never: [{ rule: "write to a guest without recorded consent", enforcedBy: "sendToGuest" }],
+      },
+    ];
+    expect(uncoveredRules(manifest, inside)).toEqual(["make the review link depend on the rating"]);
+    expect(run("reputation.open_case", facts(), { never: inside[0]?.never }).decision).toBe(
+      "execute",
+    );
+  });
+
   test("covered rules are not reported, and checks on tools outside the manifest do not count", () => {
     const both = [
       withCheck("make the review link depend on the rating"),

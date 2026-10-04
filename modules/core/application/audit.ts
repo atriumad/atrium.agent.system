@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { type AuditEntry, type Decision, maskPersonalData } from "../domain/audit";
 import type { Tx } from "../infra/db";
 import { auditLog } from "../infra/schema";
@@ -47,4 +47,25 @@ export function listAudit(tx: Tx, clientId: string, filter: AuditFilter = {}) {
     )
     .orderBy(desc(auditLog.seq))
     .limit(Math.min(filter.limit ?? 50, 200));
+}
+
+/** How many audit entries of an action by an actor, for a client, since a moment. For daily limits. */
+export async function countAuditSince(
+  tx: Tx,
+  clientId: string,
+  filter: { actorId: string; action: string; decisions: Decision[]; since: Date },
+): Promise<number> {
+  const rows = await tx
+    .select({ seq: auditLog.seq })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.clientId, clientId),
+        eq(auditLog.actorId, filter.actorId),
+        eq(auditLog.action, filter.action),
+        inArray(auditLog.decision, filter.decisions),
+        gte(auditLog.at, filter.since),
+      ),
+    );
+  return rows.length;
 }

@@ -117,6 +117,29 @@ export async function ingestSignals(
         tx,
       );
     }
+
+    // An order stitched to a guest is an identified visit. Ask schedules its review request from
+    // it. A re-run repeats the event, and the request is unique per guest, place and day.
+    const visits = new Map<string, SignalRow>();
+    for (const row of group) {
+      if (row.signalType === "order" && row.guestId) {
+        visits.set(`${row.guestId}|${row.locationId}|${row.date}`, row);
+      }
+    }
+    for (const row of visits.values()) {
+      await deps.publish?.(
+        parseEvent({
+          type: "visit.identified",
+          version: 1,
+          id: crypto.randomUUID(),
+          occurredAt: new Date().toISOString(),
+          clientId,
+          locationId: row.locationId,
+          data: { guestId: row.guestId, date: row.date },
+        }),
+        tx,
+      );
+    }
     return { inserted, updated };
   });
 

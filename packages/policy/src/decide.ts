@@ -69,6 +69,7 @@ export function decide(input: {
   // 5. Does it pass the checks for the manifest's `never` rules tied to the tool?
   const context: CheckContext = { now: facts.now };
   for (const rule of (tool.never ?? []) as NeverCheck[]) {
+    if (!("check" in rule)) continue; // enforced inside the tool; see NeverCheck
     const violation = rule.check(input.callInput, context);
     if (violation) return reject(5, `breaks a rule (${rule.rule}): ${violation}`);
   }

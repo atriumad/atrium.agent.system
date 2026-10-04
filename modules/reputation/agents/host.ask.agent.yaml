@@ -1,0 +1,14 @@
+id: host.ask
+version: 1
+engine: reputation
+goal: "Ask every guest for a review at the happy moment after the visit"
+tools:
+  reputation.send_review_request: { level: 4, max_per_day: 300 }
+scopes: [reputation:write, guests:contact_if_consented]
+never:
+  - filter who is asked for a review by their experience
+  - write to a guest without recorded consent
+untrusted_input: []
+escalate_to: account_manager
+kill_switch: per_client
+evals: evals/ask/*.yaml

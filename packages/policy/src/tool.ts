@@ -3,14 +3,25 @@ import { z } from "zod";
 import { TOOL_NAME } from "./manifest";
 
 /**
- * A check bound to a manifest's `never` rule. `rule` is the manifest line it enforces, word for
- * word, so a manifest rule with no check anywhere is found by a test instead of by an incident.
+ * Code behind a manifest's `never` rule. `rule` is the manifest line it enforces, word for word,
+ * so a manifest rule with no code anywhere is found by a test instead of by an incident.
+ *
+ * Two honest shapes:
+ *  - a `check` the engine runs before the call, on the input alone;
+ *  - `enforcedBy`, for a rule that can only be judged with data inside the tool (a guest's
+ *    consent, say). It names the function that enforces it, and a test in the module proves it.
  */
-export type NeverCheck<I = unknown> = {
-  rule: string;
-  /** Returns why the call breaks the rule, or null when it does not. */
-  check: (input: I, context: CheckContext) => string | null;
-};
+export type NeverCheck<I = unknown> =
+  | {
+      rule: string;
+      /** Returns why the call breaks the rule, or null when it does not. */
+      check: (input: I, context: CheckContext) => string | null;
+    }
+  | {
+      rule: string;
+      /** The function that enforces it, and where the test is. Not run by the engine. */
+      enforcedBy: string;
+    };
 
 /** Facts a check may use. Looked up by the gateway, never supplied by the agent. */
 export type CheckContext = { now: Date };

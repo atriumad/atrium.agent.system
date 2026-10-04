@@ -12,6 +12,17 @@
         "typescript": "^6",
       },
     },
+    "apps/agents": {
+      "name": "@atrium/agents",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/contracts": "workspace:*",
+        "@atrium/core": "workspace:*",
+        "@atrium/policy": "workspace:*",
+        "@atrium/reputation": "workspace:*",
+        "zod": "^4.6.5",
+      },
+    },
     "apps/api": {
       "name": "@atrium/api",
       "version": "0.0.0",
@@ -50,8 +61,10 @@
       "name": "@atrium/worker",
       "version": "0.0.0",
       "dependencies": {
+        "@atrium/agents": "workspace:*",
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
+        "@atrium/reputation": "workspace:*",
         "@atrium/signals": "workspace:*",
       },
     },
@@ -74,7 +87,9 @@
       "dependencies": {
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
+        "@atrium/policy": "workspace:*",
         "drizzle-orm": "^0.45.3",
+        "zod": "^4.6.5",
       },
     },
     "modules/signals": {
@@ -149,6 +164,8 @@
     "@antfu/install-pkg": ["@antfu/install-pkg@2.1.0", "", { "dependencies": { "package-manager-detector": "^1.8.0", "tinyexec": "^1.3.1" } }, "sha512-sdg9NxU3zR4Mnawfbc/x6GB5Wf17WYud5qOuEuxXjaKpYpMkISSJEjItGebXJ2bQ4DIcly4NYH23mtkGJjvKUw=="],
 
     "@asteasolutions/zod-to-openapi": ["@asteasolutions/zod-to-openapi@9.1.0", "", { "dependencies": { "openapi3-ts": "^4.6.0" }, "peerDependencies": { "zod": "^4.0.0" } }, "sha512-pLMeRgRYS7/vZIgAAkOe2P6+XGTifR1MT9pqDoxZ11EmcJJ+DPmdPqLN8ZZF4U8R9KHCCQCS9c2wtuE8wSrfkw=="],
+
+    "@atrium/agents": ["@atrium/agents@workspace:apps/agents"],
 
     "@atrium/api": ["@atrium/api@workspace:apps/api"],
 

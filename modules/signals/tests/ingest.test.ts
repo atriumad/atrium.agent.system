@@ -489,3 +489,39 @@ describe("connector tokens", () => {
     expect(rows[0]?.last_used_at).not.toBeNull();
   });
 });
+
+describe("visits", () => {
+  test("an order with a guest announces an identified visit, once per guest, place and day", async () => {
+    const r = recorder();
+    const guest = crypto.randomUUID();
+    await ingestSignals(
+      db,
+      tokenA,
+      [
+        row({ source: "toast", signalType: "order", guestId: guest, value: 1 }),
+        row({ source: "toast", signalType: "order", guestId: guest, elementId: "e2", value: 1 }),
+        row({ source: "toast", signalType: "revenue", guestId: guest, value: 4200 }),
+        row({ source: "toast", signalType: "order", value: 1, elementId: "no_guest" }),
+      ],
+      { now: NOW, publish: r.publish },
+    );
+    const visits = r.events.filter((e) => e.type === "visit.identified");
+    expect(visits).toHaveLength(1);
+    expect(visits[0]).toMatchObject({
+      clientId: a,
+      locationId: locA,
+      data: { guestId: guest, date: "2026-07-10" },
+    });
+  });
+
+  test("no guest, no visit event", async () => {
+    const r = recorder();
+    await ingestSignals(
+      db,
+      tokenA,
+      [row({ source: "toast", signalType: "order", elementId: "anon" })],
+      { now: NOW, publish: r.publish },
+    );
+    expect(r.events.some((e) => e.type === "visit.identified")).toBe(false);
+  });
+});

@@ -16,7 +16,8 @@ export type CallResult =
   | { decision: "executed"; output: unknown }
   | { decision: "pending_approval"; approvalId: string; reason: string }
   | { decision: "drafted"; reason: string }
-  | { decision: "rejected"; reason: string };
+  /** `step` is the policy step that refused it (1 to 6), or 0 for a malformed call. */
+  | { decision: "rejected"; reason: string; step: number };
 
 export interface Gateway {
   call(call: AgentCall): Promise<CallResult>;

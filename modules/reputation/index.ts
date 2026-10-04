@@ -1,4 +1,8 @@
 /** Public API of Reputation. Other modules import this file, never its tables. */
+
+export { loadHostManifests } from "./agents";
+export { askAgent } from "./agents/ask";
+export { recoveryAgent } from "./agents/recovery";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
 export type { Classification, OpenCaseResult } from "./application/recovery";
 export {
@@ -17,6 +21,7 @@ export {
   listReviewRequests,
   scheduleReviewRequest,
   sendReviewRequest,
+  skipReviewRequest,
 } from "./application/requests";
 export type { LocationSettings } from "./application/settings";
 export {
@@ -39,3 +44,5 @@ export {
 export * from "./domain/invitations";
 export * from "./domain/recovery";
 export * from "./domain/timing";
+export type { ReputationToolConfig } from "./mcp/tools";
+export { reputationTools } from "./mcp/tools";
