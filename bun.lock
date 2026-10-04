@@ -97,6 +97,15 @@
         "zod": "^4.6.5",
       },
     },
+    "packages/policy": {
+      "name": "@atrium/policy",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/contracts": "workspace:*",
+        "yaml": "^2.8.0",
+        "zod": "^4.6.5",
+      },
+    },
   },
   "packages": {
     "@11ty/gray-matter": ["@11ty/gray-matter@1.0.0", "", { "dependencies": { "js-yaml": "^4.1.0", "kind-of": "^6.0.3", "section-matter": "^1.0.0", "strip-bom-string": "^1.0.0" } }, "sha512-7mJJl+wf1AByoT0PknQiQfOPnVNT4fevGrUBVWO4HXsnYn1aQPyRyrELYrNUFleUBM++KzMKN6QaxHPk0t/6/g=="],
@@ -150,6 +159,8 @@
     "@atrium/core": ["@atrium/core@workspace:modules/core"],
 
     "@atrium/docs": ["@atrium/docs@workspace:apps/docs"],
+
+    "@atrium/policy": ["@atrium/policy@workspace:packages/policy"],
 
     "@atrium/reputation": ["@atrium/reputation@workspace:modules/reputation"],
 

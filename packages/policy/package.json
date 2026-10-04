@@ -1,0 +1,14 @@
+{
+  "name": "@atrium/policy",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@atrium/contracts": "workspace:*",
+    "yaml": "^2.8.0",
+    "zod": "^4.6.5"
+  }
+}
