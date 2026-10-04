@@ -1,4 +1,13 @@
-import { bigint, boolean, integer, pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  integer,
+  jsonb,
+  pgSchema,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const core = pgSchema("core");
 
@@ -78,5 +87,52 @@ export const featureOverrides = core.table("feature_overrides", {
   feature: text("feature").notNull(),
   level: text("level").notNull(),
   note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const auditLog = core.table("audit_log", {
+  seq: bigint("seq", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  clientId: uuid("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  locationId: uuid("location_id"),
+  actorType: text("actor_type").notNull(),
+  actorId: text("actor_id").notNull(),
+  agentVersion: integer("agent_version"),
+  action: text("action").notNull(),
+  input: jsonb("input"),
+  output: jsonb("output"),
+  decision: text("decision").notNull(),
+  approverId: text("approver_id"),
+  reason: text("reason"),
+  costTokens: integer("cost_tokens"),
+  costCents: integer("cost_cents"),
+});
+
+export const approvalRequests = core.table("approval_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  locationId: uuid("location_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  requestedByType: text("requested_by_type").notNull(),
+  requestedById: text("requested_by_id").notNull(),
+  itemType: text("item_type").notNull(),
+  itemRef: text("item_ref").notNull(),
+  summary: text("summary").notNull(),
+  payload: jsonb("payload").notNull().default({}),
+  status: text("status").notNull().default("pending"),
+  editedPayload: jsonb("edited_payload"),
+  decidedBy: text("decided_by"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+});
+
+export const killSwitches = core.table("kill_switches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: text("agent_id").notNull(),
+  clientId: uuid("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  setBy: text("set_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

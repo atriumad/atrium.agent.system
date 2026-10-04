@@ -32,6 +32,27 @@ const valid = {
     version: 1,
     data: { previous: "essential", current: "pillar_2" },
   },
+  "approval.requested": {
+    ...ids,
+    type: "approval.requested",
+    version: 1,
+    data: {
+      approvalId: "5c2e8a10-7d3b-4f6e-8a21-9b0c1d2e3f44",
+      itemType: "reputation.reply",
+      itemRef: "review_881",
+    },
+  },
+  "approval.decided": {
+    ...ids,
+    type: "approval.decided",
+    version: 1,
+    data: {
+      approvalId: "5c2e8a10-7d3b-4f6e-8a21-9b0c1d2e3f44",
+      itemType: "reputation.reply",
+      itemRef: "review_881",
+      decision: "approved",
+    },
+  },
   "consent.changed": {
     ...ids,
     type: "consent.changed",

@@ -48,6 +48,23 @@ export const PackageChangedV1 = defineEvent("package.changed", 1, {
   current: z.enum(PACKAGES),
 });
 
+const itemType = z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/);
+
+/** A proposal entered the approval queue. Notifications tell the people who can decide. */
+export const ApprovalRequestedV1 = defineEvent("approval.requested", 1, {
+  approvalId: z.string().uuid(),
+  itemType,
+  itemRef: z.string().min(1),
+});
+
+/** A person decided. The module that proposed it executes (or drops) the item. */
+export const ApprovalDecidedV1 = defineEvent("approval.decided", 1, {
+  approvalId: z.string().uuid(),
+  itemType,
+  itemRef: z.string().min(1),
+  decision: z.enum(["approved", "discarded"]),
+});
+
 /** Every event the system knows. Add it here and to the catalog in the docs. */
 export const EVENT_SCHEMAS = [
   SignalsIngestedV1,
@@ -55,6 +72,8 @@ export const EVENT_SCHEMAS = [
   GuestErasedV1,
   ConsentChangedV1,
   PackageChangedV1,
+  ApprovalRequestedV1,
+  ApprovalDecidedV1,
 ] as const;
 
 export type AtriumEvent = z.infer<(typeof EVENT_SCHEMAS)[number]>;

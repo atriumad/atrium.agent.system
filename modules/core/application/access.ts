@@ -8,8 +8,10 @@ import {
 } from "@atrium/contracts";
 import { and, eq, isNull } from "drizzle-orm";
 import { canSendSms, isLive, type Overrides, resolveAccess, resolveLevel } from "../domain/access";
+import type { Actor } from "../domain/audit";
 import type { Tx } from "../infra/db";
 import { clientPackages, featureOverrides } from "../infra/schema";
+import { writeAudit } from "./audit";
 import type { GuestDeps } from "./guests";
 
 const isPackage = (value: string): value is PackageId =>
@@ -33,6 +35,7 @@ export async function setPackage(
   tx: Tx,
   clientId: string,
   pkg: PackageId,
+  actor: Actor,
   deps: AccessDeps = {},
 ): Promise<boolean> {
   if (!isPackage(pkg)) throw new Error(`unknown package: ${pkg}`);
@@ -46,6 +49,14 @@ export async function setPackage(
       target: clientPackages.clientId,
       set: { package: pkg, updatedAt: new Date() },
     });
+  await writeAudit(tx, {
+    actor,
+    clientId,
+    action: "core.set_package",
+    input: { package: pkg },
+    output: { previous: previous?.package ?? null },
+    decision: "executed",
+  });
   await deps.publish?.(
     {
       id: crypto.randomUUID(),
@@ -62,13 +73,25 @@ export async function setPackage(
 }
 
 /** Records that the carrier approved the client's SMS registration (or revoked it). */
-export async function setSmsRegistered(tx: Tx, clientId: string, registered: boolean) {
+export async function setSmsRegistered(
+  tx: Tx,
+  clientId: string,
+  registered: boolean,
+  actor: Actor,
+) {
   const updated = await tx
     .update(clientPackages)
     .set({ smsRegistered: registered, updatedAt: new Date() })
     .where(eq(clientPackages.clientId, clientId))
     .returning({ clientId: clientPackages.clientId });
   if (updated.length === 0) throw new Error("the client has no package yet");
+  await writeAudit(tx, {
+    actor,
+    clientId,
+    action: "core.set_sms_registered",
+    input: { registered },
+    decision: "executed",
+  });
 }
 
 /** An override for a whole client (no locationId) or for one of its locations. */
@@ -77,6 +100,7 @@ export async function setOverride(
   clientId: string,
   feature: Feature,
   level: AccessLevel,
+  actor: Actor,
   options: { locationId?: string; note?: string } = {},
 ) {
   if (!isFeature(feature)) throw new Error(`unknown feature: ${feature}`);
@@ -89,15 +113,25 @@ export async function setOverride(
       target: [featureOverrides.clientId, featureOverrides.locationId, featureOverrides.feature],
       set: { level, note: options.note ?? null },
     });
+  await writeAudit(tx, {
+    actor,
+    clientId,
+    locationId,
+    action: "core.set_override",
+    input: { feature, level },
+    decision: "executed",
+    reason: options.note ?? null,
+  });
 }
 
 export async function clearOverride(
   tx: Tx,
   clientId: string,
   feature: Feature,
+  actor: Actor,
   locationId?: string,
 ) {
-  await tx
+  const removed = await tx
     .delete(featureOverrides)
     .where(
       and(

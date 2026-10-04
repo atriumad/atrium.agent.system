@@ -13,6 +13,17 @@ export {
   setSmsRegistered,
   smsAllowed,
 } from "./application/access";
+export type { ApprovalItem, ApprovalOutcome } from "./application/approvals";
+export {
+  ApprovalAlreadyDecidedError,
+  ApprovalForbiddenError,
+  ApprovalNotFoundError,
+  decideApproval,
+  listPendingApprovals,
+  requestApproval,
+} from "./application/approvals";
+export type { AuditFilter } from "./application/audit";
+export { listAudit, writeAudit } from "./application/audit";
 export type { GuestDeps, GuestInput, Publish } from "./application/guests";
 export {
   canContact,
@@ -24,6 +35,7 @@ export {
   recordOptOut,
   resolveGuest,
 } from "./application/guests";
+export { isAgentActive, switchOff, switchOn } from "./application/kill-switch";
 export {
   createAgencyOrganization,
   createClientWithOrganization,
@@ -31,7 +43,10 @@ export {
 export type { SessionIdentity } from "./application/scope";
 export { resolveScope } from "./application/scope";
 export * from "./domain/access";
+export * from "./domain/approvals";
+export * from "./domain/audit";
 export * from "./domain/contact";
+export * from "./domain/kill-switch";
 export { isValidTimeZone, localDay } from "./domain/location";
 export * from "./domain/roles";
 export type { Auth, AuthConfig } from "./infra/auth";
