@@ -59,3 +59,24 @@ export const consents = core.table("consents", {
   source: text("source").notNull(),
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const clientPackages = core.table("client_packages", {
+  clientId: uuid("client_id")
+    .primaryKey()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  package: text("package").notNull(),
+  smsRegistered: boolean("sms_registered").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const featureOverrides = core.table("feature_overrides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  locationId: uuid("location_id"),
+  feature: text("feature").notNull(),
+  level: text("level").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

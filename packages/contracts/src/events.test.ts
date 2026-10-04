@@ -26,6 +26,12 @@ const valid = {
     version: 1,
     data: { guestId: "9d4f9c52-6a1e-4a87-8d6b-3c1c2f0a7b11" },
   },
+  "package.changed": {
+    ...ids,
+    type: "package.changed",
+    version: 1,
+    data: { previous: "essential", current: "pillar_2" },
+  },
   "consent.changed": {
     ...ids,
     type: "consent.changed",

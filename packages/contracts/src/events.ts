@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PACKAGES } from "./packages";
 import { SignalSource } from "./signals";
 
 /**
@@ -42,12 +43,18 @@ export const ConsentChangedV1 = defineEvent("consent.changed", 1, {
 
 export const GuestErasedV1 = defineEvent("guest.erased", 1, { guestId: z.string().uuid() });
 
+export const PackageChangedV1 = defineEvent("package.changed", 1, {
+  previous: z.enum(PACKAGES).nullable(),
+  current: z.enum(PACKAGES),
+});
+
 /** Every event the system knows. Add it here and to the catalog in the docs. */
 export const EVENT_SCHEMAS = [
   SignalsIngestedV1,
   GuestIdentifiedV1,
   GuestErasedV1,
   ConsentChangedV1,
+  PackageChangedV1,
 ] as const;
 
 export type AtriumEvent = z.infer<(typeof EVENT_SCHEMAS)[number]>;

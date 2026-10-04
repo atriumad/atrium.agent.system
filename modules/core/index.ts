@@ -1,5 +1,18 @@
 /** Public API of Core. Other modules import this file, never Core's tables. */
 
+export type { AccessDeps } from "./application/access";
+export {
+  accessFor,
+  accessLevel,
+  clearOverride,
+  featureGate,
+  getPackage,
+  isEnabled,
+  setOverride,
+  setPackage,
+  setSmsRegistered,
+  smsAllowed,
+} from "./application/access";
 export type { GuestDeps, GuestInput, Publish } from "./application/guests";
 export {
   canContact,
@@ -17,6 +30,7 @@ export {
 } from "./application/provisioning";
 export type { SessionIdentity } from "./application/scope";
 export { resolveScope } from "./application/scope";
+export * from "./domain/access";
 export * from "./domain/contact";
 export { isValidTimeZone, localDay } from "./domain/location";
 export * from "./domain/roles";
