@@ -68,6 +68,15 @@
         "drizzle-kit": "^0.31.11",
       },
     },
+    "modules/reputation": {
+      "name": "@atrium/reputation",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/contracts": "workspace:*",
+        "@atrium/core": "workspace:*",
+        "drizzle-orm": "^0.45.3",
+      },
+    },
     "modules/signals": {
       "name": "@atrium/signals",
       "version": "0.0.0",
@@ -141,6 +150,8 @@
     "@atrium/core": ["@atrium/core@workspace:modules/core"],
 
     "@atrium/docs": ["@atrium/docs@workspace:apps/docs"],
+
+    "@atrium/reputation": ["@atrium/reputation@workspace:modules/reputation"],
 
     "@atrium/signals": ["@atrium/signals@workspace:modules/signals"],
 
