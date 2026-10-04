@@ -1,5 +1,6 @@
 /** Module boundaries from docs: architecture/repository (ADR 0001). */
-const SHARED = "packages/(contracts|scoring)";
+// Shared pure packages. Workspaces resolve through node_modules, so allow the package name too.
+const SHARED = "(packages/|@atrium/)(contracts|scoring)";
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -20,7 +21,7 @@ module.exports = {
       severity: "error",
       from: { path: "^modules/[^/]+/domain/" },
       to: {
-        pathNot: ["^modules/[^/]+/domain/", `^${SHARED}/`],
+        pathNot: ["^modules/[^/]+/domain/", `^${SHARED}(/|$)`],
         dependencyTypesNot: ["core"],
       },
     },
