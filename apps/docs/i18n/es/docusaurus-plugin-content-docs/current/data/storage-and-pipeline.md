@@ -56,6 +56,13 @@ Los workflows de N8N son la capa de conectores y nunca escriben directo en la ba
 
 Los solapamientos se resuelven con identity stitching: ID de pixel, cruce con POS y teléfono o email unen cada signal, así que un guest se cuenta una sola vez en todas las fuentes. Un escaneo de QR y la orden a la que llevó son el mismo guest y nunca se cuentan doble. Las cargas manuales caen en la misma tabla, con sello de hora y etiquetadas `source = manual`.
 
+## Reglas de operación
+
+- **Particiones.** `signals_daily` tiene una partición por mes. La ingestión crea la que falte cuando hace falta, y el worker mantiene listos el mes actual y los doce siguientes (job `signals.ensure_partitions`, el día 1 de cada mes a las 03:00 UTC). La base de datos rechaza fechas anteriores al 2020-01-01 y a más de unos 400 días hacia adelante. Solo el rol dueño puede leer una partición directamente; la aplicación lee la tabla padre, así que las políticas por fila siempre aplican.
+- **Reemplazar un día.** Cada fila lleva una `revision`: 1 al insertarse, y +1 cada vez que una re-ejecución la reemplaza, de modo que los días corregidos son visibles.
+- **Borrado.** Cuando se borra un guest, sus señales se quedan (los conteos son reales) y el consumidor `signals.erase_guest` limpia el `guest_id`, solo en ese client. La fila opaca del guest y el log de consentimientos (solo ids) se conservan.
+- **Retención.** El ledger de idempotencia de los consumidores (`processed_events`) se poda a los 30 días con el job `core.prune_processed_events`, a diario a las 03:30 UTC. La aplicación nunca borra de `signals_daily`.
+
 ## Métodos de atribución
 
 Cada dólar atribuido lleva su método, guardado en `meta`.

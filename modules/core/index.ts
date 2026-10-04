@@ -44,6 +44,11 @@ export {
 } from "./application/guests";
 export { isAgentActive, switchOff, switchOn } from "./application/kill-switch";
 export {
+  coreJobs,
+  PROCESSED_EVENT_RETENTION_DAYS,
+  pruneProcessedEvents,
+} from "./application/maintenance";
+export {
   createAgencyOrganization,
   createClientWithOrganization,
 } from "./application/provisioning";
@@ -67,8 +72,21 @@ export {
   withScope,
   withTenant,
 } from "./infra/db";
-export type { EventBus, EventHandler, RetryPolicy, SubscribeOptions } from "./infra/event-bus";
-export { createEventBus, DEAD_LETTER_QUEUE, DEFAULT_RETRY, deliver } from "./infra/event-bus";
+export type {
+  ConsumerDefinition,
+  EventBus,
+  EventHandler,
+  JobDefinition,
+  RetryPolicy,
+  SubscribeOptions,
+} from "./infra/event-bus";
+export {
+  createEventBus,
+  DEAD_LETTER_QUEUE,
+  DEFAULT_RETRY,
+  defineConsumer,
+  deliver,
+} from "./infra/event-bus";
 export type { NewClient, NewLocation } from "./infra/tenancy-repository";
 export {
   createClient,

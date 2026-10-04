@@ -1,0 +1,15 @@
+{
+  "name": "@atrium/worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "start": "bun src/main.ts"
+  },
+  "dependencies": {
+    "@atrium/contracts": "workspace:*",
+    "@atrium/core": "workspace:*",
+    "@atrium/signals": "workspace:*"
+  }
+}

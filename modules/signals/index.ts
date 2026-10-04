@@ -3,6 +3,13 @@
 export type { IngestDeps, IngestResult } from "./application/ingest";
 export { IngestionRejected, ingestSignals } from "./application/ingest";
 export {
+  ensureFuturePartitions,
+  PARTITION_MONTHS_AHEAD,
+  scrubErasedGuest,
+  signalsConsumers,
+  signalsJobs,
+} from "./application/maintenance";
+export {
   authenticateToken,
   createConnectorToken,
   generateToken,

@@ -123,12 +123,73 @@ export function createEventBus(db: Database, options: EventBusOptions = {}) {
       );
     },
 
+    /**
+     * A recurring job (cron, UTC unless `tz`). Runs on exactly one worker per tick, retries with
+     * backoff, and lands in the dead-letter queue if it keeps failing. Registering it again is a
+     * no-op, so every worker can call this at startup.
+     */
+    async job(
+      name: string,
+      cron: string,
+      handler: () => Promise<void>,
+      jobOptions: { tz?: string; pollingIntervalSeconds?: number } = {},
+    ) {
+      if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(name)) {
+        throw new Error(`job names are module.thing in snake case: ${name}`);
+      }
+      await ensureQueue(name);
+      await boss.work(
+        name,
+        { pollingIntervalSeconds: jobOptions.pollingIntervalSeconds ?? 5 },
+        async () => {
+          await handler();
+        },
+      );
+      await boss.schedule(name, cron, null, { tz: jobOptions.tz ?? "UTC" });
+    },
+
+    /** Runs a registered job now, outside its schedule. For tests and operators. */
+    runJobNow: (name: string) => boss.send(name),
+
+    /**
+     * Calls `handler` for every job that exhausted its retries. This is where an alert goes
+     * (Sentry); the job's original payload is passed through untouched.
+     */
+    async onDeadLetter(handler: (payload: unknown) => Promise<void>) {
+      await boss.work(DEAD_LETTER_QUEUE, { pollingIntervalSeconds: 5 }, async (jobs) => {
+        for (const job of jobs) await handler(job.data);
+      });
+    },
+
     /** Event types with at least one consumer queue are created at subscribe time. */
     queueName,
   };
 }
 
 export type EventBus = ReturnType<typeof createEventBus>;
+
+/** A consumer a module offers; the worker subscribes it at startup. */
+export type ConsumerDefinition<T extends EventType = EventType> = {
+  /** `module.thing`, unique. Names the queue and the idempotency record. */
+  name: string;
+  event: T;
+  handler: EventHandler<T>;
+  options?: SubscribeOptions;
+};
+
+/** A recurring job a module offers; the worker schedules it at startup. */
+export type JobDefinition = {
+  /** `module.thing`, unique. */
+  name: string;
+  /** Cron, UTC. */
+  cron: string;
+  run: () => Promise<void>;
+};
+
+/** Keeps the event type and the handler's event in step when a module declares a consumer. */
+export function defineConsumer<T extends EventType>(definition: ConsumerDefinition<T>) {
+  return definition;
+}
 
 /** One delivery. Throws to fail the job and trigger a retry. */
 export async function deliver(

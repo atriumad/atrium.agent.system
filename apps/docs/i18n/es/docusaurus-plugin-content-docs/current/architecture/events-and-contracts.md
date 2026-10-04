@@ -15,6 +15,8 @@ Los módulos solo se comunican por eventos. Un evento es un hecho pasado, inmuta
 3. **Idempotencia.** Cada consumidor guarda los `id` procesados: recibir un evento dos veces no produce dos efectos.
 4. **Sin datos personales.** Los eventos llevan ids, nunca email ni teléfono. El consumidor pide el contacto a Core, que verifica el consentimiento.
 5. **Opcional.** Un consumidor apagado para un client ignora el evento.
+6. **Las suscripciones se guardan.** Un evento sin consumidor suscrito se descarta. El worker suscribe a cada consumidor al arrancar, así que hay que correr un worker una vez antes de recibir tráfico en una base nueva.
+7. **Las dead letters se nombran, no se copian.** Un trabajo que agota sus reintentos va a la cola de dead letters; el worker registra su tipo, versión, id y client, y nada de su contenido.
 
 ## Forma de un evento
 

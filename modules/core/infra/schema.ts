@@ -153,3 +153,12 @@ export const locationAssignments = core.table("location_assignments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   createdBy: text("created_by").notNull(),
 });
+
+export const processedEvents = core.table("processed_events", {
+  consumer: text("consumer").notNull(),
+  eventId: uuid("event_id").notNull(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+});

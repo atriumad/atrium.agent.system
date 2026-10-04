@@ -15,6 +15,8 @@ Modules communicate only through events. An event is a past fact: immutable and 
 3. **Idempotency.** Each consumer stores the processed `id`s: receiving an event twice does not produce two effects.
 4. **No personal data.** Events carry ids, never email or phone. The consumer asks Core for the contact, which verifies consent.
 5. **Optional.** A consumer switched off for a client ignores the event.
+6. **Subscriptions are stored.** An event with no subscribed consumer is dropped. The worker subscribes every consumer when it starts, so run a worker once before taking traffic on a fresh database.
+7. **Dead letters name, never carry.** A job that exhausts its retries goes to the dead-letter queue; the worker logs its type, version, id and client, and nothing from its payload.
 
 ## Shape of an event
 
