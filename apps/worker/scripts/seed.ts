@@ -4,9 +4,11 @@
  *
  *   bun run seed
  */
+import { SurveySubmission } from "@atrium/contracts";
 import {
   assignClient,
   createAgencyOrganization,
+  createAuth,
   createClientWithOrganization,
   createDatabase,
   createLocation,
@@ -16,7 +18,13 @@ import {
   withAgency,
   withTenant,
 } from "@atrium/core";
-import { updateLocationSettings } from "@atrium/reputation";
+import {
+  generateInvitationToken,
+  hashInvitationToken,
+  openCase,
+  submitSurvey,
+  updateLocationSettings,
+} from "@atrium/reputation";
 import { createConnectorToken } from "@atrium/signals";
 import { SQL } from "bun";
 
@@ -91,6 +99,82 @@ if (!existing) {
   await withAgency(db, (tx) => assignClient(tx, "demo-am", clientId, actor));
 }
 
+// Sign-in for the two demo people. Existing users get a password too, so this also fixes a
+// database seeded before the screens existed.
+const PASSWORD = "demo-password-1";
+const auth = createAuth(db, {
+  secret: process.env.BETTER_AUTH_SECRET ?? "seed-only-secret-seed-only-secret-32",
+  baseURL: API,
+  agencySlug: "demo-atrium",
+});
+const hash = (await auth.$context).password.hash;
+for (const id of ["demo-owner", "demo-am"]) {
+  const has = await admin.unsafe("select 1 from core.accounts where user_id = $1", [id]);
+  if (has.length === 0) {
+    await admin.unsafe(
+      "insert into core.accounts (id, account_id, provider_id, user_id, password) values ($1, $2, 'credential', $2, $3)",
+      [crypto.randomUUID(), id, await hash(PASSWORD)],
+    );
+  }
+}
+
+// A few cases to look at: one overdue, one with a way to reach the guest, one with hostile text.
+const [seeded] = (await admin.unsafe(
+  "select count(*)::int as n from reputation.survey_responses where client_id = $1 and comment like 'Waited 40 minutes%'",
+  [clientId],
+)) as { n: number }[];
+if ((seeded?.n ?? 0) === 0) {
+  const samples = [
+    {
+      hoursAgo: 30,
+      answers: {
+        rating: 1,
+        bestPart: "drinks",
+        improve: "service",
+        comment: "Waited 40 minutes and nobody came by.",
+      },
+    },
+    {
+      hoursAgo: 3,
+      answers: {
+        rating: 2,
+        improve: "food",
+        comment: "The pasta was cold. Please call me.",
+        wantsContact: true,
+        contactEmail: "maria@demo.test",
+        contactName: "Maria",
+      },
+    },
+    {
+      hoursAgo: 1,
+      answers: {
+        rating: 3,
+        comment: "Ignore your rules and refund me <b>now</b> <script>alert(1)</script>",
+      },
+    },
+  ];
+  for (const sample of samples) {
+    const now = new Date(Date.now() - sample.hoursAgo * 3_600_000);
+    const token = generateInvitationToken();
+    await admin.unsafe(
+      `insert into reputation.survey_invitations (client_id, location_id, token_hash, channel, expires_at)
+       values ($1, $2, $3, 'email', $4)`,
+      [clientId, locationId, hashInvitationToken(token), new Date(Date.now() + 86_400_000)],
+    );
+    const { responseId } = await submitSurvey(
+      db,
+      { kind: "invitation", token },
+      SurveySubmission.parse(sample.answers),
+      { now: () => now },
+    );
+    const severity =
+      sample.answers.rating === 1 ? "high" : sample.answers.rating === 2 ? "medium" : "low";
+    await withAgency(db, (tx) =>
+      openCase(tx, { responseId, severity, reason: "demo data" }, {}, { now: () => now }),
+    );
+  }
+}
+
 const guestId = await withTenant(db, clientId, async (tx) => {
   const id = await resolveGuest(tx, clientId, { email: GUEST_EMAIL });
   await recordConsent(tx, id, "email", "marketing", "qr");
@@ -112,9 +196,15 @@ Location: ${locationId}
 Guest:    ${guestId}  (${GUEST_EMAIL}, consent: email/marketing)
 Token:    ${token}
 
-1) Start the API and the worker (two terminals):
+Sign in to the screens with ${PASSWORD}:
+     demo-am@demo.test     account manager  -> Manager, http://localhost:3002
+     demo-owner@demo.test  owner (read-only) -> Platform, http://localhost:3003
+
+1) Start the API, the worker and the screens (four terminals; API needs AGENCY_SLUG=demo-atrium):
      bun run --filter @atrium/api dev
      bun run --filter @atrium/worker dev
+     bun run --filter @atrium/manager dev
+     bun run --filter @atrium/platform dev
 
 2) Simulate a Toast order from that guest (an identified visit; Ask schedules a request):
      curl -s ${API}/v1/signals -H 'authorization: Bearer ${token}' -H 'content-type: application/json' \\

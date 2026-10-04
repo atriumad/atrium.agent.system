@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/*
+ * Provisional tokens. Decision 15 (brand system versus product theme) is still open, so these
+ * are the product theme from ADR 0004: cream, ink, lime and amber. Replace the values here and
+ * every surface follows.
+ */
+@theme {
+  --color-cream: #f6f1e7;
+  --color-paper: #fbf8f1;
+  --color-ink: #14130f;
+  --color-ink-soft: #55524a;
+  --color-line: #ddd5c4;
+  --color-lime: #c6f24e;
+  --color-amber: #e8a317;
+  --color-alert: #c2410c;
+  --color-ok: #3f6212;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
