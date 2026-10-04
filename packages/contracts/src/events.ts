@@ -65,6 +65,42 @@ export const ApprovalDecidedV1 = defineEvent("approval.decided", 1, {
   decision: z.enum(["approved", "discarded"]),
 });
 
+/**
+ * A guest's visit was identified (an order stitched to a guest). The envelope's `locationId`
+ * says where. Ask schedules the review request from it.
+ */
+export const VisitIdentifiedV1 = defineEvent("visit.identified", 1, {
+  guestId: z.string().uuid(),
+  date: day,
+});
+
+/** A survey invitation reached a guest (or was recorded by the development transport). */
+export const SurveySentV1 = defineEvent("survey.sent", 1, {
+  invitationId: z.string().uuid(),
+  channel: z.enum(["email", "sms"]),
+});
+
+/** Someone answered the survey. The rating is a number, not personal data. */
+export const SurveyResponseSubmittedV1 = defineEvent("survey.response.submitted", 1, {
+  responseId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  wantsContact: z.boolean(),
+});
+
+export const RecoveryCaseOpenedV1 = defineEvent("recovery.case.opened", 1, {
+  caseId: z.string().uuid(),
+  severity: z.enum(["low", "medium", "high"]),
+});
+
+export const RecoveryCaseResolvedV1 = defineEvent("recovery.case.resolved", 1, {
+  caseId: z.string().uuid(),
+});
+
+/** The guest tapped the Google review button on the final screen. */
+export const ReviewLinkClickedV1 = defineEvent("review.link.clicked", 1, {
+  responseId: z.string().uuid(),
+});
+
 /** Every event the system knows. Add it here and to the catalog in the docs. */
 export const EVENT_SCHEMAS = [
   SignalsIngestedV1,
@@ -74,6 +110,12 @@ export const EVENT_SCHEMAS = [
   PackageChangedV1,
   ApprovalRequestedV1,
   ApprovalDecidedV1,
+  VisitIdentifiedV1,
+  SurveySentV1,
+  SurveyResponseSubmittedV1,
+  RecoveryCaseOpenedV1,
+  RecoveryCaseResolvedV1,
+  ReviewLinkClickedV1,
 ] as const;
 
 export type AtriumEvent = z.infer<(typeof EVENT_SCHEMAS)[number]>;

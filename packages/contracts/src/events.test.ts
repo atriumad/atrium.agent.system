@@ -53,6 +53,42 @@ const valid = {
       decision: "approved",
     },
   },
+  "visit.identified": {
+    ...ids,
+    type: "visit.identified",
+    version: 1,
+    data: { guestId: "9d4f9c52-6a1e-4a87-8d6b-3c1c2f0a7b11", date: "2026-07-10" },
+  },
+  "survey.sent": {
+    ...ids,
+    type: "survey.sent",
+    version: 1,
+    data: { invitationId: "6d3f9b21-8e4c-4a77-9b32-0a1b2c3d4e55", channel: "email" },
+  },
+  "survey.response.submitted": {
+    ...ids,
+    type: "survey.response.submitted",
+    version: 1,
+    data: { responseId: "7e4a0c32-9f5d-4b88-8c43-1b2c3d4e5f66", rating: 2, wantsContact: true },
+  },
+  "recovery.case.opened": {
+    ...ids,
+    type: "recovery.case.opened",
+    version: 1,
+    data: { caseId: "8f5b1d43-0a6e-4c99-9d54-2c3d4e5f6a77", severity: "high" },
+  },
+  "recovery.case.resolved": {
+    ...ids,
+    type: "recovery.case.resolved",
+    version: 1,
+    data: { caseId: "8f5b1d43-0a6e-4c99-9d54-2c3d4e5f6a77" },
+  },
+  "review.link.clicked": {
+    ...ids,
+    type: "review.link.clicked",
+    version: 1,
+    data: { responseId: "7e4a0c32-9f5d-4b88-8c43-1b2c3d4e5f66" },
+  },
   "consent.changed": {
     ...ids,
     type: "consent.changed",

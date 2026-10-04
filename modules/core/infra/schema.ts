@@ -162,3 +162,21 @@ export const processedEvents = core.table("processed_events", {
     .references(() => clients.id, { onDelete: "cascade" }),
   processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const notifications = core.table("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  channel: text("channel").notNull(),
+  purpose: text("purpose").notNull(),
+  recipientType: text("recipient_type").notNull(),
+  recipientId: text("recipient_id").notNull(),
+  toMasked: text("to_masked").notNull(),
+  subject: text("subject"),
+  body: text("body").notNull(),
+  transport: text("transport").notNull().default("dev"),
+  status: text("status").notNull().default("recorded"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

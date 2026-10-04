@@ -48,6 +48,8 @@ export {
   PROCESSED_EVENT_RETENTION_DAYS,
   pruneProcessedEvents,
 } from "./application/maintenance";
+export type { SendResult } from "./application/notifications";
+export { listNotifications, sendToGuest, sendToUser } from "./application/notifications";
 export {
   createAgencyOrganization,
   createClientWithOrganization,
@@ -60,6 +62,7 @@ export * from "./domain/audit";
 export * from "./domain/contact";
 export * from "./domain/kill-switch";
 export { isValidTimeZone, localDay } from "./domain/location";
+export * from "./domain/notifications";
 export * from "./domain/roles";
 export type { Auth, AuthConfig } from "./infra/auth";
 export { createAuth } from "./infra/auth";
