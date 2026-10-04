@@ -136,3 +136,20 @@ export const killSwitches = core.table("kill_switches", {
   setBy: text("set_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const assignments = core.table("assignments", {
+  userId: text("user_id").notNull(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdBy: text("created_by").notNull(),
+});
+
+export const locationAssignments = core.table("location_assignments", {
+  userId: text("user_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  locationId: uuid("location_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdBy: text("created_by").notNull(),
+});

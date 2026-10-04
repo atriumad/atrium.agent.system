@@ -78,10 +78,34 @@ export function can<R extends Resource>(role: Role, resource: R, action: Action<
   return granted?.includes(action) ?? false;
 }
 
-/** What a request may touch in the database. Maps to withAgency / withTenant. */
+/**
+ * What a request may touch in the database. Maps to withAgency / withAssigned / withTenant,
+ * or to `withScope`, which picks for you.
+ *
+ * - `agency`: the whole portfolio (agency admins).
+ * - `assigned`: only the clients assigned to this user (account managers, agency staff).
+ * - `client`: one client. `locationIds` narrows it to assigned locations (client staff);
+ *   absent means every location (the owner).
+ */
 export type Scope =
   | { kind: "agency"; userId: string; role: Role }
-  | { kind: "client"; userId: string; role: Role; clientId: string };
+  | { kind: "assigned"; userId: string; role: Role }
+  | { kind: "client"; userId: string; role: Role; clientId: string; locationIds?: string[] };
+
+/** Roles that see only the clients assigned to them. */
+export function isAssignedRole(role: Role): boolean {
+  return role === "account_manager" || role === "agency_staff";
+}
+
+/** Roles whose view is narrowed to assigned locations. */
+export function isLocationScopedRole(role: Role): boolean {
+  return role === "client_staff";
+}
+
+/** Whether a scope may see a location. Downstream modules apply this to their own location_id. */
+export function locationVisible(scope: Scope, locationId: string): boolean {
+  return scope.kind !== "client" || !scope.locationIds || scope.locationIds.includes(locationId);
+}
 
 /** Agency roles live in the agency organization; client roles in a client's organization. */
 export function roleAllowedInOrganization(role: Role, isAgencyOrganization: boolean): boolean {

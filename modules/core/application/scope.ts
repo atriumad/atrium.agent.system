@@ -1,5 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
-import { isAgencyRole, isRole, type Scope } from "../domain/roles";
+import {
+  isAgencyRole,
+  isAssignedRole,
+  isLocationScopedRole,
+  isRole,
+  type Scope,
+} from "../domain/roles";
 import { members, organizations } from "../infra/auth-schema";
 import type { Database } from "../infra/db";
 
@@ -30,9 +36,11 @@ export async function resolveScope(
 
   const isAgencyOrg = row.slug === agencySlug;
   if (isAgencyOrg) {
-    return isAgencyRole(row.role)
-      ? { kind: "agency", userId: identity.userId, role: row.role }
-      : null;
+    if (!isAgencyRole(row.role)) return null;
+    // Admins see the portfolio; managers and staff only the clients assigned to them.
+    return isAssignedRole(row.role)
+      ? { kind: "assigned", userId: identity.userId, role: row.role }
+      : { kind: "agency", userId: identity.userId, role: row.role };
   }
   if (isAgencyRole(row.role)) return null;
 
@@ -41,5 +49,24 @@ export async function resolveScope(
   );
   const clientId = result[0]?.id;
   if (!clientId) return null;
+  if (isLocationScopedRole(row.role)) {
+    const locationIds = await db.execute<{ ids: string[] | string | null }>(
+      sql`select core.location_ids_for_user(${identity.userId}, ${clientId}::uuid) as ids`,
+    );
+    return {
+      kind: "client",
+      userId: identity.userId,
+      role: row.role,
+      clientId,
+      locationIds: parseUuidArray(locationIds[0]?.ids),
+    };
+  }
   return { kind: "client", userId: identity.userId, role: row.role, clientId };
+}
+
+/** The driver may hand a uuid[] back as an array or as its Postgres text form. */
+function parseUuidArray(value: string[] | string | null | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return value.replace(/[{}]/g, "").split(",").filter(Boolean);
 }
