@@ -43,8 +43,8 @@ export {
   resolveGuest,
 } from "./application/guests";
 export { isAgentActive, switchOff, switchOn } from "./application/kill-switch";
-export type { AlertRecipient } from "./application/lookups";
-export { alertRecipients, clientIdForLocation } from "./application/lookups";
+export type { AlertRecipient, LocationLabel } from "./application/lookups";
+export { alertRecipients, clientIdForLocation, describeLocations } from "./application/lookups";
 export {
   coreJobs,
   PROCESSED_EVENT_RETENTION_DAYS,

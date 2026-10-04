@@ -11,6 +11,7 @@ import {
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
+import { mountCases, type SessionDeps } from "./cases";
 import { mountSurvey } from "./survey";
 
 export type AppDeps = {
@@ -19,6 +20,8 @@ export type AppDeps = {
   publish?: (event: AtriumEvent, tx: Tx) => Promise<void>;
   now?: () => Date;
   onError?: (error: unknown) => void;
+  /** Better Auth and the agency slug. Without it the case routes and sign-in are not mounted. */
+  session?: SessionDeps;
 };
 
 /** Cap on what an error response repeats back: a bad batch can have thousands of problems. */
@@ -154,6 +157,7 @@ export function createApp(deps: AppDeps) {
   });
 
   mountSurvey(app, deps);
+  if (deps.session) mountCases(app, deps, deps.session);
 
   app.doc("/openapi.json", {
     openapi: "3.1.0",

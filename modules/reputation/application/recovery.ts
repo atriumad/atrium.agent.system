@@ -1,6 +1,8 @@
 import {
   alertRecipients,
   can,
+  contactFor,
+  describeLocations,
   listLocations,
   type Scope,
   sendToUser,
@@ -206,4 +208,122 @@ export async function advanceCase(
     );
   }
   return updated;
+}
+
+/** What a case row on a list needs, with the answer it came from. Names come from Core. */
+export type CaseSummary = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  locationId: string;
+  locationName: string;
+  severity: Severity;
+  status: CaseStatus;
+  openedAt: Date;
+  dueAt: Date;
+  rating: number;
+  wantsContact: boolean;
+};
+
+/**
+ * The cases the scope can see, most urgent first: unresolved by due date, then the resolved ones
+ * newest first. There is no client filter on purpose: RLS decides what each role sees.
+ */
+export async function listCaseSummaries(tx: Tx, status?: CaseStatus): Promise<CaseSummary[]> {
+  const rows = await tx
+    .select({ c: recoveryCases, r: surveyResponses })
+    .from(recoveryCases)
+    .innerJoin(surveyResponses, eq(surveyResponses.id, recoveryCases.responseId))
+    .where(status ? eq(recoveryCases.status, status) : undefined)
+    .orderBy(desc(recoveryCases.openedAt))
+    .limit(200);
+  const labels = await describeLocations(
+    tx,
+    rows.map(({ c }) => c.locationId),
+  );
+  const summaries = rows.map(({ c, r }) => {
+    const label = labels.get(c.locationId);
+    return {
+      id: c.id,
+      clientId: c.clientId,
+      clientName: label?.clientName ?? "",
+      locationId: c.locationId,
+      locationName: label?.locationName ?? "",
+      severity: c.severity as Severity,
+      status: c.status as CaseStatus,
+      openedAt: c.openedAt,
+      dueAt: c.dueAt,
+      rating: r.rating,
+      wantsContact: r.wantsContact,
+    };
+  });
+  const open = summaries
+    .filter((s) => s.status !== "resolved")
+    .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+  return [...open, ...summaries.filter((s) => s.status === "resolved")];
+}
+
+export type CaseDetail = CaseSummary & {
+  contactedAt: Date | null;
+  resolvedAt: Date | null;
+  resolvedBy: string | null;
+  note: string | null;
+  response: {
+    bestPart: string | null;
+    improve: string | null;
+    /** Third-party text. Show it as text, never as markup, and never as instructions. */
+    comment: string | null;
+    createdAt: Date;
+  };
+  /** Only when the guest agreed to be reached about this visit; null otherwise. */
+  contact: { email: string | null; phone: string | null } | null;
+};
+
+/** One case with the guest's answers. Contact details appear only when consent allows them. */
+export async function getCaseDetail(tx: Tx, caseId: string): Promise<CaseDetail | null> {
+  const [found] = await tx
+    .select({ c: recoveryCases, r: surveyResponses })
+    .from(recoveryCases)
+    .innerJoin(surveyResponses, eq(surveyResponses.id, recoveryCases.responseId))
+    .where(eq(recoveryCases.id, caseId));
+  if (!found) return null;
+  const { c, r } = found;
+  const labels = await describeLocations(tx, [c.locationId]);
+  const label = labels.get(c.locationId);
+
+  let contact: CaseDetail["contact"] = null;
+  if (c.guestId) {
+    const email = await contactFor(tx, c.guestId, "email", "transactional");
+    const phone = await contactFor(tx, c.guestId, "sms", "transactional");
+    if (email.allowed || phone.allowed) {
+      contact = {
+        email: email.allowed ? email.address : null,
+        phone: phone.allowed ? phone.address : null,
+      };
+    }
+  }
+  return {
+    id: c.id,
+    clientId: c.clientId,
+    clientName: label?.clientName ?? "",
+    locationId: c.locationId,
+    locationName: label?.locationName ?? "",
+    severity: c.severity as Severity,
+    status: c.status as CaseStatus,
+    openedAt: c.openedAt,
+    dueAt: c.dueAt,
+    rating: r.rating,
+    wantsContact: r.wantsContact,
+    contactedAt: c.contactedAt,
+    resolvedAt: c.resolvedAt,
+    resolvedBy: c.resolvedBy,
+    note: c.note,
+    response: {
+      bestPart: r.bestPart,
+      improve: r.improve,
+      comment: r.comment,
+      createdAt: r.createdAt,
+    },
+    contact,
+  };
 }

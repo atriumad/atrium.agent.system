@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAccessControl } from "better-auth/plugins/access";
 import { organization } from "better-auth/plugins/organization";
+import { asc, eq } from "drizzle-orm";
 import {
   isRole,
   PERMISSION_MATRIX,
@@ -10,7 +11,7 @@ import {
   roleAllowedInOrganization,
   TEAM_ROLES,
 } from "../domain/roles";
-import { authSchema } from "./auth-schema";
+import { authSchema, members } from "./auth-schema";
 import type { Database } from "./db";
 
 const ORG_RESOURCES = {
@@ -45,6 +46,8 @@ export type AuthConfig = {
   baseURL: string;
   /** Slug of the agency organization. Every other organization is a client. */
   agencySlug: string;
+  /** Origins allowed to send sign-in requests besides `baseURL`, e.g. the web apps. */
+  trustedOrigins?: string[];
 };
 
 export function createAuth(db: Database, config: AuthConfig) {
@@ -56,7 +59,27 @@ export function createAuth(db: Database, config: AuthConfig) {
     session: { modelName: "sessions" },
     account: { modelName: "accounts" },
     verification: { modelName: "verifications" },
+    ...(config.trustedOrigins ? { trustedOrigins: config.trustedOrigins } : {}),
     emailAndPassword: { enabled: true, minPasswordLength: 12 },
+    databaseHooks: {
+      session: {
+        create: {
+          // Everyone here belongs to one organization (the agency, or one client), so a new
+          // session starts in it. Without this the scope resolves to nothing after sign-in.
+          before: async (session) => {
+            const [first] = await db
+              .select({ organizationId: members.organizationId })
+              .from(members)
+              .where(eq(members.userId, session.userId))
+              .orderBy(asc(members.createdAt))
+              .limit(1);
+            return {
+              data: { ...session, activeOrganizationId: first?.organizationId ?? null },
+            };
+          },
+        },
+      },
+    },
     plugins: [
       organization({
         ac,

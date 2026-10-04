@@ -4,7 +4,12 @@ export { loadHostManifests } from "./agents";
 export { askAgent } from "./agents/ask";
 export { recoveryAgent } from "./agents/recovery";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
-export type { Classification, OpenCaseResult } from "./application/recovery";
+export type {
+  CaseDetail,
+  CaseSummary,
+  Classification,
+  OpenCaseResult,
+} from "./application/recovery";
 export {
   advanceCase,
   CaseForbiddenError,
@@ -12,6 +17,8 @@ export {
   CaseTransitionError,
   classifyResponse,
   getCase,
+  getCaseDetail,
+  listCaseSummaries,
   listCases,
   openCase,
 } from "./application/recovery";
