@@ -11,6 +11,7 @@ import {
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
+import { mountSurvey } from "./survey";
 
 export type AppDeps = {
   db: Database;
@@ -151,6 +152,8 @@ export function createApp(deps: AppDeps) {
       throw error;
     }
   });
+
+  mountSurvey(app, deps);
 
   app.doc("/openapi.json", {
     openapi: "3.1.0",
