@@ -43,6 +43,16 @@ export {
   resolveGuest,
 } from "./application/guests";
 export { isAgentActive, switchOff, switchOn } from "./application/kill-switch";
+export type { LocationAction } from "./application/locations";
+export {
+  decideLocation,
+  InvalidLocationError,
+  LOCATION_ACTIONS,
+  LocationForbiddenError,
+  LocationNotFoundError,
+  LocationStateError,
+  requestLocation,
+} from "./application/locations";
 export type { AlertRecipient, LocationLabel } from "./application/lookups";
 export {
   alertRecipients,
