@@ -26,7 +26,7 @@ export { RequestAccessForm } from "./request-access";
 export { Account, SessionGate } from "./session";
 export { SetPasswordForm } from "./set-password";
 export { AppFrame, MeProvider, useMe } from "./shell/app-frame";
-export { activeId, managerNav, platformNav, teaserFor } from "./shell/nav";
+export { activeId, crumbsFor, managerNav, platformNav, teaserFor } from "./shell/nav";
 export { OverviewPage } from "./shell/overview";
 export { ModulePage } from "./shell/teaser";
 export {

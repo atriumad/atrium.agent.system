@@ -7,6 +7,12 @@ const config: NextConfig = {
   agentRules: false,
   transpilePackages: ["@atrium/ui"],
   // The browser talks to this app only; sign-in cookies stay same-origin and need no CORS.
+  async redirects() {
+    return [
+      { source: "/surveys", destination: "/reputation/responses", permanent: false },
+      { source: "/approvals", destination: "/approvals/accounts", permanent: false },
+    ];
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeId, managerNav, platformNav, teaserFor } from "../src/shell/nav";
+import { activeId, crumbsFor, managerNav, platformNav, teaserFor } from "../src/shell/nav";
 import { meOf } from "./fake-api";
 
 const flat = (groups: ReturnType<typeof managerNav>) =>
@@ -153,5 +153,17 @@ describe("teasers", () => {
       title: expect.stringContaining("Analytics"),
     });
     expect(teaserFor("nonsense", "full")).toBeNull();
+  });
+});
+
+describe("breadcrumbs", () => {
+  const groups = managerNav(adminMe, { approvals: 0 });
+  test("a child is shown under its parent, a top-level item alone", () => {
+    expect(crumbsFor(groups, "responses")).toEqual([
+      { label: "Reputation", href: "/reputation/cases" },
+      { label: "Responses" },
+    ]);
+    expect(crumbsFor(groups, "overview")).toEqual([{ label: "Overview" }]);
+    expect(crumbsFor(groups, "")).toEqual([]);
   });
 });

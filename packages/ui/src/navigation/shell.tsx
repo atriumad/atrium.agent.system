@@ -18,13 +18,16 @@ export type SideNavItem = {
 export type SideNavGroup = { title?: string; items: SideNavItem[] };
 
 export type SideNavProps = {
-  brand: ReactNode;
+  /** Omit it when the frame draws its own header (the rail). */
+  brand?: ReactNode;
   groups: SideNavGroup[];
   current: string;
   label?: string;
   /** Render links with your router's Link: `linkAs={NextLink}`. */
   linkAs?: ElementType;
   className?: string;
+  /** `card` floats on the page; `rail` fills a sidebar from edge to edge. */
+  variant?: "card" | "rail";
 };
 
 const ROW =
@@ -38,6 +41,7 @@ export function SideNav({
   label = "Main",
   linkAs: LinkAs = "a",
   className,
+  variant = "card",
 }: SideNavProps) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
@@ -52,13 +56,17 @@ export function SideNav({
     <nav
       aria-label={label}
       className={cx(
-        "flex w-60 flex-col gap-0.5 rounded-md bg-surface-dark px-3 py-4 text-cream-300",
+        variant === "rail"
+          ? "flex w-full flex-col gap-0.5 px-3 py-4 text-cream-300"
+          : "flex w-60 flex-col gap-0.5 rounded-md bg-surface-dark px-3 py-4 text-cream-300",
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2.5 px-2.5 pb-4 text-cream-200">
-        {brand}
-      </div>
+      {brand ? (
+        <div className="flex items-center justify-between gap-2.5 px-2.5 pb-4 text-cream-200">
+          {brand}
+        </div>
+      ) : null}
       {groups.map((g, gi) => (
         <div key={g.title ?? gi} className="flex flex-col gap-0.5">
           {g.title ? (
@@ -89,7 +97,7 @@ export function SideNav({
                     />
                   </button>
                   {isOpen ? (
-                    <ul className="m-0 flex list-none flex-col gap-0.5 p-0 pl-5">
+                    <ul className="m-0 ml-[1.15rem] flex list-none flex-col gap-0.5 border-l border-charcoal-700 p-0 pl-2">
                       {kids.map((c) => (
                         <li key={c.id}>
                           <LinkAs

@@ -7,9 +7,10 @@ import { Wordmark } from "../brand/wordmark";
 import { SignIn, type Surface } from "../cases-app";
 import { Banner } from "../feedback/banner";
 import { Container } from "../layout/layout";
-import { AppShell, SideNav, TopBar } from "../navigation/shell";
+import { Breadcrumbs } from "../navigation/links";
+import { SideNav } from "../navigation/shell";
 import { MeProvider, useMe } from "./me-context";
-import { type Access, activeId, managerNav, platformNav } from "./nav";
+import { type Access, activeId, crumbsFor, managerNav, platformNav } from "./nav";
 
 export { MeProvider, useMe };
 
@@ -40,7 +41,7 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
-        className="absolute inset-y-0 left-0 p-4"
+        className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto bg-surface-dark"
       >
         {children}
       </div>
@@ -48,17 +49,31 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
   );
 }
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "?";
+
 function AccountMenu({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   return (
     <div className="flex items-center gap-3 text-sm">
-      <span className="text-right leading-tight">
+      <span
+        aria-hidden="true"
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-charcoal-800 text-xs text-cream-100"
+      >
+        {initials(me.name)}
+      </span>
+      <span className="hidden text-left leading-tight sm:block">
         <span className="block">{me.name}</span>
-        <span className="block text-fg-muted">{me.role.replaceAll("_", " ")}</span>
+        <span className="block text-xs text-fg-muted">{me.role.replaceAll("_", " ")}</span>
       </span>
       <button
         type="button"
         onClick={onSignOut}
-        className="cursor-pointer underline underline-offset-4 hover:text-clay-600"
+        className="cursor-pointer text-fg-muted underline underline-offset-4 hover:text-clay-600"
       >
         Sign out
       </button>
@@ -152,41 +167,52 @@ export function AppFrame({
   const groups =
     surface === "manager" ? managerNav(me, { approvals }) : platformNav(me, access ?? {});
   const current = activeId(pathname, groups);
+  const crumbs = crumbsFor(groups, current);
   const nav = (
-    <SideNav
-      brand={<Wordmark size="sm" tone="cream" />}
-      groups={groups}
-      current={current}
-      {...(linkAs ? { linkAs } : {})}
-    />
+    <SideNav variant="rail" groups={groups} current={current} {...(linkAs ? { linkAs } : {})} />
+  );
+  const brand = (
+    <div className="flex h-14 shrink-0 items-center border-b border-charcoal-700 px-5">
+      <Wordmark size="sm" tone="cream" />
+    </div>
   );
 
   return (
     <MeProvider me={me}>
-      <AppShell
-        nav={nav}
-        topBar={
-          <TopBar
-            start={
-              <button
-                ref={menuButton}
-                type="button"
-                aria-label="Open menu"
-                onClick={() => setDrawer(true)}
-                className="cursor-pointer rounded-sm p-1 lg:hidden"
-              >
-                <Menu size={20} strokeWidth={1.5} aria-hidden />
-              </button>
-            }
-            end={<AccountMenu me={me} onSignOut={signOut} />}
-          >
-            {null}
-          </TopBar>
-        }
-      >
-        {children}
-      </AppShell>
-      {drawer ? <Drawer onClose={closeDrawer}>{nav}</Drawer> : null}
+      <div className="min-h-dvh bg-surface-page">
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-charcoal-700 bg-surface-dark lg:flex">
+          {brand}
+          <div className="flex-1 overflow-y-auto">{nav}</div>
+        </aside>
+        <div className="flex min-h-dvh flex-col lg:pl-64">
+          <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-card px-4 lg:px-8">
+            <button
+              ref={menuButton}
+              type="button"
+              aria-label="Open menu"
+              onClick={() => setDrawer(true)}
+              className="-ml-1 cursor-pointer rounded-sm p-1.5 hover:bg-cream-200 lg:hidden"
+            >
+              <Menu size={20} strokeWidth={1.5} aria-hidden />
+            </button>
+            <div className="min-w-0 flex-1">
+              {crumbs.length > 0 ? (
+                <Breadcrumbs items={crumbs} {...(linkAs ? { linkAs } : {})} />
+              ) : null}
+            </div>
+            <AccountMenu me={me} onSignOut={signOut} />
+          </header>
+          <main id="main" className="min-w-0 flex-1 px-4 py-8 lg:px-8">
+            <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+          </main>
+        </div>
+      </div>
+      {drawer ? (
+        <Drawer onClose={closeDrawer}>
+          {brand}
+          {nav}
+        </Drawer>
+      ) : null}
     </MeProvider>
   );
 }

@@ -147,6 +147,21 @@ export function activeId(pathname: string, groups: SideNavGroup[]): string {
   return best;
 }
 
+/** The path to the current item for the top bar: parent then child, or the item alone. */
+export function crumbsFor(
+  groups: SideNavGroup[],
+  current: string,
+): { label: string; href?: string }[] {
+  for (const g of groups) {
+    for (const item of g.items) {
+      const child = item.children?.find((c) => c.id === current);
+      if (child) return [{ label: item.label, href: item.href }, { label: child.label }];
+      if (item.id === current) return [{ label: item.label }];
+    }
+  }
+  return [];
+}
+
 const LABELS: Record<string, string> = {
   reputation: "Reputation",
   ...Object.fromEntries(MODULES.map((m) => [m.feature, m.label])),

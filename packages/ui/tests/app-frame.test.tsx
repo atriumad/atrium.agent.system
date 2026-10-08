@@ -127,4 +127,26 @@ describe("AppFrame", () => {
     await user.click(await screen.findByText("Sign out"));
     await waitFor(() => expect(c.signOut).toHaveBeenCalled());
   });
+
+  test("shows where the person is as breadcrumbs", async () => {
+    setup(
+      <AppFrame surface="platform" pathname="/reputation/responses" client={client()}>
+        x
+      </AppFrame>,
+    );
+    const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+    expect(within(crumbs).getByText("Reputation")).toBeTruthy();
+    expect(within(crumbs).getByText("Responses").getAttribute("aria-current")).toBe("page");
+  });
+
+  test("the sidebar is a full-height rail, not a floating card", async () => {
+    setup(
+      <AppFrame surface="platform" pathname="/" client={client()}>
+        x
+      </AppFrame>,
+    );
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    expect(nav.className).not.toContain("rounded");
+    expect(nav.closest("aside")?.className).toContain("fixed");
+  });
 });
