@@ -215,4 +215,34 @@ describe("AppFrame", () => {
     expect(calls.some((c) => c.path === "/api/locations/p/decide")).toBe(true);
     restoreFetch();
   });
+
+  test("the person and sign out sit at the bottom of the sidebar, not in the top bar", async () => {
+    setup(
+      <AppFrame surface="platform" pathname="/" client={client()}>
+        x
+      </AppFrame>,
+    );
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    const aside = nav.closest("aside") as HTMLElement;
+    expect(within(aside).getByText(ownerMe.name)).toBeTruthy();
+    expect(within(aside).getByText("Sign out")).toBeTruthy();
+    const bar = screen.getByRole("banner");
+    expect(Boolean(within(bar).queryByText(ownerMe.name))).toBe(false);
+    expect(Boolean(within(bar).queryByText("Sign out"))).toBe(false);
+    // the user block comes after the menu in the sidebar
+    const order = aside.compareDocumentPosition(nav);
+    expect(order).toBeGreaterThan(0);
+    expect(nav.compareDocumentPosition(within(aside).getByText("Sign out")) & 4).toBe(4);
+  });
+
+  test("the drawer carries the person too", async () => {
+    const { user } = setup(
+      <AppFrame surface="platform" pathname="/" client={client()}>
+        x
+      </AppFrame>,
+    );
+    await user.click(await screen.findByRole("button", { name: "Open menu" }));
+    const dialog = screen.getByRole("dialog", { name: "Menu" });
+    expect(within(dialog).getByText("Sign out")).toBeTruthy();
+  });
 });

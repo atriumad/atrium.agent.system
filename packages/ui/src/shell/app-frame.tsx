@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import {
   type CSSProperties,
   type ElementType,
@@ -97,24 +97,30 @@ const initials = (name: string) =>
     .map((w) => w[0]?.toUpperCase())
     .join("") || "?";
 
-function AccountMenu({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
+/** Who is signed in, at the foot of the sidebar, with the way out. */
+function SidebarUser({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-charcoal-800 text-xs text-cream-100"
-      >
-        {initials(me.name)}
-      </span>
-      <span className="hidden text-left leading-tight sm:block">
-        <span className="block">{me.name}</span>
-        <span className="block text-xs text-fg-muted">{me.role.replaceAll("_", " ")}</span>
-      </span>
+    <div className="shrink-0 border-t border-charcoal-700 p-3">
+      <div className="flex items-center gap-3 px-2 py-2">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-charcoal-700 text-sm text-cream-100"
+        >
+          {initials(me.name)}
+        </span>
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate text-sm text-cream-100">{me.name}</span>
+          <span className="block truncate text-xs text-charcoal-400">
+            {me.role.replaceAll("_", " ")}
+          </span>
+        </span>
+      </div>
       <button
         type="button"
         onClick={onSignOut}
-        className="cursor-pointer text-fg-muted underline underline-offset-4 hover:text-clay-600"
+        className="flex w-full cursor-pointer items-center gap-3 rounded-sm px-2.5 py-2 text-left text-sm text-cream-300 transition-colors hover:bg-charcoal-700"
       >
+        <LogOut size={16} strokeWidth={1.5} aria-hidden />
         Sign out
       </button>
     </div>
@@ -239,6 +245,7 @@ export function AppFrame({
           <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-charcoal-700 bg-surface-dark lg:flex">
             {brand}
             <div className="flex-1 overflow-y-auto">{nav}</div>
+            <SidebarUser me={me} onSignOut={signOut} />
           </aside>
           <div className="flex min-h-dvh flex-col lg:pl-64">
             <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-card px-4 lg:px-8">
@@ -256,7 +263,6 @@ export function AppFrame({
                   <Breadcrumbs items={crumbs} {...(linkAs ? { linkAs } : {})} />
                 ) : null}
               </div>
-              <AccountMenu me={me} onSignOut={signOut} />
             </header>
             <main
               id="main"
@@ -269,7 +275,8 @@ export function AppFrame({
         {drawer ? (
           <Drawer onClose={closeDrawer}>
             {brand}
-            {nav}
+            <div className="flex-1">{nav}</div>
+            <SidebarUser me={me} onSignOut={signOut} />
           </Drawer>
         ) : null}
       </FrameProvider>
