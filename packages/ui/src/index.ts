@@ -21,4 +21,6 @@ export { PlacesPanel } from "./places-panel";
 export { RequestAccessForm } from "./request-access";
 export { Account, SessionGate } from "./session";
 export { SetPasswordForm } from "./set-password";
+export { AppFrame, MeProvider, useMe } from "./shell/app-frame";
+export { activeId, managerNav, platformNav, teaserFor } from "./shell/nav";
 export { SurveysAdminApp, SurveysClientApp } from "./surveys-app";

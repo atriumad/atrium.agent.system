@@ -173,6 +173,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ to, response: response.trim() || null }),
     }),
+  access: () => call<{ access: Record<string, string> }>("/api/access").then((r) => r.access),
   places: () => call<{ locations: Place[] }>("/api/locations").then((r) => r.locations),
   requestPlace: (name: string, timeZone: string) =>
     call<{ id: string }>("/api/locations/request", {
