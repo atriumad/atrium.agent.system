@@ -22,7 +22,7 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
 export const PERMISSIONS = {
   portfolio: ["read", "manage"],
   client: ["read", "update"],
-  location: ["read", "manage"],
+  location: ["read", "manage", "request"],
   task: ["read", "fire", "work"],
   content: ["read", "approve"],
   // Surveys. read: responses and cases. forms: locations, QR, printable card. operate: one-off
@@ -62,7 +62,7 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
   },
   client_owner: {
     client: ["read"],
-    location: ["read"],
+    location: ["read", "request"],
     content: ["read", "approve"],
     survey: ["read", "forms", "operate", "request"],
   },

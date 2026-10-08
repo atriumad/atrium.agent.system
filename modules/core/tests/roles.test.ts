@@ -51,6 +51,14 @@ describe("permission matrix", () => {
     expect(rolesWith("request")).toEqual(["client_owner"]);
   });
 
+  test("only the owner can ask for a location; the agency decides", () => {
+    expect(ROLES.filter((r) => can(r, "location", "request"))).toEqual(["client_owner"]);
+    expect(ROLES.filter((r) => can(r, "location", "manage"))).toEqual([
+      "agency_admin",
+      "account_manager",
+    ]);
+  });
+
   test("every role has a row in the matrix", () => {
     expect(Object.keys(PERMISSION_MATRIX).sort()).toEqual([...ROLES].sort());
   });
