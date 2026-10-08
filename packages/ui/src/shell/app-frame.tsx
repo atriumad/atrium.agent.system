@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   type ElementType,
   type ReactNode,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -16,6 +17,7 @@ import { Banner } from "../feedback/banner";
 import { Container } from "../layout/layout";
 import { Breadcrumbs } from "../navigation/links";
 import { SideNav } from "../navigation/shell";
+import { FrameProvider } from "./frame-context";
 import { MeProvider, useMe } from "./me-context";
 import { type Access, activeId, crumbsFor, managerNav, platformNav } from "./nav";
 
@@ -29,12 +31,42 @@ export type FrameClient = {
   signOut: () => Promise<unknown>;
 };
 
+const FOCUSABLE = "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
+/** A real modal: focus moves in and stays in, the page behind cannot scroll, Escape closes. */
 function Drawer({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const dialog = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onClose();
+      if (e.key !== "Tab" || !dialog.current) return;
+      const items = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return;
+      const inside = dialog.current.contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    return () => {
+      document.body.style.overflow = before;
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       <button
@@ -45,6 +77,7 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
         className="absolute inset-0 cursor-default bg-charcoal-900/50"
       />
       <div
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
@@ -122,6 +155,23 @@ export function AppFrame({
       });
   }, [client]);
 
+  const loadApprovals = useCallback(() => {
+    Promise.all([
+      client.onboardingRequests().catch(() => []),
+      client.places().catch(() => []),
+    ]).then(([accounts, places]) =>
+      setApprovals(
+        accounts.filter((a) => a.status === "open").length +
+          places.filter((p) => p.status === "pending").length,
+      ),
+    );
+  }, [client]);
+
+  // A drawer left open would cover the page the person just chose.
+  useEffect(() => {
+    setDrawer(false);
+  }, [pathname]);
+
   useEffect(() => {
     if (!me) return;
     if (surface === "platform") {
@@ -130,23 +180,17 @@ export function AppFrame({
         .then((levels) => setAccess(levels as Access))
         .catch(() => setAccess({}));
     }
-    if (surface === "manager" && me.canManageLocations) {
-      Promise.all([
-        client.onboardingRequests().catch(() => []),
-        client.places().catch(() => []),
-      ]).then(([accounts, places]) =>
-        setApprovals(
-          accounts.filter((a) => a.status === "open").length +
-            places.filter((p) => p.status === "pending").length,
-        ),
-      );
-    }
-  }, [me, surface, client]);
+    if (surface === "manager" && me.canManageLocations) loadApprovals();
+  }, [me, surface, client, loadApprovals]);
 
-  const closeDrawer = () => {
-    setDrawer(false);
-    menuButton.current?.focus();
-  };
+  const closeDrawer = useCallback(() => setDrawer(false), []);
+
+  // The page is inert while the drawer is open, so focus goes back only after it has closed.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (wasOpen.current && !drawer) menuButton.current?.focus();
+    wasOpen.current = drawer;
+  }, [drawer]);
 
   async function signOut() {
     await client.signOut().catch(() => undefined);
@@ -186,46 +230,49 @@ export function AppFrame({
 
   return (
     <MeProvider me={me}>
-      <div
-        className="min-h-dvh bg-surface-page"
-        style={{ "--row-py": surface === "manager" ? "0.75rem" : "1.125rem" } as CSSProperties}
-      >
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-charcoal-700 bg-surface-dark lg:flex">
-          {brand}
-          <div className="flex-1 overflow-y-auto">{nav}</div>
-        </aside>
-        <div className="flex min-h-dvh flex-col lg:pl-64">
-          <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-card px-4 lg:px-8">
-            <button
-              ref={menuButton}
-              type="button"
-              aria-label="Open menu"
-              onClick={() => setDrawer(true)}
-              className="-ml-1 cursor-pointer rounded-sm p-1.5 hover:bg-cream-200 lg:hidden"
+      <FrameProvider value={{ refreshApprovals: loadApprovals }}>
+        <div
+          inert={drawer || undefined}
+          className="min-h-dvh bg-surface-page"
+          style={{ "--row-py": surface === "manager" ? "0.75rem" : "1.125rem" } as CSSProperties}
+        >
+          <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-charcoal-700 bg-surface-dark lg:flex">
+            {brand}
+            <div className="flex-1 overflow-y-auto">{nav}</div>
+          </aside>
+          <div className="flex min-h-dvh flex-col lg:pl-64">
+            <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-line bg-surface-card px-4 lg:px-8">
+              <button
+                ref={menuButton}
+                type="button"
+                aria-label="Open menu"
+                onClick={() => setDrawer(true)}
+                className="-ml-1 cursor-pointer rounded-sm p-1.5 hover:bg-cream-200 lg:hidden"
+              >
+                <Menu size={20} strokeWidth={1.5} aria-hidden />
+              </button>
+              <div className="min-w-0 flex-1">
+                {crumbs.length > 0 ? (
+                  <Breadcrumbs items={crumbs} {...(linkAs ? { linkAs } : {})} />
+                ) : null}
+              </div>
+              <AccountMenu me={me} onSignOut={signOut} />
+            </header>
+            <main
+              id="main"
+              className={`min-w-0 flex-1 px-4 lg:px-8 ${surface === "manager" ? "py-6" : "py-10"}`}
             >
-              <Menu size={20} strokeWidth={1.5} aria-hidden />
-            </button>
-            <div className="min-w-0 flex-1">
-              {crumbs.length > 0 ? (
-                <Breadcrumbs items={crumbs} {...(linkAs ? { linkAs } : {})} />
-              ) : null}
-            </div>
-            <AccountMenu me={me} onSignOut={signOut} />
-          </header>
-          <main
-            id="main"
-            className={`min-w-0 flex-1 px-4 lg:px-8 ${surface === "manager" ? "py-6" : "py-10"}`}
-          >
-            <div className="mx-auto w-full max-w-[1200px]">{children}</div>
-          </main>
+              <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+            </main>
+          </div>
         </div>
-      </div>
-      {drawer ? (
-        <Drawer onClose={closeDrawer}>
-          {brand}
-          {nav}
-        </Drawer>
-      ) : null}
+        {drawer ? (
+          <Drawer onClose={closeDrawer}>
+            {brand}
+            {nav}
+          </Drawer>
+        ) : null}
+      </FrameProvider>
     </MeProvider>
   );
 }

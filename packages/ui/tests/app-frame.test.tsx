@@ -1,7 +1,8 @@
 import { describe, expect, mock, test } from "bun:test";
 import { ApiError } from "../src/api";
+import { PlacesApprovalsPage } from "../src/approvals-app";
 import { AppFrame, useMe } from "../src/shell/app-frame";
-import { amMe, ownerMe } from "./fake-api";
+import { amMe, fakeFetch, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup, waitFor, within } from "./helpers";
 
 const levels = {
@@ -114,7 +115,7 @@ describe("AppFrame", () => {
     await user.click(await screen.findByRole("button", { name: "Open menu" }));
     expect(screen.getByRole("dialog", { name: "Menu" })).toBeTruthy();
     await user.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog", { name: "Menu" })).toBeNull();
+    expect(Boolean(screen.queryByRole("dialog", { name: "Menu" }))).toBe(false);
   });
 
   test("sign out goes through the client", async () => {
@@ -148,5 +149,70 @@ describe("AppFrame", () => {
     const nav = await screen.findByRole("navigation", { name: "Main" });
     expect(nav.className).not.toContain("rounded");
     expect(nav.closest("aside")?.className).toContain("fixed");
+  });
+
+  test("the drawer closes when the page changes", async () => {
+    const c = client();
+    const { user, rerender } = setup(
+      <AppFrame surface="platform" pathname="/" client={c}>
+        x
+      </AppFrame>,
+    );
+    await user.click(await screen.findByRole("button", { name: "Open menu" }));
+    expect(screen.getByRole("dialog", { name: "Menu" })).toBeTruthy();
+    rerender(
+      <AppFrame surface="platform" pathname="/reputation/feedback" client={c}>
+        x
+      </AppFrame>,
+    );
+    await waitFor(() =>
+      expect(Boolean(screen.queryByRole("dialog", { name: "Menu" }))).toBe(false),
+    );
+  });
+
+  test("the drawer is really modal: focus moves in and stays in, the page cannot scroll", async () => {
+    const { user } = setup(
+      <AppFrame surface="platform" pathname="/" client={client()}>
+        x
+      </AppFrame>,
+    );
+    const button = await screen.findByRole("button", { name: "Open menu" });
+    await user.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Menu" });
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+    expect(document.body.style.overflow).toBe("hidden");
+    for (let i = 0; i < 25; i++) {
+      await user.tab();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    await user.keyboard("{Escape}");
+    expect(document.body.style.overflow).toBe("");
+    await waitFor(() => expect(document.activeElement === button).toBe(true));
+  });
+
+  test("the approvals count follows what the person does on the approval pages", async () => {
+    let pending = [
+      { id: "p", name: "Patio", clientId: "c", clientName: "Olivo", status: "pending" },
+    ];
+    const calls = fakeFetch({
+      "/api/me": () => amMe,
+      "/api/onboarding/requests": { requests: [] },
+      "/api/locations": () => ({ locations: pending }),
+      "/api/locations/p/decide": () => {
+        pending = [{ ...pending[0], status: "active" } as never];
+        return { status: "active" };
+      },
+    });
+    const { user } = setup(
+      <AppFrame surface="manager" pathname="/approvals/places">
+        <PlacesApprovalsPage />
+      </AppFrame>,
+    );
+    const toggle = await screen.findByRole("button", { name: /Approvals/ });
+    await waitFor(() => expect(within(toggle).getByText("1")).toBeTruthy());
+    await user.click(await screen.findByText("Approve place"));
+    await waitFor(() => expect(Boolean(within(toggle).queryByText("1"))).toBe(false));
+    expect(calls.some((c) => c.path === "/api/locations/p/decide")).toBe(true);
+    restoreFetch();
   });
 });

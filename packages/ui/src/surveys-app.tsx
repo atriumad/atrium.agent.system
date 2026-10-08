@@ -27,6 +27,7 @@ import { Select } from "./forms/select";
 import { PageHeader } from "./layout/layout";
 import { ListPanel, ROW_PAD } from "./layout/list-panel";
 import { useMe } from "./shell/me-context";
+import { NotAvailable } from "./shell/not-available";
 
 const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
 
@@ -405,10 +406,11 @@ function Requests() {
 /* ---------------------------------- pages ---------------------------------- */
 
 export function ResponsesPage() {
+  const me = useMe();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader compact title="Responses" description="What guests answered after their visit." />
-      <Responses />
+      {me.canReadSurveys ? <Responses /> : <NotAvailable />}
     </div>
   );
 }
@@ -422,12 +424,17 @@ export function FormsPage() {
         title={me.kind === "client" ? "QR & links" : "Forms & QR"}
         description="How each place collects answers: its printed QR, one-time links and timing."
       />
-      <Forms canManage={me.canManageSurveys} canOperate={me.canOperateSurveys} />
+      {me.canViewForms ? (
+        <Forms canManage={me.canManageSurveys} canOperate={me.canOperateSurveys} />
+      ) : (
+        <NotAvailable />
+      )}
     </div>
   );
 }
 
 export function HelpRequestsPage() {
+  const me = useMe();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -435,7 +442,7 @@ export function HelpRequestsPage() {
         title="Help requests"
         description="What clients asked the Atrium team for."
       />
-      <Requests />
+      {me.canViewForms ? <Requests /> : <NotAvailable />}
     </div>
   );
 }
@@ -516,6 +523,7 @@ function HelpPanel() {
 }
 
 export function HelpPage() {
+  const me = useMe();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -523,7 +531,7 @@ export function HelpPage() {
         title="Ask for help"
         description="Tell the Atrium team what you need: a new QR, a change to your Google review link, anything else."
       />
-      <HelpPanel />
+      {me.canRequestSurveys ? <HelpPanel /> : <NotAvailable />}
     </div>
   );
 }

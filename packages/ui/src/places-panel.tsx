@@ -10,6 +10,8 @@ import { Banner } from "./feedback/banner";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { TextField } from "./forms/input";
 import { PageHeader } from "./layout/layout";
+import { useMe } from "./shell/me-context";
+import { NotAvailable } from "./shell/not-available";
 
 export const PLACE_STATUS: Record<
   PlaceStatus,
@@ -129,6 +131,7 @@ export function PlacesPanel({ client = api }: { client?: PlacesClient }) {
 }
 
 export function PlacesPage() {
+  const me = useMe();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -136,7 +139,7 @@ export function PlacesPage() {
         title="My places"
         description="Your places and where each one stands. New places are reviewed by the Atrium team."
       />
-      <PlacesPanel />
+      {me.canRequestLocations ? <PlacesPanel /> : <NotAvailable />}
     </div>
   );
 }

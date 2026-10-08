@@ -13,6 +13,9 @@ import { ago } from "./format";
 import { TextareaField } from "./forms/input";
 import { PageHeader } from "./layout/layout";
 import { PLACE_STATUS } from "./places-panel";
+import { useFrame } from "./shell/frame-context";
+import { useMe } from "./shell/me-context";
+import { NotAvailable } from "./shell/not-available";
 
 type ApprovalsClient = {
   onboardingRequests: () => Promise<OnboardingRequest[]>;
@@ -61,10 +64,12 @@ function AccountRow({
   request,
   client,
   onChanged,
+  onApproved,
 }: {
   request: OnboardingRequest;
   client: ApprovalsClient;
   onChanged: () => void;
+  onApproved: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -77,6 +82,7 @@ function AccountRow({
     setError(null);
     try {
       setLink((await client.approveOnboarding(request.id)).setupUrl);
+      onApproved();
     } catch (e) {
       setError(
         e instanceof ApiError && e.status === 409
@@ -189,6 +195,7 @@ export function Accounts({
             key={r.id}
             request={r}
             client={client}
+            onApproved={onChanged}
             onChanged={() => {
               reload();
               onChanged();
@@ -204,10 +211,12 @@ function PlaceRow({
   place,
   client,
   onChanged,
+  canManage = true,
 }: {
   place: Place;
   client: ApprovalsClient;
   onChanged: () => void;
+  canManage?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -246,7 +255,7 @@ function PlaceRow({
             <span className="text-fg-muted"> · {place.clientName}</span>
           </span>
           <Badge variant="quiet">{s.word}</Badge>
-          {place.status === "pending" && !rejecting ? (
+          {canManage && place.status === "pending" && !rejecting ? (
             <>
               <Button size="sm" loading={busy} onClick={() => act("approve")}>
                 Approve place
@@ -256,7 +265,7 @@ function PlaceRow({
               </Button>
             </>
           ) : null}
-          {place.status === "active" ? (
+          {canManage && place.status === "active" ? (
             <ConfirmDialog
               trigger={
                 <Button size="sm" variant="ghost" loading={busy}>
@@ -269,7 +278,7 @@ function PlaceRow({
               onConfirm={() => act("suspend")}
             />
           ) : null}
-          {place.status === "suspended" ? (
+          {canManage && place.status === "suspended" ? (
             <Button size="sm" variant="outline" loading={busy} onClick={() => act("reactivate")}>
               Resume
             </Button>
@@ -306,9 +315,11 @@ function PlaceRow({
 export function Locations({
   client,
   onChanged = () => {},
+  canManage = true,
 }: {
   client: ApprovalsClient;
   onChanged?: () => void;
+  canManage?: boolean;
 }) {
   const { data, failed, reload } = useList(client.places);
   const waiting = (data ?? []).filter((p) => p.status === "pending");
@@ -329,6 +340,7 @@ export function Locations({
             key={p.id}
             place={p}
             client={client}
+            canManage={canManage}
             onChanged={() => {
               reload();
               onChanged();
@@ -343,6 +355,7 @@ export function Locations({
             key={p.id}
             place={p}
             client={client}
+            canManage={canManage}
             onChanged={() => {
               reload();
               onChanged();
@@ -355,6 +368,8 @@ export function Locations({
 }
 
 export function AccountsApprovalsPage() {
+  const me = useMe();
+  const { refreshApprovals } = useFrame();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -362,12 +377,18 @@ export function AccountsApprovalsPage() {
         title="Accounts"
         description="Businesses asking for access. Approving one creates the account and gives you a link for the owner to set a password."
       />
-      <Accounts client={api} />
+      {me.canManageLocations ? (
+        <Accounts client={api} onChanged={refreshApprovals} />
+      ) : (
+        <NotAvailable>Accounts are approved by account managers and admins.</NotAvailable>
+      )}
     </div>
   );
 }
 
 export function PlacesApprovalsPage() {
+  const me = useMe();
+  const { refreshApprovals } = useFrame();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -375,12 +396,18 @@ export function PlacesApprovalsPage() {
         title="Places"
         description="New places that owners asked for. A place collects answers only once it is approved."
       />
-      <Locations client={api} />
+      {me.canManageLocations ? (
+        <Locations client={api} onChanged={refreshApprovals} />
+      ) : (
+        <NotAvailable>Places are approved by account managers and admins.</NotAvailable>
+      )}
     </div>
   );
 }
 
 export function ClientPlacesPage() {
+  const me = useMe();
+  const { refreshApprovals } = useFrame();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -388,7 +415,7 @@ export function ClientPlacesPage() {
         title="Places"
         description="Every place across your clients and where it stands."
       />
-      <Locations client={api} />
+      <Locations client={api} onChanged={refreshApprovals} canManage={me.canManageLocations} />
     </div>
   );
 }

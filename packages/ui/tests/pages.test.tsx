@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { AccountsApprovalsPage, PlacesApprovalsPage } from "../src/approvals-app";
+import { AccountsApprovalsPage, ClientPlacesPage, PlacesApprovalsPage } from "../src/approvals-app";
 import { CasesPage } from "../src/cases-app";
 import { PlacesPage } from "../src/places-panel";
 import { MeProvider } from "../src/shell/me-context";
 import { OverviewPage } from "../src/shell/overview";
 import { ModulePage } from "../src/shell/teaser";
 import { FormsPage, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/surveys-app";
-import { amMe, fakeFetch, ownerMe, restoreFetch } from "./fake-api";
+import { amMe, fakeFetch, meOf, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup } from "./helpers";
 
 afterEach(restoreFetch);
@@ -190,5 +190,43 @@ describe("overview", () => {
     expect(screen.getByRole("link", { name: /Places waiting/ }).getAttribute("href")).toBe(
       "/approvals/places",
     );
+  });
+});
+
+describe("a page the role cannot use says so instead of failing", () => {
+  const staff = meOf({ role: "client_staff", kind: "client", canReadSurveys: true });
+  const agencyStaff = meOf({
+    role: "agency_staff",
+    kind: "assigned",
+    canReadSurveys: true,
+    canViewForms: true,
+  });
+
+  test("forms and help for a location manager", async () => {
+    const calls = fakeFetch({});
+    const first = inside(staff, <FormsPage />);
+    expect(await screen.findByText("Not available for your role")).toBeTruthy();
+    first.unmount();
+    inside(staff, <HelpPage />);
+    expect(await screen.findByText("Not available for your role")).toBeTruthy();
+    expect(calls.some((c) => c.path.startsWith("/api/surveys/forms"))).toBe(false);
+  });
+
+  test("the approvals pages for someone who cannot decide", async () => {
+    fakeFetch({ "/api/onboarding/requests": { requests: [] } });
+    const first = inside(agencyStaff, <AccountsApprovalsPage />);
+    expect(await screen.findByText("Not available for your role")).toBeTruthy();
+    first.unmount();
+    fakeFetch({
+      "/api/locations": {
+        locations: [
+          { id: "p", name: "Patio", clientId: "c", clientName: "Casa Olivo", status: "pending" },
+        ],
+      },
+    });
+    inside(agencyStaff, <ClientPlacesPage />);
+    expect(await screen.findByText("Patio")).toBeTruthy();
+    expect(screen.queryByText("Approve place")).toBeNull();
+    expect(screen.queryByText("Pause")).toBeNull();
   });
 });
