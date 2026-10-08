@@ -7,6 +7,8 @@ export type Me = {
   kind: "agency" | "assigned" | "client";
   canWorkCases: boolean;
   canReadSurveys: boolean;
+  canRequestLocations: boolean;
+  canManageLocations: boolean;
   canViewForms: boolean;
   canOperateSurveys: boolean;
   canManageSurveys: boolean;
@@ -49,6 +51,31 @@ export type SurveyRequest = {
   createdAt: string;
   handledAt: string | null;
   response: string | null;
+};
+
+export type PlaceStatus = "pending" | "active" | "suspended" | "rejected";
+
+export type Place = {
+  id: string;
+  name: string;
+  clientId: string;
+  clientName: string;
+  status: PlaceStatus;
+};
+
+export type PlaceAction = "approve" | "reject" | "suspend" | "reactivate";
+
+export type OnboardingRequest = {
+  id: string;
+  businessName: string;
+  ownerName: string;
+  ownerEmail: string;
+  firstLocationName: string;
+  firstLocationTimeZone: string;
+  note: string | null;
+  status: "open" | "approved" | "rejected";
+  createdAt: string;
+  reason: string | null;
 };
 
 export type PlaceOption = { id: string; locationName: string; clientName: string };
@@ -145,6 +172,29 @@ export const api = {
     call<unknown>(`/api/surveys/requests/${id}/handle`, {
       method: "POST",
       body: JSON.stringify({ to, response: response.trim() || null }),
+    }),
+  places: () => call<{ locations: Place[] }>("/api/locations").then((r) => r.locations),
+  requestPlace: (name: string, timeZone: string) =>
+    call<{ id: string }>("/api/locations/request", {
+      method: "POST",
+      body: JSON.stringify({ name, timeZone }),
+    }),
+  decidePlace: (id: string, action: PlaceAction, reason?: string) =>
+    call<{ status: PlaceStatus }>(`/api/locations/${id}/decide`, {
+      method: "POST",
+      body: JSON.stringify({ action, ...(reason ? { reason } : {}) }),
+    }),
+  onboardingRequests: () =>
+    call<{ requests: OnboardingRequest[] }>("/api/onboarding/requests").then((r) => r.requests),
+  approveOnboarding: (id: string) =>
+    call<{ clientId: string; setupUrl: string }>(`/api/onboarding/requests/${id}/approve`, {
+      method: "POST",
+      body: "{}",
+    }),
+  rejectOnboarding: (id: string, reason: string) =>
+    call<unknown>(`/api/onboarding/requests/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
     }),
   signIn: (email: string, password: string) =>
     call<unknown>("/api/auth/sign-in/email", {

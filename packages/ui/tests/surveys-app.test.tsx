@@ -29,4 +29,18 @@ describe("FormCard capabilities", () => {
     expect(screen.getByText("Rotate QR")).toBeTruthy();
     expect((screen.getByLabelText(/Google review link/i) as HTMLInputElement).disabled).toBe(false);
   });
+
+  test("a place waiting for approval shows no QR and no link button", () => {
+    setup(
+      <FormCard
+        form={{ ...form, status: "pending", qrUrl: null, qrPath: null }}
+        onChanged={() => {}}
+        canManage={false}
+        canOperate
+      />,
+    );
+    expect(screen.getByText("Waiting for approval")).toBeTruthy();
+    expect(screen.queryByText("Generate link")).toBeNull();
+    expect(screen.queryByText("Copy QR link")).toBeNull();
+  });
 });

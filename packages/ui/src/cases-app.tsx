@@ -159,6 +159,9 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
               href: "/surveys",
               label: "Surveys",
             },
+            ...(surface === "manager" && me.canManageLocations
+              ? [{ href: "/approvals", label: "Approvals" }]
+              : []),
           ]}
         />
       ) : null}

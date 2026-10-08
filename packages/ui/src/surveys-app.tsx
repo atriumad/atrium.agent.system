@@ -27,6 +27,7 @@ import { Select } from "./forms/select";
 import { PageHeader } from "./layout/layout";
 import { SectionNav } from "./navigation/section-nav";
 import { Tabs } from "./navigation/tabs";
+import { PlacesPanel } from "./places-panel";
 import { Account, SessionGate } from "./session";
 
 const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
@@ -215,6 +216,12 @@ export function FormCard({
                 />
               ) : null}
             </>
+          ) : form.status !== "active" ? (
+            <Banner status="info" title="Waiting for approval">
+              {form.status === "pending"
+                ? "The Atrium team is reviewing this place. Its QR appears here once it is approved."
+                : "This place is not collecting answers right now."}
+            </Banner>
           ) : (
             <Banner status="warning">QR signing is not configured on the server.</Banner>
           )}
@@ -255,7 +262,7 @@ export function FormCard({
             ) : null}
           </div>
 
-          {canOperate ? (
+          {canOperate && form.status === "active" ? (
             <div className="border-t border-line pt-4">
               <Field label="One-time link">
                 <div className="flex flex-wrap items-center gap-2">
@@ -415,6 +422,7 @@ function AdminWorkspace({ me }: { me: Me }) {
         links={[
           { href: "/", label: "Cases" },
           { href: "/surveys", label: "Surveys", current: true },
+          ...(me.canManageLocations ? [{ href: "/approvals", label: "Approvals" }] : []),
         ]}
       />
       <PageHeader
@@ -458,7 +466,7 @@ export function SurveysClientApp() {
   return <SessionGate surface="platform">{(me) => <ClientWorkspace me={me} />}</SessionGate>;
 }
 
-type ClientTab = "responses" | "locations" | "help";
+type ClientTab = "responses" | "locations" | "places" | "help";
 
 function HelpPanel() {
   const places = useLoad(api.surveyLocations);
@@ -539,6 +547,7 @@ function ClientWorkspace({ me }: { me: Me }) {
   const tabs: { value: ClientTab; label: string }[] = [
     ...(me.canReadSurveys ? [{ value: "responses" as const, label: "Responses" }] : []),
     ...(me.canViewForms ? [{ value: "locations" as const, label: "My locations" }] : []),
+    ...(me.canRequestLocations ? [{ value: "places" as const, label: "My places" }] : []),
     ...(me.canRequestSurveys ? [{ value: "help" as const, label: "Help" }] : []),
   ];
   const [tab, setTab] = useState<ClientTab | null>(null);
@@ -573,6 +582,7 @@ function ClientWorkspace({ me }: { me: Me }) {
           {current === "locations" ? (
             <Forms canManage={false} canOperate={me.canOperateSurveys} />
           ) : null}
+          {current === "places" ? <PlacesPanel /> : null}
           {current === "help" ? <HelpPanel /> : null}
         </>
       )}
