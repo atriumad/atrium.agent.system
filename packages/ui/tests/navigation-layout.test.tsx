@@ -174,6 +174,58 @@ describe("SideNav, TopBar, AppShell", () => {
     expect(screen.getByRole("link", { name: "Portfolio" }).getAttribute("data-router")).toBe("yes");
   });
 
+  const nested = [
+    {
+      items: [
+        { id: "overview", label: "Overview", href: "/" },
+        {
+          id: "reputation",
+          label: "Reputation",
+          href: "/reputation/cases",
+          count: 2,
+          children: [
+            { id: "cases", label: "Cases", href: "/reputation/cases" },
+            { id: "responses", label: "Responses", href: "/reputation/responses" },
+          ],
+        },
+        { id: "growth", label: "Growth", href: "/modules/growth", locked: true },
+      ],
+    },
+  ];
+
+  test("a parent is collapsed until a child is current, then it opens by itself", () => {
+    const { rerender } = setup(<SideNav brand="x" groups={nested} current="overview" />);
+    const toggle = screen.getByRole("button", { name: /Reputation/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("link", { name: "Cases" })).toBeNull();
+    rerender(<SideNav brand="x" groups={nested} current="responses" />);
+    expect(screen.getByRole("button", { name: /Reputation/ }).getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("link", { name: "Responses" }).getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Cases" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  test("clicking a parent toggles its children and keeps the count visible", async () => {
+    const { user } = setup(<SideNav brand="x" groups={nested} current="overview" />);
+    const toggle = screen.getByRole("button", { name: /Reputation/ });
+    expect(within(toggle).getByText("2")).toBeTruthy();
+    await user.click(toggle);
+    expect(screen.getByRole("link", { name: "Cases" })).toBeTruthy();
+    await user.click(toggle);
+    expect(screen.queryByRole("link", { name: "Cases" })).toBeNull();
+  });
+
+  test("a locked item stays a link to its teaser and says it is locked", () => {
+    setup(<SideNav brand="x" groups={nested} current="overview" />);
+    const link = screen.getByRole("link", { name: /Growth/ });
+    expect(link.getAttribute("href")).toBe("/modules/growth");
+    expect(link.getAttribute("data-locked")).toBe("true");
+    expect(within(link).getByLabelText("Locked")).toBeTruthy();
+  });
+
   test("AppShell has a main landmark and the navigation", () => {
     setup(
       <AppShell

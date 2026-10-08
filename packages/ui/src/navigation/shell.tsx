@@ -1,4 +1,7 @@
-import type { ComponentProps, ElementType, ReactNode } from "react";
+"use client";
+
+import { ChevronDown, Lock } from "lucide-react";
+import { type ComponentProps, type ElementType, type ReactNode, useState } from "react";
 import { Badge } from "../feedback/badge";
 import { cx } from "../lib/cx";
 
@@ -8,6 +11,9 @@ export type SideNavItem = {
   href: string;
   icon?: ReactNode;
   count?: number;
+  /** A module the package does not include: dimmed, still a link (to its teaser). */
+  locked?: boolean;
+  children?: SideNavItem[];
 };
 export type SideNavGroup = { title?: string; items: SideNavItem[] };
 
@@ -21,6 +27,9 @@ export type SideNavProps = {
   className?: string;
 };
 
+const ROW =
+  "flex w-full cursor-pointer items-center gap-3 rounded-sm px-2.5 py-[9px] text-left text-sm no-underline transition-colors duration-(--dur-base) hover:bg-charcoal-700 aria-[current=page]:bg-charcoal-700 aria-[current=page]:text-lime-500 aria-[current=page]:shadow-[inset_3px_0_0_var(--lime-500)] aria-[current=true]:text-lime-500";
+
 /** The Manager's chrome: charcoal, the current page in lime with a 3px lime edge, a clay count for work waiting on a person. */
 export function SideNav({
   brand,
@@ -30,6 +39,15 @@ export function SideNav({
   linkAs: LinkAs = "a",
   className,
 }: SideNavProps) {
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  const count = (n?: number) =>
+    n ? (
+      <Badge variant="clay" className="ml-auto">
+        {n}
+      </Badge>
+    ) : null;
+
   return (
     <nav
       aria-label={label}
@@ -46,22 +64,73 @@ export function SideNav({
           {g.title ? (
             <div className="label-caps mx-2.5 mt-4 mb-1.5 text-charcoal-400">{g.title}</div>
           ) : null}
-          {g.items.map((it) => (
-            <LinkAs
-              key={it.id}
-              href={it.href}
-              aria-current={it.id === current ? "page" : undefined}
-              className="flex items-center gap-3 rounded-sm px-2.5 py-[9px] text-sm no-underline transition-colors duration-(--dur-base) hover:bg-charcoal-700 aria-[current=page]:bg-charcoal-700 aria-[current=page]:text-lime-500 aria-[current=page]:shadow-[inset_3px_0_0_var(--lime-500)]"
-            >
-              {it.icon}
-              {it.label}
-              {it.count ? (
-                <Badge variant="clay" className="ml-auto">
-                  {it.count}
-                </Badge>
-              ) : null}
-            </LinkAs>
-          ))}
+          {g.items.map((it) => {
+            const kids = it.children ?? [];
+            if (kids.length > 0) {
+              const childCurrent = kids.some((c) => c.id === current);
+              const isOpen = open[it.id] ?? childCurrent;
+              return (
+                <div key={it.id} className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-current={childCurrent ? "true" : undefined}
+                    onClick={() => setOpen((o) => ({ ...o, [it.id]: !isOpen }))}
+                    className={ROW}
+                  >
+                    {it.icon}
+                    {it.label}
+                    {it.count ? count(it.count) : <span className="ml-auto" />}
+                    <ChevronDown
+                      size={16}
+                      strokeWidth={1.5}
+                      aria-hidden
+                      className={isOpen ? "rotate-180" : undefined}
+                    />
+                  </button>
+                  {isOpen ? (
+                    <ul className="m-0 flex list-none flex-col gap-0.5 p-0 pl-5">
+                      {kids.map((c) => (
+                        <li key={c.id}>
+                          <LinkAs
+                            href={c.href}
+                            aria-current={c.id === current ? "page" : undefined}
+                            className={ROW}
+                          >
+                            {c.label}
+                            {count(c.count)}
+                          </LinkAs>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            }
+            return (
+              <LinkAs
+                key={it.id}
+                href={it.href}
+                aria-current={it.id === current ? "page" : undefined}
+                data-locked={it.locked ? "true" : undefined}
+                className={cx(ROW, it.locked && "opacity-60")}
+              >
+                {it.icon}
+                {it.label}
+                {it.locked ? (
+                  <Lock
+                    size={14}
+                    strokeWidth={1.5}
+                    role="img"
+                    aria-label="Locked"
+                    className="ml-auto"
+                  />
+                ) : (
+                  count(it.count)
+                )}
+              </LinkAs>
+            );
+          })}
         </div>
       ))}
     </nav>
