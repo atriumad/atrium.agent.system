@@ -30,6 +30,27 @@ describe("permission matrix", () => {
     ]);
   });
 
+  test("survey actions: the owner runs day to day, the agency owns the risky settings", () => {
+    const rolesWith = (action: "read" | "forms" | "operate" | "manage" | "request") =>
+      ROLES.filter((r) => can(r, "survey", action));
+    expect(rolesWith("read")).toEqual([
+      "agency_admin",
+      "account_manager",
+      "agency_staff",
+      "client_owner",
+      "client_staff",
+    ]);
+    expect(rolesWith("forms")).toEqual([
+      "agency_admin",
+      "account_manager",
+      "agency_staff",
+      "client_owner",
+    ]);
+    expect(rolesWith("operate")).toEqual(["agency_admin", "account_manager", "client_owner"]);
+    expect(rolesWith("manage")).toEqual(["agency_admin", "account_manager"]);
+    expect(rolesWith("request")).toEqual(["client_owner"]);
+  });
+
   test("every role has a row in the matrix", () => {
     expect(Object.keys(PERMISSION_MATRIX).sort()).toEqual([...ROLES].sort());
   });

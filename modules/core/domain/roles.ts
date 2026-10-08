@@ -25,6 +25,10 @@ export const PERMISSIONS = {
   location: ["read", "manage"],
   task: ["read", "fire", "work"],
   content: ["read", "approve"],
+  // Surveys. read: responses and cases. forms: locations, QR, printable card. operate: one-off
+  // links and the send delay. manage: the Google review link and rotating the QR. request: ask
+  // the agency for help.
+  survey: ["read", "forms", "operate", "manage", "request"],
 } as const;
 export type Resource = keyof typeof PERMISSIONS;
 export type Action<R extends Resource> = (typeof PERMISSIONS)[R][number];
@@ -38,6 +42,7 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     location: ["read", "manage"],
     task: ["read", "fire", "work"],
     content: ["read", "approve"],
+    survey: ["read", "forms", "operate", "manage"],
   },
   account_manager: {
     portfolio: ["read"],
@@ -45,6 +50,7 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     location: ["read", "manage"],
     task: ["read", "fire", "work"],
     content: ["read", "approve"],
+    survey: ["read", "forms", "operate", "manage"],
   },
   agency_staff: {
     portfolio: ["read"],
@@ -52,16 +58,19 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     location: ["read"],
     task: ["read", "work"],
     content: ["read"],
+    survey: ["read", "forms"],
   },
   client_owner: {
     client: ["read"],
     location: ["read"],
     content: ["read", "approve"],
+    survey: ["read", "forms", "operate", "request"],
   },
   client_staff: {
     client: ["read"],
     location: ["read"],
     content: ["read"],
+    survey: ["read"],
   },
 };
 
