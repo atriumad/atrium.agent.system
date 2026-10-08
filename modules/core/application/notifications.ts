@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { ContactDenial } from "../domain/contact";
 import {
   devTransport,
@@ -109,4 +109,58 @@ export function listNotifications(tx: Tx, clientId: string, limit = 50) {
     .where(eq(notifications.clientId, clientId))
     .orderBy(desc(notifications.createdAt))
     .limit(Math.min(limit, 200));
+}
+
+export type UserNotification = {
+  id: string;
+  kind: string;
+  subject: string | null;
+  body: string;
+  createdAt: Date;
+  readAt: Date | null;
+};
+
+/** What was sent to this person, newest first, and how many they have not read. */
+export async function listUserNotifications(
+  tx: Tx,
+  userId: string,
+  limit = 30,
+): Promise<{ notifications: UserNotification[]; unread: number }> {
+  const mine = and(eq(notifications.recipientType, "user"), eq(notifications.recipientId, userId));
+  const rows = await tx
+    .select({
+      id: notifications.id,
+      kind: notifications.kind,
+      subject: notifications.subject,
+      body: notifications.body,
+      createdAt: notifications.createdAt,
+      readAt: notifications.readAt,
+    })
+    .from(notifications)
+    .where(mine)
+    .orderBy(desc(notifications.createdAt))
+    .limit(Math.min(limit, 100));
+  const unread = await tx
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(and(mine, isNull(notifications.readAt)));
+  return { notifications: rows, unread: unread.length };
+}
+
+/** Marks some (or all) of this person's notifications as read. Anyone else's are left alone. */
+export async function markUserNotificationsRead(
+  tx: Tx,
+  userId: string,
+  which: { ids: string[] } | { all: true },
+  now: Date = new Date(),
+): Promise<void> {
+  const mine = and(
+    eq(notifications.recipientType, "user"),
+    eq(notifications.recipientId, userId),
+    isNull(notifications.readAt),
+  );
+  await tx
+    .update(notifications)
+    .set({ readAt: now })
+    .where("ids" in which ? and(mine, inArray(notifications.id, which.ids)) : mine);
 }

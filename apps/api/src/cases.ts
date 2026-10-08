@@ -19,6 +19,7 @@ import {
 import { Hono } from "hono";
 import type { AppDeps } from "./app";
 import { mountLocations } from "./locations";
+import { mountNotifications } from "./notifications";
 import { mountOnboardingAdmin } from "./onboarding";
 import { mountSurveyAdmin } from "./surveys-admin";
 
@@ -150,6 +151,7 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
   });
 
   mountLocations(api, deps);
+  mountNotifications(api, deps);
   mountOnboardingAdmin(api, deps, session);
   mountSurveyAdmin(api, deps, {
     qrSecret: session.surveySecret,

@@ -66,8 +66,14 @@ export {
   PROCESSED_EVENT_RETENTION_DAYS,
   pruneProcessedEvents,
 } from "./application/maintenance";
-export type { SendResult } from "./application/notifications";
-export { listNotifications, sendToGuest, sendToUser } from "./application/notifications";
+export type { SendResult, UserNotification } from "./application/notifications";
+export {
+  listNotifications,
+  listUserNotifications,
+  markUserNotificationsRead,
+  sendToGuest,
+  sendToUser,
+} from "./application/notifications";
 export type { ApprovalDeps, OnboardingInput } from "./application/onboarding";
 export {
   approveOnboardingRequest,

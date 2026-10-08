@@ -183,6 +183,7 @@ export const notifications = core.table("notifications", {
   transport: text("transport").notNull().default("dev"),
   status: text("status").notNull().default("recorded"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  readAt: timestamp("read_at", { withTimezone: true }),
 });
 
 export const onboardingRequests = core.table("onboarding_requests", {
