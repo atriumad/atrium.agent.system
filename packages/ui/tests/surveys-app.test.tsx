@@ -33,7 +33,7 @@ describe("FormCard capabilities", () => {
   test("a place waiting for approval shows no QR and no link button", () => {
     setup(
       <FormCard
-        form={{ ...form, status: "pending", qrUrl: null, qrPath: null }}
+        form={{ ...form, status: "pending", qrUrl: null }}
         onChanged={() => {}}
         canManage={false}
         canOperate
