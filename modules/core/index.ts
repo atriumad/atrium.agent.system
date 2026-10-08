@@ -68,12 +68,24 @@ export {
 } from "./application/maintenance";
 export type { SendResult } from "./application/notifications";
 export { listNotifications, sendToGuest, sendToUser } from "./application/notifications";
+export type { ApprovalDeps, OnboardingInput } from "./application/onboarding";
+export {
+  approveOnboardingRequest,
+  listOnboardingRequests,
+  OnboardingForbiddenError,
+  OnboardingNotFoundError,
+  OnboardingStateError,
+  rejectOnboardingRequest,
+  submitOnboardingRequest,
+} from "./application/onboarding";
 export {
   createAgencyOrganization,
   createClientWithOrganization,
 } from "./application/provisioning";
 export type { SessionIdentity } from "./application/scope";
 export { resolveScope } from "./application/scope";
+export type { SetupLinkCapture } from "./application/setup-link";
+export { createSetupLinkCapture } from "./application/setup-link";
 export * from "./domain/access";
 export * from "./domain/approvals";
 export * from "./domain/audit";

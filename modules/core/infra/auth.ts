@@ -48,6 +48,8 @@ export type AuthConfig = {
   agencySlug: string;
   /** Origins allowed to send sign-in requests besides `baseURL`, e.g. the web apps. */
   trustedOrigins?: string[];
+  /** Receives the one-time set-password link for a new owner. Email delivery plugs in here. */
+  onPasswordSetup?: (input: { email: string; url: string }) => Promise<void>;
 };
 
 export function createAuth(db: Database, config: AuthConfig) {
@@ -60,7 +62,17 @@ export function createAuth(db: Database, config: AuthConfig) {
     account: { modelName: "accounts" },
     verification: { modelName: "verifications" },
     ...(config.trustedOrigins ? { trustedOrigins: config.trustedOrigins } : {}),
-    emailAndPassword: { enabled: true, minPasswordLength: 12 },
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 12,
+      resetPasswordTokenExpiresIn: 7 * 24 * 3600,
+      ...(config.onPasswordSetup
+        ? {
+            sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) =>
+              config.onPasswordSetup?.({ email: user.email, url }),
+          }
+        : {}),
+    },
     databaseHooks: {
       session: {
         create: {

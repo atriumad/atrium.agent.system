@@ -184,3 +184,19 @@ export const notifications = core.table("notifications", {
   status: text("status").notNull().default("recorded"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const onboardingRequests = core.table("onboarding_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  businessName: text("business_name").notNull(),
+  ownerName: text("owner_name").notNull(),
+  ownerEmail: text("owner_email").notNull(),
+  firstLocationName: text("first_location_name").notNull(),
+  firstLocationTimeZone: text("first_location_time_zone").notNull(),
+  note: text("note"),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  handledAt: timestamp("handled_at", { withTimezone: true }),
+  handledBy: text("handled_by"),
+  reason: text("reason"),
+  clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+});
