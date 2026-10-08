@@ -71,4 +71,14 @@ describe("ApprovalsPanel", () => {
       expect(client.decidePlace).toHaveBeenCalledWith("p1", "approve", undefined),
     );
   });
+
+  test("opens on the tab that has something waiting and counts each tab", async () => {
+    const client = make({ onboardingRequests: async () => [] });
+    setup(<ApprovalsPanel client={client} />);
+    expect(await screen.findByText("Patio")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Locations/ }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: /Locations.*1/ })).toBeTruthy();
+  });
 });

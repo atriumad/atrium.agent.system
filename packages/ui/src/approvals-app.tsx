@@ -160,7 +160,7 @@ function AccountRow({
   );
 }
 
-function Accounts({ client }: { client: ApprovalsClient }) {
+function Accounts({ client, onChanged }: { client: ApprovalsClient; onChanged: () => void }) {
   const load = useCallback(
     () => client.onboardingRequests().then((r) => r.filter((x) => x.status === "open")),
     [client],
@@ -177,7 +177,15 @@ function Accounts({ client }: { client: ApprovalsClient }) {
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Account requests">
         {data?.map((r) => (
-          <AccountRow key={r.id} request={r} client={client} onChanged={reload} />
+          <AccountRow
+            key={r.id}
+            request={r}
+            client={client}
+            onChanged={() => {
+              reload();
+              onChanged();
+            }}
+          />
         ))}
       </ul>
     </div>
@@ -236,7 +244,7 @@ function PlaceRow({
   );
 }
 
-function Locations({ client }: { client: ApprovalsClient }) {
+function Locations({ client, onChanged }: { client: ApprovalsClient; onChanged: () => void }) {
   const { data, failed, reload } = useList(client.places);
   const waiting = (data ?? []).filter((p) => p.status === "pending");
   const rest = (data ?? []).filter((p) => p.status === "active" || p.status === "suspended");
@@ -252,13 +260,29 @@ function Locations({ client }: { client: ApprovalsClient }) {
       ) : null}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Places waiting">
         {waiting.map((p) => (
-          <PlaceRow key={p.id} place={p} client={client} onChanged={reload} />
+          <PlaceRow
+            key={p.id}
+            place={p}
+            client={client}
+            onChanged={() => {
+              reload();
+              onChanged();
+            }}
+          />
         ))}
       </ul>
       {rest.length > 0 ? <h2 className="m-0 text-xl font-normal">Running places</h2> : null}
       <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Running places">
         {rest.map((p) => (
-          <PlaceRow key={p.id} place={p} client={client} onChanged={reload} />
+          <PlaceRow
+            key={p.id}
+            place={p}
+            client={client}
+            onChanged={() => {
+              reload();
+              onChanged();
+            }}
+          />
         ))}
       </ul>
     </div>
@@ -267,19 +291,54 @@ function Locations({ client }: { client: ApprovalsClient }) {
 
 /** The Manager's approvals: new accounts and new places. Takes a client so tests can stub it. */
 export function ApprovalsPanel({ client = api }: { client?: ApprovalsClient }) {
-  const [tab, setTab] = useState<"accounts" | "locations">("accounts");
+  const [tab, setTab] = useState<"accounts" | "locations" | null>(null);
+  const [counts, setCounts] = useState<{ accounts: number; locations: number } | null>(null);
+  const [version, setVersion] = useState(0);
+
+  // The counts decide where the panel opens, so a request is never hiding behind an empty tab.
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      client.onboardingRequests().catch(() => [] as OnboardingRequest[]),
+      client.places().catch(() => [] as Place[]),
+    ]).then(([accounts, places]) => {
+      if (!alive) return;
+      setCounts({
+        accounts: accounts.filter((a) => a.status === "open").length,
+        locations: places.filter((p) => p.status === "pending").length,
+      });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [client, version]);
+
+  const current =
+    tab ?? (counts && counts.accounts === 0 && counts.locations > 0 ? "locations" : "accounts");
   return (
     <div className="flex flex-col gap-4">
       <Tabs
         label="Approval sections"
-        value={tab}
+        value={current}
         onValueChange={(v) => setTab(v as "accounts" | "locations")}
         items={[
-          { value: "accounts", label: "Accounts" },
-          { value: "locations", label: "Locations" },
+          {
+            value: "accounts",
+            label: "Accounts",
+            ...(counts ? { count: counts.accounts } : {}),
+          },
+          {
+            value: "locations",
+            label: "Locations",
+            ...(counts ? { count: counts.locations } : {}),
+          },
         ]}
       />
-      {tab === "accounts" ? <Accounts client={client} /> : <Locations client={client} />}
+      {current === "accounts" ? (
+        <Accounts key={`a${version}`} client={client} onChanged={() => setVersion((v) => v + 1)} />
+      ) : (
+        <Locations key={`l${version}`} client={client} onChanged={() => setVersion((v) => v + 1)} />
+      )}
     </div>
   );
 }
