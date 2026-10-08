@@ -35,8 +35,8 @@ beforeAll(async () => {
   await migrate(ADMIN_URL);
   await withAgency(db, async (tx) => {
     await createAgencyOrganization(tx, { name: "Atrium", slug: `atrium-ls2-${suffix}` });
-    clientId = (await createClientWithOrganization(tx, { name: "LS", slug: `ls2-${suffix}` })).client
-      .id;
+    clientId = (await createClientWithOrganization(tx, { name: "LS", slug: `ls2-${suffix}` }))
+      .client.id;
     active = (await createLocation(tx, clientId, { name: "Main", timeZone: "America/Chicago" })).id;
   });
 });
