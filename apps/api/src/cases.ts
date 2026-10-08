@@ -1,5 +1,7 @@
+import { FEATURES } from "@atrium/contracts";
 import {
   type Auth,
+  accessFor,
   can,
   resolveScope,
   type Scope,
@@ -84,6 +86,17 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       canManageSurveys: can(scope.role, "survey", "manage"),
       canRequestSurveys: can(scope.role, "survey", "request"),
     });
+  });
+
+  // What the person's package opens. Clients read it to draw locked modules; the agency runs the
+  // product, so nothing is locked for it.
+  api.get("/access", async (c) => {
+    const scope = c.get("scope");
+    if (scope.kind !== "client") {
+      return c.json({ access: Object.fromEntries(FEATURES.map((f) => [f, "full"])) });
+    }
+    const access = await withScope(deps.db, scope, (tx) => accessFor(tx, scope.clientId));
+    return c.json({ access });
   });
 
   api.get("/cases", async (c) => {
