@@ -214,6 +214,10 @@ describe("who can do what", () => {
     expect((await call("mgr-a", "GET", "/api/surveys/responses")).status).toBe(200);
   });
 
+  test("a location manager cannot read help requests, which span every location", async () => {
+    expect((await call("mgr-a", "GET", "/api/surveys/requests")).status).toBe(403);
+  });
+
   test("a client lists only its own places to ask about", async () => {
     const rows = ((await (await call("owner-a", "GET", "/api/surveys/locations")).json()) as any)
       .locations;

@@ -182,7 +182,9 @@ export type SurveyRequestRow = {
 };
 
 export async function listSurveyRequests(tx: Tx, scope: Scope): Promise<SurveyRequestRow[]> {
-  if (!can(scope.role, "survey", "read") && !can(scope.role, "survey", "request")) {
+  // Requests span every location of a client and their policy is client-wide, so a location
+  // manager (read only) stays out: `forms` and `request` are the roles that see the whole client.
+  if (!can(scope.role, "survey", "forms") && !can(scope.role, "survey", "request")) {
     throw new SurveyForbiddenError(`role ${scope.role} cannot see survey requests`);
   }
   const rows = await tx
