@@ -21,19 +21,19 @@ import {
 } from "./format";
 import { TextareaField, TextField } from "./forms/input";
 import { Container, PageHeader } from "./layout/layout";
+import { ListPanel, ROW_PAD } from "./layout/list-panel";
+import { cx } from "./lib/cx";
 import { Tabs } from "./navigation/tabs";
 import { useMe } from "./shell/me-context";
 
 export type Surface = "manager" | "platform";
 
-const COPY: Record<Surface, { title: string; blurb: string; eyebrow: string }> = {
+const COPY: Record<Surface, { title: string; blurb: string }> = {
   manager: {
-    eyebrow: "Reputation",
     title: "Recovery cases",
     blurb: "Guests who had a bad visit. Reach out within 24 hours.",
   },
   platform: {
-    eyebrow: "Reputation",
     title: "Guest feedback to follow up",
     blurb: "Your team is on these. You are told when one opens and when it closes.",
   },
@@ -115,11 +115,7 @@ export function CasesPage({ surface }: { surface: Surface }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow={COPY[surface].eyebrow}
-        title={COPY[surface].title}
-        description={COPY[surface].blurb}
-      />
+      <PageHeader compact title={COPY[surface].title} description={COPY[surface].blurb} />
 
       {overdue > 0 ? (
         <Banner
@@ -141,31 +137,26 @@ export function CasesPage({ surface }: { surface: Surface }) {
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <ul
-          className="m-0 flex list-none flex-col gap-2 p-0"
-          aria-label="Cases"
-          aria-busy={cases === null || undefined}
-        >
+        <ListPanel aria-label="Cases" aria-busy={cases === null || undefined}>
           {cases === null
             ? [0, 1, 2].map((i) => (
-                <li key={i}>
-                  <Card padding="sm">
-                    <div className="flex flex-col gap-2.5">
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="w-3/4" />
-                      <Skeleton className="w-1/2" />
-                    </div>
-                  </Card>
+                <li key={i} className={ROW_PAD}>
+                  <div className="flex flex-col gap-2.5">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="w-3/4" />
+                    <Skeleton className="w-1/2" />
+                  </div>
                 </li>
               ))
             : null}
           {cases !== null && visible.length === 0 ? (
-            <li>
-              <EmptyState
-                title={tab === "active" ? "Nothing needs follow-up right now." : "No cases here."}
-              >
+            <li className={ROW_PAD}>
+              <p className="m-0 font-medium">
+                {tab === "active" ? "Nothing needs follow-up right now." : "No cases here."}
+              </p>
+              <p className="m-0 mt-1 text-sm text-fg-muted">
                 New cases appear here the moment a guest leaves a low rating.
-              </EmptyState>
+              </p>
             </li>
           ) : null}
           {visible.map((c) => (
@@ -178,7 +169,7 @@ export function CasesPage({ surface }: { surface: Surface }) {
               onSelect={() => setSelected(c.id)}
             />
           ))}
-        </ul>
+        </ListPanel>
         <div className="lg:sticky lg:top-6">
           {selected ? (
             <Detail
@@ -247,28 +238,25 @@ function CaseRow(props: {
         type="button"
         onClick={props.onSelect}
         aria-current={props.active}
-        className="block w-full cursor-pointer text-left"
+        className={cx(
+          "block w-full cursor-pointer text-left transition-colors hover:bg-surface-sunken",
+          ROW_PAD,
+          props.active && "bg-surface-sunken",
+        )}
       >
-        <Card
-          padding="sm"
-          tone={props.active ? "ruled" : "paper"}
-          elevation={props.active ? "offset" : "flat"}
-          interactive={!props.active}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <Badge variant={SEVERITY_BADGE[item.severity]}>{SEVERITY_LABEL[item.severity]}</Badge>
-            <Stars rating={item.rating} />
-          </div>
-          <p className="mt-2.5 mb-1 text-base">
-            {props.showClient ? `${item.clientName} · ` : ""}
-            {item.locationName}
-          </p>
-          <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
-            <span>{STATUS_LABEL[item.status]}</span>
-            <span>opened {ago(item.openedAt, now)}</span>
-            <DueBadge status={item.status} dueAt={item.dueAt} now={now} />
-          </p>
-        </Card>
+        <div className="flex items-center justify-between gap-3">
+          <Badge variant={SEVERITY_BADGE[item.severity]}>{SEVERITY_LABEL[item.severity]}</Badge>
+          <Stars rating={item.rating} />
+        </div>
+        <p className="mt-2 mb-1 text-base">
+          {props.showClient ? `${item.clientName} · ` : ""}
+          {item.locationName}
+        </p>
+        <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
+          <span>{STATUS_LABEL[item.status]}</span>
+          <span>opened {ago(item.openedAt, now)}</span>
+          <DueBadge status={item.status} dueAt={item.dueAt} now={now} />
+        </p>
       </button>
     </li>
   );

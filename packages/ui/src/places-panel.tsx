@@ -132,7 +132,7 @@ export function PlacesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Your business"
+        compact
         title="My places"
         description="Your places and where each one stands. New places are reviewed by the Atrium team."
       />

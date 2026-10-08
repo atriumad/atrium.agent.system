@@ -102,7 +102,7 @@ export function OverviewPage({ surface }: { surface: Surface }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow={surface === "manager" ? "Portfolio" : "Your business"}
+        compact
         title="Overview"
         description={
           surface === "manager"

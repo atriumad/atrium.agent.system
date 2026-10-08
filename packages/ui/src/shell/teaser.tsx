@@ -32,7 +32,7 @@ export function ModulePage({ feature }: { feature: string }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Module"
+        compact
         title={teaser.title}
         description={teaser.locked ? "Not in your plan yet." : "Coming soon."}
       />

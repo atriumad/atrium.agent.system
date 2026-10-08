@@ -31,7 +31,7 @@ export type SideNavProps = {
 };
 
 const ROW =
-  "flex w-full cursor-pointer items-center gap-3 rounded-sm px-2.5 py-[9px] text-left text-sm no-underline transition-colors duration-(--dur-base) hover:bg-charcoal-700 aria-[current=page]:bg-charcoal-700 aria-[current=page]:text-lime-500 aria-[current=page]:shadow-[inset_3px_0_0_var(--lime-500)] aria-[current=true]:text-lime-500";
+  "flex w-full cursor-pointer items-center gap-3 rounded-sm px-2.5 py-[9px] text-left text-[0.9rem] no-underline transition-colors duration-(--dur-base) hover:bg-charcoal-700 aria-[current=page]:bg-charcoal-700 aria-[current=page]:font-medium aria-[current=page]:text-lime-500 aria-[current=true]:text-lime-500";
 
 /** The Manager's chrome: charcoal, the current page in lime with a 3px lime edge, a clay count for work waiting on a person. */
 export function SideNav({

@@ -25,6 +25,7 @@ import { Field } from "./forms/field";
 import { TextareaField, TextField } from "./forms/input";
 import { Select } from "./forms/select";
 import { PageHeader } from "./layout/layout";
+import { ListPanel, ROW_PAD } from "./layout/list-panel";
 import { useMe } from "./shell/me-context";
 
 const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
@@ -89,11 +90,11 @@ function Responses() {
           Answers appear here as soon as a guest finishes the survey.
         </EmptyState>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Survey responses">
+        <ListPanel aria-label="Survey responses">
           {data?.map((r) => (
             <ResponseCard key={r.id} r={r} now={now} />
           ))}
-        </ul>
+        </ListPanel>
       )}
     </div>
   );
@@ -101,8 +102,8 @@ function Responses() {
 
 function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
   return (
-    <li>
-      <Card padding="sm">
+    <li className={ROW_PAD}>
+      <div>
         <div className="flex flex-wrap items-center gap-3">
           <span
             className="inline-flex items-center gap-1 font-serif text-2xl leading-none tabular-nums"
@@ -127,7 +128,7 @@ function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
           {r.reviewClicked ? <StatusBadge status="positive">Went to Google</StatusBadge> : null}
           {r.caseId ? <StatusBadge status="warning">Recovery case</StatusBadge> : null}
         </div>
-      </Card>
+      </div>
     </li>
   );
 }
@@ -406,11 +407,7 @@ function Requests() {
 export function ResponsesPage() {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow="Reputation"
-        title="Responses"
-        description="What guests answered after their visit."
-      />
+      <PageHeader compact title="Responses" description="What guests answered after their visit." />
       <Responses />
     </div>
   );
@@ -421,7 +418,7 @@ export function FormsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Reputation"
+        compact
         title={me.kind === "client" ? "QR & links" : "Forms & QR"}
         description="How each place collects answers: its printed QR, one-time links and timing."
       />
@@ -434,7 +431,7 @@ export function HelpRequestsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Reputation"
+        compact
         title="Help requests"
         description="What clients asked the Atrium team for."
       />
@@ -522,7 +519,7 @@ export function HelpPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Reputation"
+        compact
         title="Ask for help"
         description="Tell the Atrium team what you need: a new QR, a change to your Google review link, anything else."
       />

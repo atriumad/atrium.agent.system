@@ -1,7 +1,14 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { type ElementType, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ElementType,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ApiError, api, type Me } from "../api";
 import { Wordmark } from "../brand/wordmark";
 import { SignIn, type Surface } from "../cases-app";
@@ -179,7 +186,10 @@ export function AppFrame({
 
   return (
     <MeProvider me={me}>
-      <div className="min-h-dvh bg-surface-page">
+      <div
+        className="min-h-dvh bg-surface-page"
+        style={{ "--row-py": surface === "manager" ? "0.75rem" : "1.125rem" } as CSSProperties}
+      >
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-charcoal-700 bg-surface-dark lg:flex">
           {brand}
           <div className="flex-1 overflow-y-auto">{nav}</div>
@@ -202,7 +212,10 @@ export function AppFrame({
             </div>
             <AccountMenu me={me} onSignOut={signOut} />
           </header>
-          <main id="main" className="min-w-0 flex-1 px-4 py-8 lg:px-8">
+          <main
+            id="main"
+            className={`min-w-0 flex-1 px-4 lg:px-8 ${surface === "manager" ? "py-6" : "py-10"}`}
+          >
             <div className="mx-auto w-full max-w-[1200px]">{children}</div>
           </main>
         </div>

@@ -10,14 +10,14 @@ export type BannerProps = Omit<ComponentProps<"div">, "title"> & {
 };
 
 const TONE: Record<Status, string> = {
-  positive: "bg-status-positive-bg shadow-[inset_3px_0_0_var(--status-positive-line)]",
-  warning: "bg-status-warning-bg shadow-[inset_3px_0_0_var(--status-warning-line)]",
-  danger: "bg-status-danger-bg shadow-[inset_3px_0_0_var(--status-danger-line)]",
-  info: "bg-status-info-bg shadow-[inset_3px_0_0_var(--status-info-line)]",
-  neutral: "bg-status-neutral-bg shadow-[inset_3px_0_0_var(--status-neutral-line)]",
+  positive: "border-status-positive-line bg-status-positive-bg",
+  warning: "border-status-warning-line bg-status-warning-bg",
+  danger: "border-status-danger-line bg-status-danger-bg",
+  info: "border-status-info-line bg-status-info-bg",
+  neutral: "border-status-neutral-line bg-status-neutral-bg",
 };
 
-/** Speaks for the page or a section: a fill, a 3px left rule, an icon, a title, one sentence, at most one action. A danger banner is announced as an alert. */
+/** Speaks for the page or a section: a fill, a 1px border in the status colour, an icon, a title, one sentence, at most one action. A danger banner is announced as an alert. */
 export function Banner({
   status = "info",
   title,
@@ -31,7 +31,7 @@ export function Banner({
     <div
       role={status === "danger" ? "alert" : "status"}
       className={cx(
-        "flex items-start gap-3 rounded-sm px-4 py-3.5 text-sm text-fg-body",
+        "flex items-start gap-3 rounded-sm border px-4 py-3.5 text-sm text-fg-body",
         TONE[status],
         className,
       )}

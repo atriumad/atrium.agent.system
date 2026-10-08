@@ -80,6 +80,8 @@ export type PageHeaderProps = Omit<ComponentProps<"header">, "title"> & {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  /** App-scale title for dashboard pages: smaller, since the top bar already shows the path. */
+  compact?: boolean;
 };
 
 /** An eyebrow, a headline at 400, a line of context and the page's actions. The headline is the page's h1. */
@@ -88,6 +90,7 @@ export function PageHeader({
   title,
   description,
   actions,
+  compact,
   className,
   ...rest
 }: PageHeaderProps) {
@@ -99,7 +102,12 @@ export function PageHeader({
             {eyebrow}
           </span>
         ) : null}
-        <h1 className="m-0 text-4xl leading-none font-normal tracking-tighter text-fg-strong">
+        <h1
+          className={cx(
+            "m-0 leading-none font-normal tracking-tighter text-fg-strong",
+            compact ? "text-3xl" : "text-4xl",
+          )}
+        >
           {title}
         </h1>
         {description ? <p className="m-0 max-w-[68ch] text-fg-muted">{description}</p> : null}

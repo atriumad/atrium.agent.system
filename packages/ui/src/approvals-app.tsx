@@ -358,7 +358,7 @@ export function AccountsApprovalsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Approvals"
+        compact
         title="Accounts"
         description="Businesses asking for access. Approving one creates the account and gives you a link for the owner to set a password."
       />
@@ -371,7 +371,7 @@ export function PlacesApprovalsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Approvals"
+        compact
         title="Places"
         description="New places that owners asked for. A place collects answers only once it is approved."
       />
@@ -384,7 +384,7 @@ export function ClientPlacesPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Clients"
+        compact
         title="Places"
         description="Every place across your clients and where it stands."
       />
