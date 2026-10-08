@@ -1,4 +1,5 @@
 import { eq, inArray, sql } from "drizzle-orm";
+import type { LocationStatus } from "../domain/location-status";
 import type { Database, Tx } from "../infra/db";
 import { clients, locations } from "../infra/schema";
 
@@ -14,6 +15,17 @@ export async function clientIdForLocation(
     sql`select core.client_id_for_location(${locationId}::uuid) as id`,
   );
   return rows[0]?.id ?? null;
+}
+
+/** Whether a location is tracked: null when it does not exist. For flows that run before a scope. */
+export async function locationStatusFor(
+  db: Database,
+  locationId: string,
+): Promise<LocationStatus | null> {
+  const rows = await db.execute<{ status: LocationStatus | null }>(
+    sql`select core.public_location_status(${locationId}::uuid) as status`,
+  );
+  return rows[0]?.status ?? null;
 }
 
 export type AlertRecipient = { userId: string; role: string };
@@ -50,4 +62,19 @@ export async function describeLocations(
       { locationName: r.locationName, clientId: r.clientId, clientName: r.clientName },
     ]),
   );
+}
+
+/** Every location the scope can see, with its client's name. RLS decides which. */
+export async function listLocationLabels(tx: Tx): Promise<(LocationLabel & { id: string })[]> {
+  const rows = await tx
+    .select({
+      id: locations.id,
+      locationName: locations.name,
+      clientId: locations.clientId,
+      clientName: clients.name,
+    })
+    .from(locations)
+    .innerJoin(clients, eq(clients.id, locations.clientId))
+    .orderBy(clients.name, locations.name);
+  return rows;
 }

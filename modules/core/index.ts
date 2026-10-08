@@ -44,7 +44,13 @@ export {
 } from "./application/guests";
 export { isAgentActive, switchOff, switchOn } from "./application/kill-switch";
 export type { AlertRecipient, LocationLabel } from "./application/lookups";
-export { alertRecipients, clientIdForLocation, describeLocations } from "./application/lookups";
+export {
+  alertRecipients,
+  clientIdForLocation,
+  describeLocations,
+  listLocationLabels,
+  locationStatusFor,
+} from "./application/lookups";
 export {
   coreJobs,
   PROCESSED_EVENT_RETENTION_DAYS,
@@ -65,6 +71,7 @@ export * from "./domain/contact";
 export * from "./domain/kill-switch";
 export { isValidTimeZone, localDay } from "./domain/location";
 export * from "./domain/notifications";
+export * from "./domain/location-status";
 export * from "./domain/roles";
 export type { Auth, AuthConfig } from "./infra/auth";
 export { createAuth } from "./infra/auth";

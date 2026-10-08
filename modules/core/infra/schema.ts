@@ -28,6 +28,10 @@ export const locations = core.table("locations", {
   name: text("name").notNull(),
   timeZone: text("time_zone").notNull(),
   radiusMiles: integer("radius_miles").notNull().default(10),
+  status: text("status").notNull().default("active"),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
+  statusChangedBy: text("status_changed_by"),
+  statusReason: text("status_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
