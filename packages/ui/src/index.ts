@@ -16,3 +16,5 @@ export * from "./forms";
 export * from "./icon";
 export * from "./layout";
 export * from "./navigation";
+export { Account, SessionGate } from "./session";
+export { SurveysAdminApp, SurveysClientApp } from "./surveys-app";

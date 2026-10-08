@@ -21,6 +21,7 @@ import {
 } from "./format";
 import { TextareaField, TextField } from "./forms/input";
 import { Container, PageHeader } from "./layout/layout";
+import { SectionNav } from "./navigation/section-nav";
 import { Tabs } from "./navigation/tabs";
 
 export type Surface = "manager" | "platform";
@@ -72,7 +73,7 @@ export function CasesApp({ surface }: { surface: Surface }) {
   );
 }
 
-function SignIn({ surface }: { surface: Surface }) {
+export function SignIn({ surface }: { surface: Surface }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -150,6 +151,17 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {surface === "manager" || me.canReadSurveys || me.canRequestSurveys ? (
+        <SectionNav
+          links={[
+            { href: "/", label: surface === "manager" ? "Cases" : "Feedback", current: true },
+            {
+              href: "/surveys",
+              label: "Surveys",
+            },
+          ]}
+        />
+      ) : null}
       <PageHeader
         eyebrow={COPY[surface].eyebrow}
         title={COPY[surface].title}
