@@ -1,4 +1,11 @@
-import { type Auth, can, resolveScope, type Scope, withScope } from "@atrium/core";
+import {
+  type Auth,
+  can,
+  resolveScope,
+  type Scope,
+  type SetupLinkCapture,
+  withScope,
+} from "@atrium/core";
 import {
   advanceCase,
   CaseForbiddenError,
@@ -9,6 +16,8 @@ import {
 } from "@atrium/reputation";
 import { Hono } from "hono";
 import type { AppDeps } from "./app";
+import { mountLocations } from "./locations";
+import { mountOnboardingAdmin } from "./onboarding";
 import { mountSurveyAdmin } from "./surveys-admin";
 
 export type SessionDeps = {
@@ -18,6 +27,10 @@ export type SessionDeps = {
   surveySecret?: string | undefined;
   /** The Hub's public origin, where survey links point. */
   hubUrl?: string | undefined;
+  /** Holds the one-time set-password link of a new owner. Without it approvals answer 503. */
+  setup?: SetupLinkCapture | undefined;
+  /** The Platform's public origin, where the owner sets a password. */
+  platformUrl?: string | undefined;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,6 +77,8 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       kind: scope.kind,
       canWorkCases: can(scope.role, "task", "work"),
       canReadSurveys: can(scope.role, "survey", "read"),
+      canRequestLocations: can(scope.role, "location", "request"),
+      canManageLocations: can(scope.role, "location", "manage"),
       canViewForms: can(scope.role, "survey", "forms"),
       canOperateSurveys: can(scope.role, "survey", "operate"),
       canManageSurveys: can(scope.role, "survey", "manage"),
@@ -121,6 +136,8 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
     }
   });
 
+  mountLocations(api, deps);
+  mountOnboardingAdmin(api, deps, session);
   mountSurveyAdmin(api, deps, {
     qrSecret: session.surveySecret,
     hubUrl: (session.hubUrl ?? "http://localhost:3004").replace(/\/$/, ""),

@@ -12,7 +12,8 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { mountCases, type SessionDeps } from "./cases";
-import { mountSurvey } from "./survey";
+import { mountOnboardingPublic } from "./onboarding";
+import { mountQrSurvey, mountSurvey } from "./survey";
 
 export type AppDeps = {
   db: Database;
@@ -157,6 +158,8 @@ export function createApp(deps: AppDeps) {
   });
 
   mountSurvey(app, deps);
+  mountQrSurvey(app, deps);
+  mountOnboardingPublic(app, deps);
   if (deps.session) mountCases(app, deps, deps.session);
 
   app.doc("/openapi.json", {
