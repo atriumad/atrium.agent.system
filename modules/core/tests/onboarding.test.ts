@@ -199,6 +199,30 @@ describe("approval", () => {
   });
 });
 
+describe("an email that already has an account", () => {
+  test("is refused with a clear state error, creates nothing and leaves the request open", async () => {
+    const email = `taken-${suffix}@ob.atrium.dev`;
+    await auth.api.signUpEmail({
+      body: { email, password: "correct-horse-battery", name: "Already Here" },
+    });
+    await submitOnboardingRequest(db, input("taken"));
+    const id = await idOf(email);
+    await expect(
+      approveOnboardingRequest(db, amScope, id, { auth, setup, redirectTo: REDIRECT }),
+    ).rejects.toBeInstanceOf(OnboardingStateError);
+    expect((await open()).some((r) => r.id === id)).toBe(true);
+    const clients = await withAgency(db, (tx) =>
+      tx.execute(sql`select 1 from core.clients where slug like ${`biz-taken-${suffix}%`}`),
+    );
+    expect(clients).toHaveLength(0);
+    // the person who already existed is not deleted by the cleanup
+    const users = await withAgency(db, (tx) =>
+      tx.execute(sql`select 1 from core.users where email = ${email}`),
+    );
+    expect(users).toHaveLength(1);
+  });
+});
+
 describe("rejecting and who may decide", () => {
   test("reject records the reason", async () => {
     await submitOnboardingRequest(db, input("no"));

@@ -116,6 +116,17 @@ export async function approveOnboardingRequest(
   const request = await withAgency(db, (tx) => loadOpen(tx, requestId));
   const email = request.ownerEmail.toLowerCase();
 
+  const existing = await withAgency(db, (tx) =>
+    tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(sql`lower(${users.email})`, email))
+      .limit(1),
+  );
+  if (existing.length > 0) {
+    throw new OnboardingStateError("an account with this email already exists");
+  }
+
   const created: { userId?: string; clientId?: string; organizationId?: string } = {};
   try {
     const signUp = await deps.auth.api.signUpEmail({
@@ -184,7 +195,18 @@ export async function approveOnboardingRequest(
         await tx.delete(organizations).where(eq(organizations.id, created.organizationId));
       }
       if (created.userId) await tx.delete(users).where(eq(users.id, created.userId));
-    }).catch(() => undefined);
+    }).catch((cleanupError) => {
+      // A failed cleanup leaves an orphan someone must remove by hand: say so loudly.
+      console.error(
+        JSON.stringify({
+          level: "error",
+          message: "onboarding cleanup failed",
+          requestId,
+          created,
+          error: String(cleanupError),
+        }),
+      );
+    });
     deps.setup.take(email);
     throw error;
   }

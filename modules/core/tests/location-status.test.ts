@@ -89,6 +89,14 @@ describe("database", () => {
     ).rejects.toThrow();
   });
 
+  test("only the trigger stops an owner from walking a location back to pending", async () => {
+    // pending passes the policy's WITH CHECK, so the status guard is the only thing in the way.
+    await withScope(db, owner(), (tx) =>
+      tx.update(locations).set({ status: "pending" }).where(eq(locations.id, active)),
+    ).catch(() => undefined);
+    expect(await locationStatusFor(db, active)).toBe("active");
+  });
+
   test("an owner cannot change the status of a location", async () => {
     await withScope(db, owner(), (tx) =>
       tx.update(locations).set({ status: "suspended" }).where(eq(locations.id, active)),

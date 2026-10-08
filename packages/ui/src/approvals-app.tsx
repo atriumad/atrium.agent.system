@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./actions/button";
-import { api, type OnboardingRequest, type Place } from "./api";
+import { ApiError, api, type OnboardingRequest, type Place } from "./api";
 import { Card } from "./data/card";
 import { Skeleton } from "./data/misc";
 import { Badge } from "./feedback/badge";
 import { Banner } from "./feedback/banner";
+import { ConfirmDialog } from "./feedback/overlays";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { ago } from "./format";
 import { TextareaField } from "./forms/input";
@@ -79,8 +80,12 @@ function AccountRow({
     setError(null);
     try {
       setLink((await client.approveOnboarding(request.id)).setupUrl);
-    } catch {
-      setError("Could not approve this request. Nothing was created; try again.");
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 409
+          ? "That email already has an account. Reject this request, or ask the owner to sign in."
+          : "Could not approve this request. Nothing was created; try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -202,13 +207,33 @@ function PlaceRow({
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const s = PLACE_STATUS[place.status];
-  async function act(action: "approve" | "reject" | "suspend" | "reactivate") {
+
+  async function act(action: "approve" | "reject" | "suspend" | "reactivate", why?: string) {
     setBusy(true);
-    await client.decidePlace(place.id, action, undefined).catch(() => undefined);
-    setBusy(false);
-    onChanged();
+    setError(null);
+    try {
+      await client.decidePlace(place.id, action, why);
+      onChanged();
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 409
+          ? "This place already changed. Reload to see where it stands."
+          : "Could not update this place. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
+
+  function reject() {
+    if (!reason.trim()) return setError("Say why, so the owner knows.");
+    void act("reject", reason.trim());
+  }
+
   return (
     <li>
       <Card padding="sm">
@@ -218,20 +243,28 @@ function PlaceRow({
             <span className="text-fg-muted"> · {place.clientName}</span>
           </span>
           <Badge variant="quiet">{s.word}</Badge>
-          {place.status === "pending" ? (
+          {place.status === "pending" && !rejecting ? (
             <>
               <Button size="sm" loading={busy} onClick={() => act("approve")}>
                 Approve place
               </Button>
-              <Button size="sm" variant="outline" loading={busy} onClick={() => act("reject")}>
+              <Button size="sm" variant="outline" onClick={() => setRejecting(true)}>
                 Reject place
               </Button>
             </>
           ) : null}
           {place.status === "active" ? (
-            <Button size="sm" variant="ghost" loading={busy} onClick={() => act("suspend")}>
-              Pause
-            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button size="sm" variant="ghost" loading={busy}>
+                  Pause
+                </Button>
+              }
+              title="Pause this place?"
+              description="Guests cannot answer for it and review requests waiting to be sent for this place are cancelled. Resuming does not bring them back."
+              confirmLabel="Pause place"
+              onConfirm={() => act("suspend")}
+            />
           ) : null}
           {place.status === "suspended" ? (
             <Button size="sm" variant="outline" loading={busy} onClick={() => act("reactivate")}>
@@ -239,6 +272,29 @@ function PlaceRow({
             </Button>
           ) : null}
         </div>
+        {rejecting ? (
+          <div className="mt-3 flex flex-col gap-3">
+            <TextareaField
+              label="Reason"
+              rows={2}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button size="sm" loading={busy} onClick={reject}>
+                Send rejection
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setRejecting(false)}>
+                Back
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {error ? (
+          <div className="mt-3">
+            <Banner status="danger">{error}</Banner>
+          </div>
+        ) : null}
       </Card>
     </li>
   );

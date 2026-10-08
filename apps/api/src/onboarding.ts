@@ -16,6 +16,9 @@ import type { SessionDeps } from "./cases";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 5;
+/** Behind a proxy the address can be spoofed, so the whole form also has a ceiling of its own. */
+const MAX_TOTAL_PER_WINDOW = 60;
+const MAX_TRACKED = 5000;
 
 type Env = { Variables: { scope: Scope; userName: string } };
 
@@ -26,14 +29,32 @@ type Env = { Variables: { scope: Scope; userName: string } };
  */
 export function mountOnboardingPublic(app: Hono<any>, deps: AppDeps) {
   const hits = new Map<string, { count: number; resetAt: number }>();
+  const total = { count: 0, resetAt: 0 };
   const clock = () => (deps.now ? deps.now().getTime() : Date.now());
+
+  /** True when this request is over a limit. Expired entries are dropped, and the map is capped. */
+  const limited = (ip: string, now: number) => {
+    if (total.resetAt <= now) {
+      total.count = 0;
+      total.resetAt = now + WINDOW_MS;
+    }
+    if (++total.count > MAX_TOTAL_PER_WINDOW) return true;
+    if (hits.size >= MAX_TRACKED) {
+      for (const [key, entry] of hits) if (entry.resetAt <= now) hits.delete(key);
+      if (hits.size >= MAX_TRACKED) return true;
+    }
+    const entry = hits.get(ip);
+    if (!entry || entry.resetAt <= now) {
+      hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+      return false;
+    }
+    return ++entry.count > MAX_PER_WINDOW;
+  };
 
   app.post("/onboarding/request", async (c) => {
     const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const now = clock();
-    const entry = hits.get(ip);
-    if (!entry || entry.resetAt <= now) hits.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    else if (++entry.count > MAX_PER_WINDOW) return c.json({ error: "rate_limited" }, 429);
+    if (limited(ip, now)) return c.json({ error: "rate_limited" }, 429);
 
     const body = ((await c.req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     const text = (key: string) => (typeof body[key] === "string" ? (body[key] as string) : "");

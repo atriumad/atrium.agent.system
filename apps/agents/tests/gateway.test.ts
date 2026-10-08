@@ -335,6 +335,31 @@ evals: none
   });
 });
 
+describe("locations that are not active", () => {
+  test("a pending or suspended location is refused before the tool runs", async () => {
+    const id = `gw${suffix}.inactive`;
+    const loc = await withAgency(db, async (tx) => {
+      const made = await createLocation(tx, a, { name: "Waiting", timeZone: "America/Chicago" });
+      await tx.execute(sql`update core.locations set status = 'pending' where id = ${made.id}`);
+      return made.id;
+    });
+    const before = ran.length;
+    const result = await gatewayFor(manifest(id, 4)).call({ ...write(id), locationId: loc });
+    expect(result).toMatchObject({ decision: "rejected", step: 0 });
+    expect((result as { reason: string }).reason).toContain("not active");
+    expect(ran.length).toBe(before);
+    await withAgency(db, (tx) =>
+      tx.execute(sql`update core.locations set status = 'suspended' where id = ${loc}`),
+    );
+    expect(await gatewayFor(manifest(id, 4)).call({ ...write(id), locationId: loc })).toMatchObject(
+      {
+        decision: "rejected",
+        step: 0,
+      },
+    );
+  });
+});
+
 describe("malformed calls", () => {
   test("an unknown agent, tool or bad input is refused, never run", async () => {
     const id = `gw${suffix}.bad`;

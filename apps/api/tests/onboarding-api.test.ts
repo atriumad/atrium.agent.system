@@ -232,3 +232,15 @@ describe("locations", () => {
     });
   });
 });
+
+// Last on purpose: it uses up the form's hourly ceiling for this app instance.
+describe("the form's ceiling", () => {
+  test("changing the forwarded address does not get around the limit", async () => {
+    let tooMany = 0;
+    for (let i = 0; i < 80; i++) {
+      const status = (await publicForm(`172.16.${Math.floor(i / 200)}.${i}`, {})).status;
+      if (status === 429) tooMany++;
+    }
+    expect(tooMany).toBeGreaterThan(0);
+  });
+});
