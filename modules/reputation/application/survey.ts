@@ -4,6 +4,7 @@ import {
   IdentityConflictError,
   InvalidContactError,
   listLocations,
+  locationStatusFor,
   recordConsent,
   resolveGuest,
   type Tx,
@@ -56,6 +57,11 @@ export async function resolveInvitation(
   const row = rows[0];
   if (!row) return { ok: false, reason: "unknown" };
 
+  // A location that is not active is gone as far as a guest is concerned.
+  if ((await locationStatusFor(db, row.location_id)) !== "active") {
+    return { ok: false, reason: "unknown" };
+  }
+
   const state = invitationState(
     { expiresAt: new Date(row.expires_at), usedAt: row.used_at ? new Date(row.used_at) : null },
     now,
@@ -106,6 +112,9 @@ export async function submitSurvey(
     if (!resolved.ok) throw new InvitationUnavailableError(resolved.reason);
     target = resolved.target;
   } else {
+    if ((await locationStatusFor(db, source.locationId)) !== "active") {
+      throw new InvitationUnavailableError("unknown");
+    }
     target = {
       clientId: source.clientId,
       locationId: source.locationId,

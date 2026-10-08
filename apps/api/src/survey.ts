@@ -1,12 +1,22 @@
 import { SurveySubmission } from "@atrium/contracts";
 import {
+  clientIdForLocation,
+  describeLocations,
+  locationStatusFor,
+  withTenant,
+} from "@atrium/core";
+import {
   DeviceLimitError,
+  getLocationSettings,
+  hashDevice,
   InvalidSubmissionError,
   InvitationUnavailableError,
   resolveInvitation,
   submitSurvey,
+  verifyQrToken,
 } from "@atrium/reputation";
 import type { Hono } from "hono";
+import { getCookie, setCookie } from "hono/cookie";
 import type { AppDeps } from "./app";
 
 const escape = (value: string) => value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -20,6 +30,13 @@ const page = (body: string) =>
  * This is a plain page for testing the flow. The real survey UI replaces it.
  */
 export function mountSurvey(app: Hono<any>, deps: AppDeps) {
+  // What the Hub survey page needs before it draws the form: the venue name, or why the link is dead.
+  app.get("/s/:token/info", async (c) => {
+    const resolved = await resolveInvitation(deps.db, c.req.param("token"), deps.now?.());
+    if (!resolved.ok) return c.json({ error: resolved.reason }, 410);
+    return c.json({ locationName: resolved.target.locationName });
+  });
+
   app.get("/s/:token", async (c) => {
     const resolved = await resolveInvitation(deps.db, c.req.param("token"), deps.now?.());
     if (!resolved.ok) {
@@ -78,6 +95,79 @@ f.onsubmit = async (e) => {
       return c.json({ ok: true, reviewUrl: result.reviewUrl });
     } catch (error) {
       if (error instanceof InvitationUnavailableError) return c.json({ error: error.message }, 410);
+      if (error instanceof InvalidSubmissionError) return c.json({ error: error.message }, 422);
+      if (error instanceof DeviceLimitError) return c.json({ error: "already_answered" }, 429);
+      throw error;
+    }
+  });
+}
+
+const DEVICE_COOKIE = "atr_dev";
+
+/**
+ * The printed QR: a signed, multi-use link per location with no row behind it. Rotating the
+ * location's QR version kills every copy already printed. One anonymous answer per device per
+ * window, told apart by a cookie that is stored only as a salted hash.
+ */
+export function mountQrSurvey(app: Hono<any>, deps: AppDeps) {
+  const secret = deps.session?.surveySecret;
+
+  const resolve = async (token: string) => {
+    if (!secret) return null;
+    const parsed = verifyQrToken(secret, token);
+    if (!parsed) return null;
+    const clientId = await clientIdForLocation(deps.db, parsed.locationId);
+    if (!clientId) return null;
+    if ((await locationStatusFor(deps.db, parsed.locationId)) !== "active") return null;
+    return withTenant(deps.db, clientId, async (tx) => {
+      const settings = await getLocationSettings(tx, parsed.locationId);
+      if (settings.qrVersion !== parsed.version) return null;
+      const label = (await describeLocations(tx, [parsed.locationId])).get(parsed.locationId);
+      return label
+        ? { clientId, locationId: parsed.locationId, locationName: label.locationName }
+        : null;
+    });
+  };
+
+  app.get("/q/:token/info", async (c) => {
+    const found = await resolve(c.req.param("token"));
+    if (!found) return c.json({ error: "unknown" }, 410);
+    return c.json({ locationName: found.locationName });
+  });
+
+  app.post("/q/:token", async (c) => {
+    const parsed = SurveySubmission.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "invalid_request" }, 422);
+    const found = await resolve(c.req.param("token"));
+    if (!found || !secret) return c.json({ error: "unknown" }, 410);
+
+    let deviceId = getCookie(c, DEVICE_COOKIE);
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      setCookie(c, DEVICE_COOKIE, deviceId, {
+        httpOnly: true,
+        sameSite: "Lax",
+        maxAge: 60 * 60 * 24 * 365,
+        path: "/",
+      });
+    }
+    try {
+      const result = await submitSurvey(
+        deps.db,
+        {
+          kind: "qr",
+          clientId: found.clientId,
+          locationId: found.locationId,
+          deviceHash: hashDevice(secret, deviceId),
+        },
+        parsed.data,
+        {
+          ...(deps.publish ? { publish: deps.publish } : {}),
+          ...(deps.now ? { now: deps.now } : {}),
+        },
+      );
+      return c.json({ ok: true, reviewUrl: result.reviewUrl });
+    } catch (error) {
       if (error instanceof InvalidSubmissionError) return c.json({ error: error.message }, 422);
       if (error instanceof DeviceLimitError) return c.json({ error: "already_answered" }, 429);
       throw error;

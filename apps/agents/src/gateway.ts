@@ -129,10 +129,14 @@ export function createGateway(deps: GatewayDeps): Gateway {
 
       try {
         return await withTenant(deps.db, call.clientId, async (tx): Promise<CallResult> => {
-          const timeZone = locationId
-            ? ((await listLocations(tx, call.clientId)).find((l) => l.id === locationId)
-                ?.timeZone ?? "UTC")
-            : "UTC";
+          const located = locationId
+            ? (await listLocations(tx, call.clientId)).find((l) => l.id === locationId)
+            : undefined;
+          // Agents act only on places the agency has approved and not suspended.
+          if (located && located.status !== "active") {
+            return reject(call, 0, "location is not active", manifest);
+          }
+          const timeZone = located?.timeZone ?? "UTC";
           const facts: Facts = {
             agentActive: await isAgentActive(tx, manifest.id, call.clientId),
             featureLevel: await accessLevel(tx, call.clientId, locationId, tool.feature),

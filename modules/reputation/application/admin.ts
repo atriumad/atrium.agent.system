@@ -2,6 +2,7 @@ import {
   type Actor,
   can,
   describeLocations,
+  type LocationStatus,
   listLocationLabels,
   locationVisible,
   type Scope,
@@ -105,6 +106,8 @@ export type SurveyForm = {
   qrVersion: number;
   /** The printable link. Signed, no row behind it; rotating the QR invalidates it. */
   qrPath: string | null;
+  /** Only an active location collects answers; the others show no QR. */
+  status: LocationStatus;
 };
 
 /** The survey setup of every location the scope can manage: link, QR and timing. */
@@ -128,7 +131,9 @@ export async function listSurveyForms(
       reviewUrl: s?.reviewUrl ?? null,
       requestDelayMinutes: s?.requestDelayMinutes ?? 120,
       qrVersion,
-      qrPath: qrSecret ? `/q/${signQrToken(qrSecret, l.id, qrVersion)}` : null,
+      qrPath:
+        qrSecret && l.status === "active" ? `/q/${signQrToken(qrSecret, l.id, qrVersion)}` : null,
+      status: l.status,
     };
   });
 }
@@ -146,6 +151,7 @@ export async function createManualInvitation(
   assertCan(scope, "operate");
   const label = (await describeLocations(tx, [locationId])).get(locationId);
   if (!label) throw new SurveyNotFoundError("location not found");
+  if (label.status !== "active") throw new SurveyStateError("the location is not active");
   const now = clock(deps);
   const token = generateInvitationToken();
   const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);

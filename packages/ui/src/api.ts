@@ -35,6 +35,7 @@ export type SurveyForm = {
   reviewUrl: string | null;
   requestDelayMinutes: number;
   qrVersion: number;
+  status: "pending" | "active" | "suspended" | "rejected";
   qrUrl: string | null;
 };
 

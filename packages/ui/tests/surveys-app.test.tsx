@@ -10,6 +10,7 @@ const form = {
   reviewUrl: "https://g.page/r/abc/review",
   requestDelayMinutes: 120,
   qrVersion: 1,
+  status: "active" as const,
   qrPath: "/q/x",
   qrUrl: "http://hub.test/q/x",
 };

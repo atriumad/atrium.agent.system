@@ -21,7 +21,10 @@ import { clock, envelope, type ReputationDeps } from "./shared";
 export type ScheduleOutcome =
   | { status: "scheduled"; sendAt: Date }
   | { status: "duplicate" }
-  | { status: "skipped"; reason: "stale_visit" | "no_review_url" | "unknown_location" };
+  | {
+      status: "skipped";
+      reason: "stale_visit" | "no_review_url" | "unknown_location" | "location_inactive";
+    };
 
 async function locationOf(tx: Tx, clientId: string, locationId: string) {
   return (await listLocations(tx, clientId)).find((l) => l.id === locationId) ?? null;
@@ -39,7 +42,9 @@ export async function scheduleReviewRequest(
 ): Promise<ScheduleOutcome> {
   const now = clock(deps);
   const location = await locationOf(tx, input.clientId, input.locationId);
-  const skip = async (reason: "stale_visit" | "no_review_url" | "unknown_location") => {
+  const skip = async (
+    reason: "stale_visit" | "no_review_url" | "unknown_location" | "location_inactive",
+  ) => {
     if (location) {
       await tx
         .insert(reviewRequests)
@@ -50,6 +55,7 @@ export async function scheduleReviewRequest(
   };
 
   if (!location) return skip("unknown_location");
+  if (location.status !== "active") return skip("location_inactive");
   if (isStaleVisit(input.visitDate, now, location.timeZone)) return skip("stale_visit");
   const settings = await getLocationSettings(tx, input.locationId);
   if (!settings.reviewUrl) return skip("no_review_url");
@@ -132,6 +138,7 @@ export async function sendReviewRequest(
     (l) => l.id === request.locationId,
   );
   if (!location) return skip("unknown_location");
+  if (location.status !== "active") return skip("location_inactive");
 
   const choice = await chooseChannel(tx, request.clientId, request.guestId);
   if ("reason" in choice) return skip(choice.reason);

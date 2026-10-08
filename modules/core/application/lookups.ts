@@ -38,7 +38,12 @@ export async function alertRecipients(tx: Tx, clientId: string): Promise<AlertRe
   return rows.map((row) => ({ userId: row.user_id, role: row.role }));
 }
 
-export type LocationLabel = { locationName: string; clientId: string; clientName: string };
+export type LocationLabel = {
+  locationName: string;
+  clientId: string;
+  clientName: string;
+  status: LocationStatus;
+};
 
 /** Names for a set of locations, for screens that list rows from several clients. RLS applies. */
 export async function describeLocations(
@@ -52,6 +57,7 @@ export async function describeLocations(
       locationName: locations.name,
       clientId: clients.id,
       clientName: clients.name,
+      status: locations.status,
     })
     .from(locations)
     .innerJoin(clients, eq(clients.id, locations.clientId))
@@ -59,7 +65,12 @@ export async function describeLocations(
   return new Map(
     rows.map((r) => [
       r.id,
-      { locationName: r.locationName, clientId: r.clientId, clientName: r.clientName },
+      {
+        locationName: r.locationName,
+        clientId: r.clientId,
+        clientName: r.clientName,
+        status: r.status as LocationStatus,
+      },
     ]),
   );
 }
@@ -72,9 +83,10 @@ export async function listLocationLabels(tx: Tx): Promise<(LocationLabel & { id:
       locationName: locations.name,
       clientId: locations.clientId,
       clientName: clients.name,
+      status: locations.status,
     })
     .from(locations)
     .innerJoin(clients, eq(clients.id, locations.clientId))
     .orderBy(clients.name, locations.name);
-  return rows;
+  return rows.map((r) => ({ ...r, status: r.status as LocationStatus }));
 }
