@@ -25,10 +25,7 @@ import { Field } from "./forms/field";
 import { TextareaField, TextField } from "./forms/input";
 import { Select } from "./forms/select";
 import { PageHeader } from "./layout/layout";
-import { SectionNav } from "./navigation/section-nav";
-import { Tabs } from "./navigation/tabs";
-import { PlacesPanel } from "./places-panel";
-import { Account, SessionGate } from "./session";
+import { useMe } from "./shell/me-context";
 
 const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
 
@@ -406,67 +403,45 @@ function Requests() {
 
 /* ---------------------------------- pages ---------------------------------- */
 
-type AdminTab = "responses" | "forms" | "requests";
-
-/** The Manager's survey area: for the agency, never the client. */
-export function SurveysAdminApp() {
-  return <SessionGate surface="manager">{(me) => <AdminWorkspace me={me} />}</SessionGate>;
-}
-
-function AdminWorkspace({ me }: { me: Me }) {
-  const [tab, setTab] = useState<AdminTab>("responses");
-  const open = useLoad(api.surveyRequests).data?.filter((r) => r.status === "open").length;
+export function ResponsesPage() {
   return (
     <div className="flex flex-col gap-6">
-      <SectionNav
-        links={[
-          { href: "/", label: "Cases" },
-          { href: "/surveys", label: "Surveys", current: true },
-          ...(me.canManageLocations ? [{ href: "/approvals", label: "Approvals" }] : []),
-        ]}
-      />
       <PageHeader
         eyebrow="Reputation"
-        title="Surveys"
-        description="What guests answered, how each place collects answers, and what clients asked for."
-        actions={<Account me={me} />}
+        title="Responses"
+        description="What guests answered after their visit."
       />
-      {!me.canReadSurveys ? (
-        <Banner status="neutral" title="Not available for your role">
-          Surveys are run by the agency.
-        </Banner>
-      ) : (
-        <>
-          <Tabs
-            label="Survey sections"
-            value={tab}
-            onValueChange={(v) => setTab(v as AdminTab)}
-            items={[
-              { value: "responses", label: "Responses" },
-              { value: "forms", label: "Forms and links" },
-              { value: "requests", label: "Requests", ...(open ? { count: open } : {}) },
-            ]}
-          />
-          {tab === "responses" ? <Responses /> : null}
-          {tab === "forms" ? (
-            <Forms canManage={me.canManageSurveys} canOperate={me.canOperateSurveys} />
-          ) : null}
-          {tab === "requests" ? <Requests /> : null}
-        </>
-      )}
-      {me.canReadSurveys && !me.canManageSurveys ? (
-        <Banner status="info">Your role can read surveys but not change them.</Banner>
-      ) : null}
+      <Responses />
     </div>
   );
 }
 
-/** The Platform's survey area: the owner runs the day to day, the agency helps when asked. */
-export function SurveysClientApp() {
-  return <SessionGate surface="platform">{(me) => <ClientWorkspace me={me} />}</SessionGate>;
+export function FormsPage() {
+  const me = useMe();
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Reputation"
+        title={me.kind === "client" ? "QR & links" : "Forms & QR"}
+        description="How each place collects answers: its printed QR, one-time links and timing."
+      />
+      <Forms canManage={me.canManageSurveys} canOperate={me.canOperateSurveys} />
+    </div>
+  );
 }
 
-type ClientTab = "responses" | "locations" | "places" | "help";
+export function HelpRequestsPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Reputation"
+        title="Help requests"
+        description="What clients asked the Atrium team for."
+      />
+      <Requests />
+    </div>
+  );
+}
 
 function HelpPanel() {
   const places = useLoad(api.surveyLocations);
@@ -543,49 +518,15 @@ function HelpPanel() {
   );
 }
 
-function ClientWorkspace({ me }: { me: Me }) {
-  const tabs: { value: ClientTab; label: string }[] = [
-    ...(me.canReadSurveys ? [{ value: "responses" as const, label: "Responses" }] : []),
-    ...(me.canViewForms ? [{ value: "locations" as const, label: "My locations" }] : []),
-    ...(me.canRequestLocations ? [{ value: "places" as const, label: "My places" }] : []),
-    ...(me.canRequestSurveys ? [{ value: "help" as const, label: "Help" }] : []),
-  ];
-  const [tab, setTab] = useState<ClientTab | null>(null);
-  const current = tab ?? tabs[0]?.value ?? null;
+export function HelpPage() {
   return (
     <div className="flex flex-col gap-6">
-      <SectionNav
-        links={[
-          { href: "/", label: "Feedback" },
-          { href: "/surveys", label: "Surveys", current: true },
-        ]}
-      />
       <PageHeader
         eyebrow="Reputation"
-        title="Surveys"
-        description="What your guests said, the QR and links for each of your places, and a way to ask the Atrium team for help."
-        actions={<Account me={me} />}
+        title="Ask for help"
+        description="Tell the Atrium team what you need: a new QR, a change to your Google review link, anything else."
       />
-      {current === null ? (
-        <Banner status="neutral" title="Not available for your role">
-          Ask the account owner for access.
-        </Banner>
-      ) : (
-        <>
-          <Tabs
-            label="Survey sections"
-            value={current}
-            onValueChange={(v) => setTab(v as ClientTab)}
-            items={tabs}
-          />
-          {current === "responses" ? <Responses /> : null}
-          {current === "locations" ? (
-            <Forms canManage={false} canOperate={me.canOperateSurveys} />
-          ) : null}
-          {current === "places" ? <PlacesPanel /> : null}
-          {current === "help" ? <HelpPanel /> : null}
-        </>
-      )}
+      <HelpPanel />
     </div>
   );
 }

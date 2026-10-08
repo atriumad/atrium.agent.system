@@ -12,10 +12,7 @@ import { EmptyState, ErrorState } from "./feedback/states";
 import { ago } from "./format";
 import { TextareaField } from "./forms/input";
 import { PageHeader } from "./layout/layout";
-import { SectionNav } from "./navigation/section-nav";
-import { Tabs } from "./navigation/tabs";
 import { PLACE_STATUS } from "./places-panel";
-import { Account, SessionGate } from "./session";
 
 type ApprovalsClient = {
   onboardingRequests: () => Promise<OnboardingRequest[]>;
@@ -165,7 +162,13 @@ function AccountRow({
   );
 }
 
-function Accounts({ client, onChanged }: { client: ApprovalsClient; onChanged: () => void }) {
+export function Accounts({
+  client,
+  onChanged = () => {},
+}: {
+  client: ApprovalsClient;
+  onChanged?: () => void;
+}) {
   const load = useCallback(
     () => client.onboardingRequests().then((r) => r.filter((x) => x.status === "open")),
     [client],
@@ -300,7 +303,13 @@ function PlaceRow({
   );
 }
 
-function Locations({ client, onChanged }: { client: ApprovalsClient; onChanged: () => void }) {
+export function Locations({
+  client,
+  onChanged = () => {},
+}: {
+  client: ApprovalsClient;
+  onChanged?: () => void;
+}) {
   const { data, failed, reload } = useList(client.places);
   const waiting = (data ?? []).filter((p) => p.status === "pending");
   const rest = (data ?? []).filter((p) => p.status === "active" || p.status === "suspended");
@@ -345,87 +354,41 @@ function Locations({ client, onChanged }: { client: ApprovalsClient; onChanged: 
   );
 }
 
-/** The Manager's approvals: new accounts and new places. Takes a client so tests can stub it. */
-export function ApprovalsPanel({ client = api }: { client?: ApprovalsClient }) {
-  const [tab, setTab] = useState<"accounts" | "locations" | null>(null);
-  const [counts, setCounts] = useState<{ accounts: number; locations: number } | null>(null);
-  const [version, setVersion] = useState(0);
-
-  // The counts decide where the panel opens, so a request is never hiding behind an empty tab.
-  useEffect(() => {
-    let alive = true;
-    Promise.all([
-      client.onboardingRequests().catch(() => [] as OnboardingRequest[]),
-      client.places().catch(() => [] as Place[]),
-    ]).then(([accounts, places]) => {
-      if (!alive) return;
-      setCounts({
-        accounts: accounts.filter((a) => a.status === "open").length,
-        locations: places.filter((p) => p.status === "pending").length,
-      });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [client, version]);
-
-  const current =
-    tab ?? (counts && counts.accounts === 0 && counts.locations > 0 ? "locations" : "accounts");
+export function AccountsApprovalsPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <Tabs
-        label="Approval sections"
-        value={current}
-        onValueChange={(v) => setTab(v as "accounts" | "locations")}
-        items={[
-          {
-            value: "accounts",
-            label: "Accounts",
-            ...(counts ? { count: counts.accounts } : {}),
-          },
-          {
-            value: "locations",
-            label: "Locations",
-            ...(counts ? { count: counts.locations } : {}),
-          },
-        ]}
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Approvals"
+        title="Accounts"
+        description="Businesses asking for access. Approving one creates the account and gives you a link for the owner to set a password."
       />
-      {current === "accounts" ? (
-        <Accounts key={`a${version}`} client={client} onChanged={() => setVersion((v) => v + 1)} />
-      ) : (
-        <Locations key={`l${version}`} client={client} onChanged={() => setVersion((v) => v + 1)} />
-      )}
+      <Accounts client={api} />
     </div>
   );
 }
 
-export function ApprovalsApp() {
+export function PlacesApprovalsPage() {
   return (
-    <SessionGate surface="manager">
-      {(me) => (
-        <div className="flex flex-col gap-6">
-          <SectionNav
-            links={[
-              { href: "/", label: "Cases" },
-              { href: "/surveys", label: "Surveys" },
-              { href: "/approvals", label: "Approvals", current: true },
-            ]}
-          />
-          <PageHeader
-            eyebrow="Onboarding"
-            title="Approvals"
-            description="New accounts asking for access and new places asked for by owners."
-            actions={<Account me={me} />}
-          />
-          {me.canManageLocations ? (
-            <ApprovalsPanel />
-          ) : (
-            <Banner status="neutral" title="Not available for your role">
-              Approvals are handled by account managers and admins.
-            </Banner>
-          )}
-        </div>
-      )}
-    </SessionGate>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Approvals"
+        title="Places"
+        description="New places that owners asked for. A place collects answers only once it is approved."
+      />
+      <Locations client={api} />
+    </div>
+  );
+}
+
+export function ClientPlacesPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Clients"
+        title="Places"
+        description="Every place across your clients and where it stands."
+      />
+      <Locations client={api} />
+    </div>
   );
 }

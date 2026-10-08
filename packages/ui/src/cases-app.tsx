@@ -21,8 +21,8 @@ import {
 } from "./format";
 import { TextareaField, TextField } from "./forms/input";
 import { Container, PageHeader } from "./layout/layout";
-import { SectionNav } from "./navigation/section-nav";
 import { Tabs } from "./navigation/tabs";
+import { useMe } from "./shell/me-context";
 
 export type Surface = "manager" | "platform";
 
@@ -40,38 +40,6 @@ const COPY: Record<Surface, { title: string; blurb: string; eyebrow: string }> =
 };
 
 const SEVERITY_BADGE = { high: "clay", medium: "ink", low: "quiet" } as const;
-
-export function CasesApp({ surface }: { surface: Surface }) {
-  const [me, setMe] = useState<Me | null | undefined>(undefined);
-  const [unreachable, setUnreachable] = useState(false);
-
-  useEffect(() => {
-    api
-      .me()
-      .then(setMe)
-      .catch((e: unknown) => {
-        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) setMe(null);
-        else setUnreachable(true);
-      });
-  }, []);
-
-  if (unreachable) {
-    return (
-      <Container className="py-16">
-        <Banner status="danger" title="Cannot reach the server">
-          Check that the API is running, then reload.
-        </Banner>
-      </Container>
-    );
-  }
-  if (me === undefined) return <Container className="py-8" />;
-  if (me === null) return <SignIn surface={surface} />;
-  return (
-    <Container className="py-8">
-      <Workspace surface={surface} me={me} />
-    </Container>
-  );
-}
 
 export function SignIn({ surface }: { surface: Surface }) {
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +81,8 @@ export function SignIn({ surface }: { surface: Surface }) {
   );
 }
 
-function Workspace({ surface, me }: { surface: Surface; me: Me }) {
+export function CasesPage({ surface }: { surface: Surface }) {
+  const me = useMe();
   const [cases, setCases] = useState<CaseSummary[] | null>(null);
   const [tab, setTab] = useState<Tab>("active");
   const [selected, setSelected] = useState<string | null>(null);
@@ -144,44 +113,12 @@ function Workspace({ surface, me }: { surface: Surface; me: Me }) {
     (c) => dueLabel(c.status, c.dueAt, now)?.tone === "overdue",
   ).length;
 
-  async function signOut() {
-    await api.signOut().catch(() => undefined);
-    location.reload();
-  }
-
   return (
     <div className="flex flex-col gap-6">
-      {surface === "manager" || me.canReadSurveys || me.canRequestSurveys ? (
-        <SectionNav
-          links={[
-            { href: "/", label: surface === "manager" ? "Cases" : "Feedback", current: true },
-            {
-              href: "/surveys",
-              label: "Surveys",
-            },
-            ...(surface === "manager" && me.canManageLocations
-              ? [{ href: "/approvals", label: "Approvals" }]
-              : []),
-          ]}
-        />
-      ) : null}
       <PageHeader
         eyebrow={COPY[surface].eyebrow}
         title={COPY[surface].title}
         description={COPY[surface].blurb}
-        actions={
-          <div className="text-right text-sm">
-            <p className="m-0">{me.name}</p>
-            <p className="m-0 text-fg-muted">{me.role.replaceAll("_", " ")}</p>
-            <button
-              type="button"
-              onClick={signOut}
-              className="cursor-pointer underline underline-offset-4 hover:text-clay-600"
-            >
-              Sign out
-            </button>
-          </div>
-        }
       />
 
       {overdue > 0 ? (

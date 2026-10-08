@@ -9,6 +9,7 @@ import { StatusBadge } from "./feedback/badge";
 import { Banner } from "./feedback/banner";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { TextField } from "./forms/input";
+import { PageHeader } from "./layout/layout";
 
 export const PLACE_STATUS: Record<
   PlaceStatus,
@@ -123,6 +124,19 @@ export function PlacesPanel({ client = api }: { client?: PlacesClient }) {
           </Button>
         </div>
       </Card>
+    </div>
+  );
+}
+
+export function PlacesPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Your business"
+        title="My places"
+        description="Your places and where each one stands. New places are reviewed by the Atrium team."
+      />
+      <PlacesPanel />
     </div>
   );
 }

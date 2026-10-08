@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import { ApiError } from "../src/api";
-import { ApprovalsPanel } from "../src/approvals-app";
+import { Accounts, Locations } from "../src/approvals-app";
 import { screen, setup, waitFor } from "./helpers";
 
 const request = {
@@ -38,7 +38,7 @@ const make = (over: Record<string, unknown> = {}) => ({
 describe("ApprovalsPanel", () => {
   test("approving an account shows the set-password link once", async () => {
     const client = make();
-    const { user } = setup(<ApprovalsPanel client={client} />);
+    const { user } = setup(<Accounts client={client} />);
     expect(await screen.findByText("Casa Nueva")).toBeTruthy();
     await user.click(screen.getByText("Approve"));
     expect(await screen.findByText("http://api/reset-password/tok")).toBeTruthy();
@@ -48,7 +48,7 @@ describe("ApprovalsPanel", () => {
 
   test("rejecting an account asks for a reason", async () => {
     const client = make();
-    const { user } = setup(<ApprovalsPanel client={client} />);
+    const { user } = setup(<Accounts client={client} />);
     await screen.findByText("Casa Nueva");
     await user.click(screen.getByText("Reject"));
     await user.click(screen.getByText("Send rejection"));
@@ -61,26 +61,14 @@ describe("ApprovalsPanel", () => {
     );
   });
 
-  test("the locations tab approves a pending place", async () => {
+  test("a pending place can be approved", async () => {
     const client = make();
-    const { user } = setup(<ApprovalsPanel client={client} />);
-    await screen.findByText("Casa Nueva");
-    await user.click(screen.getByRole("tab", { name: /Locations/ }));
+    const { user } = setup(<Locations client={client} />);
     expect(await screen.findByText("Patio")).toBeTruthy();
     await user.click(screen.getByText("Approve place"));
     await waitFor(() =>
       expect(client.decidePlace).toHaveBeenCalledWith("p1", "approve", undefined),
     );
-  });
-
-  test("opens on the tab that has something waiting and counts each tab", async () => {
-    const client = make({ onboardingRequests: async () => [] });
-    setup(<ApprovalsPanel client={client} />);
-    expect(await screen.findByText("Patio")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: /Locations/ }).getAttribute("aria-selected")).toBe(
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: /Locations.*1/ })).toBeTruthy();
   });
 
   test("pausing a running place asks first and says what it cancels", async () => {
@@ -92,8 +80,7 @@ describe("ApprovalsPanel", () => {
       status: "active" as const,
     };
     const client = make({ onboardingRequests: async () => [], places: async () => [running] });
-    const { user } = setup(<ApprovalsPanel client={client} />);
-    await user.click(await screen.findByRole("tab", { name: /Locations/ }));
+    const { user } = setup(<Locations client={client} />);
     await user.click(await screen.findByText("Pause"));
     expect(await screen.findByText(/review requests waiting/i)).toBeTruthy();
     expect(client.decidePlace).not.toHaveBeenCalled();
@@ -105,7 +92,7 @@ describe("ApprovalsPanel", () => {
 
   test("rejecting a place needs a reason", async () => {
     const client = make({ onboardingRequests: async () => [] });
-    const { user } = setup(<ApprovalsPanel client={client} />);
+    const { user } = setup(<Locations client={client} />);
     await user.click(await screen.findByText("Reject place"));
     await user.click(screen.getByText("Send rejection"));
     expect(await screen.findByText(/Say why/i)).toBeTruthy();
@@ -124,7 +111,7 @@ describe("ApprovalsPanel", () => {
         throw new ApiError(409, "invalid_state");
       }),
     });
-    const { user } = setup(<ApprovalsPanel client={client} />);
+    const { user } = setup(<Locations client={client} />);
     await user.click(await screen.findByText("Approve place"));
     expect(await screen.findByText(/already changed|could not/i)).toBeTruthy();
   });
@@ -135,7 +122,7 @@ describe("ApprovalsPanel", () => {
         throw new ApiError(409, "invalid_state");
       }),
     });
-    const { user } = setup(<ApprovalsPanel client={client} />);
+    const { user } = setup(<Accounts client={client} />);
     await user.click(await screen.findByText("Approve"));
     expect(await screen.findByText(/already has an account/i)).toBeTruthy();
   });

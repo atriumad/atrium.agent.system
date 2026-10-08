@@ -3,24 +3,35 @@ export * from "./actions/chip";
 export * from "./actions/icon-button";
 // The case screens of the Manager and the Platform. They move onto these components next.
 export type { CaseDetail, CaseSummary, Me } from "./api";
-export { ApprovalsApp, ApprovalsPanel } from "./approvals-app";
+export {
+  AccountsApprovalsPage,
+  ClientPlacesPage,
+  PlacesApprovalsPage,
+} from "./approvals-app";
 export * from "./brand/emphasis";
 export * from "./brand/eyebrow";
 export * from "./brand/highlight";
 export * from "./brand/rule";
 export * from "./brand/stat-figure";
 export * from "./brand/wordmark";
-export { CasesApp, type Surface } from "./cases-app";
+export { CasesPage, type Surface } from "./cases-app";
 export * from "./data";
 export * from "./feedback";
 export * from "./forms";
 export * from "./icon";
 export * from "./layout";
 export * from "./navigation";
-export { PlacesPanel } from "./places-panel";
+export { PlacesPage, PlacesPanel } from "./places-panel";
 export { RequestAccessForm } from "./request-access";
 export { Account, SessionGate } from "./session";
 export { SetPasswordForm } from "./set-password";
 export { AppFrame, MeProvider, useMe } from "./shell/app-frame";
 export { activeId, managerNav, platformNav, teaserFor } from "./shell/nav";
-export { SurveysAdminApp, SurveysClientApp } from "./surveys-app";
+export { OverviewPage } from "./shell/overview";
+export { ModulePage } from "./shell/teaser";
+export {
+  FormsPage,
+  HelpPage,
+  HelpRequestsPage,
+  ResponsesPage,
+} from "./surveys-app";
