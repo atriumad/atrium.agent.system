@@ -78,6 +78,15 @@ export type OnboardingRequest = {
   reason: string | null;
 };
 
+export type AppNotification = {
+  id: string;
+  kind: string;
+  subject: string | null;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
 export type PlaceOption = { id: string; locationName: string; clientName: string };
 
 export type CaseSummary = {
@@ -197,6 +206,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ reason }),
     }),
+  notifications: () =>
+    call<{ notifications: AppNotification[]; unread: number }>("/api/notifications"),
+  markNotificationsRead: (which: { ids: string[] } | { all: true }) =>
+    call<unknown>("/api/notifications/read", { method: "POST", body: JSON.stringify(which) }),
   signIn: (email: string, password: string) =>
     call<unknown>("/api/auth/sign-in/email", {
       method: "POST",

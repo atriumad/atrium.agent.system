@@ -20,6 +20,7 @@ import { SideNav } from "../navigation/shell";
 import { FrameProvider } from "./frame-context";
 import { MeProvider, useMe } from "./me-context";
 import { type Access, activeId, crumbsFor, managerNav, platformNav } from "./nav";
+import { type NotificationsClient, NotificationsMenu } from "./notifications";
 
 export { MeProvider, useMe };
 
@@ -29,7 +30,7 @@ export type FrameClient = {
   onboardingRequests: () => Promise<{ status: string }[]>;
   places: () => Promise<{ status: string }[]>;
   signOut: () => Promise<unknown>;
-};
+} & NotificationsClient;
 
 const FOCUSABLE = "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
@@ -263,6 +264,11 @@ export function AppFrame({
                   <Breadcrumbs items={crumbs} {...(linkAs ? { linkAs } : {})} />
                 ) : null}
               </div>
+              <NotificationsMenu
+                surface={surface}
+                client={client}
+                {...(linkAs ? { linkAs } : {})}
+              />
             </header>
             <main
               id="main"

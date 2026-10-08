@@ -27,6 +27,7 @@ export { Account, SessionGate } from "./session";
 export { SetPasswordForm } from "./set-password";
 export { AppFrame, MeProvider, useMe } from "./shell/app-frame";
 export { activeId, crumbsFor, managerNav, platformNav, teaserFor } from "./shell/nav";
+export { NotificationsMenu, NotificationsPage } from "./shell/notifications";
 export { OverviewPage } from "./shell/overview";
 export { ModulePage } from "./shell/teaser";
 export {

@@ -49,7 +49,7 @@ export function Popover({ trigger, title, children, className, ...root }: Popove
       <BasePopover.Trigger render={trigger} />
       <BasePopover.Portal>
         <BasePopover.Positioner sideOffset={6} className="z-40">
-          <BasePopover.Popup className={cx(popupBase, "w-72 p-4", className)}>
+          <BasePopover.Popup className={cx(popupBase, className ?? "w-72 p-4")}>
             {title ? (
               <BasePopover.Title className="m-0 mb-2 text-lg leading-tight font-normal tracking-tight">
                 {title}

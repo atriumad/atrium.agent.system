@@ -23,6 +23,8 @@ const client = (over: Record<string, unknown> = {}) => ({
   onboardingRequests: async () => [] as { status: string }[],
   places: async () => [] as { status: string }[],
   signOut: mock(async () => undefined),
+  notifications: async () => ({ notifications: [], unread: 3 }),
+  markNotificationsRead: async () => undefined,
   ...over,
 });
 
@@ -244,5 +246,15 @@ describe("AppFrame", () => {
     await user.click(await screen.findByRole("button", { name: "Open menu" }));
     const dialog = screen.getByRole("dialog", { name: "Menu" });
     expect(within(dialog).getByText("Sign out")).toBeTruthy();
+  });
+
+  test("the bell sits in the top bar with the unread count", async () => {
+    setup(
+      <AppFrame surface="platform" pathname="/" client={client()}>
+        x
+      </AppFrame>,
+    );
+    const bar = await screen.findByRole("banner");
+    expect(await within(bar).findByLabelText("Notifications, 3 unread")).toBeTruthy();
   });
 });
