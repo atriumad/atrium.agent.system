@@ -9,8 +9,16 @@ import {
 } from "@atrium/reputation";
 import { Hono } from "hono";
 import type { AppDeps } from "./app";
+import { mountSurveyAdmin } from "./surveys-admin";
 
-export type SessionDeps = { auth: Auth; agencySlug: string };
+export type SessionDeps = {
+  auth: Auth;
+  agencySlug: string;
+  /** Signs QR links. */
+  surveySecret?: string | undefined;
+  /** The Hub's public origin, where survey links point. */
+  hubUrl?: string | undefined;
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUSES = ["open", "contacted", "resolved"] as const;
@@ -55,6 +63,11 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       role: scope.role,
       kind: scope.kind,
       canWorkCases: can(scope.role, "task", "work"),
+      canReadSurveys: can(scope.role, "survey", "read"),
+      canViewForms: can(scope.role, "survey", "forms"),
+      canOperateSurveys: can(scope.role, "survey", "operate"),
+      canManageSurveys: can(scope.role, "survey", "manage"),
+      canRequestSurveys: can(scope.role, "survey", "request"),
     });
   });
 
@@ -106,6 +119,11 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       }
       throw error;
     }
+  });
+
+  mountSurveyAdmin(api, deps, {
+    qrSecret: session.surveySecret,
+    hubUrl: (session.hubUrl ?? "http://localhost:3004").replace(/\/$/, ""),
   });
 
   app.route("/api", api);
