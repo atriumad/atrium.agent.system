@@ -9,7 +9,7 @@ import {
   type Tx,
   writeAudit,
 } from "@atrium/core";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { type CaseStatus, canTransition, caseDueAt, type Severity } from "../domain/recovery";
 import { escalatedSeverity, shouldOpenWithReading, storedReading } from "../domain/sentiment";
 import { recoveryCases, surveyResponses } from "../infra/schema";
@@ -79,11 +79,43 @@ export async function openCase(
     .returning({ id: recoveryCases.id });
   if (!created) {
     const [existing] = await tx
-      .select({ id: recoveryCases.id })
+      .select({
+        id: recoveryCases.id,
+        severity: recoveryCases.severity,
+        status: recoveryCases.status,
+      })
       .from(recoveryCases)
       .where(eq(recoveryCases.responseId, response.id));
     if (!existing) throw new Error("case was not created");
-    return { caseId: existing.id, created: false, alerted: 0 };
+    // A serious reading raises the case, never lowers it, and a resolved case is left alone.
+    if (
+      existing.status === "resolved" ||
+      !outranks(input.severity, existing.severity as Severity)
+    ) {
+      return { caseId: existing.id, created: false, alerted: 0 };
+    }
+    const [raised] = await tx
+      .update(recoveryCases)
+      .set({ severity: input.severity })
+      .where(
+        and(
+          eq(recoveryCases.id, existing.id),
+          eq(recoveryCases.severity, existing.severity),
+          ne(recoveryCases.status, "resolved"),
+        ),
+      )
+      .returning({ id: recoveryCases.id });
+    if (!raised) return { caseId: existing.id, created: false, alerted: 0 };
+    const alerted = await alertCase(
+      tx,
+      response,
+      existing.id,
+      input.severity,
+      "raised",
+      context,
+      deps,
+    );
+    return { caseId: existing.id, created: false, alerted };
   }
 
   await deps.publish?.(
@@ -96,12 +128,37 @@ export async function openCase(
     tx,
   );
 
+  const alerted = await alertCase(
+    tx,
+    response,
+    created.id,
+    input.severity,
+    "opened",
+    context,
+    deps,
+  );
+  return { caseId: created.id, created: true, alerted };
+}
+
+const SEVERITY_RANK: Record<Severity, number> = { low: 0, medium: 1, high: 2 };
+const outranks = (a: Severity, b: Severity) => SEVERITY_RANK[a] > SEVERITY_RANK[b];
+
+/** Tells the client's owners and the assigned team about a case, and says how many were reached. */
+async function alertCase(
+  tx: Tx,
+  response: typeof surveyResponses.$inferSelect,
+  caseId: string,
+  severity: Severity,
+  why: "opened" | "raised",
+  context: { adminBaseUrl?: string },
+  deps: ReputationDeps,
+): Promise<number> {
   const location = (await listLocations(tx, response.clientId)).find(
     (l) => l.id === response.locationId,
   );
   const where = location?.name ?? "a location";
   const link = context.adminBaseUrl
-    ? `${context.adminBaseUrl.replace(/\/$/, "")}/admin/cases/${created.id}`
+    ? `${context.adminBaseUrl.replace(/\/$/, "")}/admin/cases/${caseId}`
     : null;
   let alerted = 0;
   for (const recipient of await alertRecipients(tx, response.clientId)) {
@@ -111,10 +168,15 @@ export async function openCase(
         clientId: response.clientId,
         userId: recipient.userId,
         kind: "reputation.case_alert",
-        subject: `A guest needs a reply at ${where} (${input.severity})`,
+        subject:
+          why === "raised"
+            ? `A case at ${where} was raised to ${severity}`
+            : `A guest needs a reply at ${where} (${severity})`,
         body: [
-          `A survey at ${where} opened a private case.`,
-          `Rating: ${response.rating} of 5. Severity: ${input.severity}.`,
+          why === "raised"
+            ? `The words of a survey at ${where} made its case more serious.`
+            : `A survey at ${where} opened a private case.`,
+          `Rating: ${response.rating} of 5. Severity: ${severity}.`,
           `First response is due within 24 hours.`,
           link ? `Open it: ${link}` : "",
         ]
@@ -125,7 +187,7 @@ export async function openCase(
     );
     if (result.sent) alerted++;
   }
-  return { caseId: created.id, created: true, alerted };
+  return alerted;
 }
 
 export function listCases(tx: Tx, clientId: string, status?: CaseStatus) {

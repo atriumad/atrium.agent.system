@@ -621,6 +621,74 @@ describe("recovery", () => {
     expect(eventsOf("recovery.case.opened").length).toBe(before + 1);
   });
 
+  test("a more serious reading raises an existing case and tells the people again; never lowers", async () => {
+    const responseId = await respond("raise1", { rating: 2, comment: "Long wait" });
+    const opened = await inA((tx) =>
+      openCase(
+        tx,
+        { responseId, severity: "medium", reason: "rating 2" },
+        {},
+        { ...deps, publish },
+      ),
+    );
+    const before = eventsOf("recovery.case.opened").length;
+    const sevOf = async () =>
+      (
+        (await admin.unsafe("select severity from reputation.recovery_cases where id = $1", [
+          opened.caseId,
+        ])) as { severity: string }[]
+      )[0]?.severity;
+
+    const same = await inA((tx) =>
+      openCase(tx, { responseId, severity: "medium", reason: "same" }, {}, { ...deps, publish }),
+    );
+    expect(same).toEqual({ caseId: opened.caseId, created: false, alerted: 0 });
+    const lower = await inA((tx) =>
+      openCase(tx, { responseId, severity: "low", reason: "lower" }, {}, { ...deps, publish }),
+    );
+    expect(lower.alerted).toBe(0);
+    expect(await sevOf()).toBe("medium");
+
+    const raised = await inA((tx) =>
+      openCase(tx, { responseId, severity: "high", reason: "poison" }, {}, { ...deps, publish }),
+    );
+    expect(raised.caseId).toBe(opened.caseId);
+    expect(raised.created).toBe(false);
+    expect(raised.alerted).toBeGreaterThan(0);
+    expect(await sevOf()).toBe("high");
+    expect(eventsOf("recovery.case.opened").length).toBe(before);
+    const subjects = (await admin.unsafe(
+      "select subject from core.notifications where kind = 'reputation.case_alert' and subject like '%raised to high%'",
+    )) as { subject: string }[];
+    expect(subjects.length).toBeGreaterThan(0);
+
+    const lowerAgain = await inA((tx) =>
+      openCase(tx, { responseId, severity: "medium", reason: "lower" }, {}, deps),
+    );
+    expect(lowerAgain.alerted).toBe(0);
+    expect(await sevOf()).toBe("high");
+  });
+
+  test("a resolved case is not raised", async () => {
+    const responseId = await respond("raise2", { rating: 2, comment: "Long wait" });
+    const opened = await inA((tx) =>
+      openCase(tx, { responseId, severity: "medium", reason: "rating 2" }, {}, deps),
+    );
+    await admin.unsafe(
+      "update reputation.recovery_cases set status = 'resolved', resolved_at = now() where id = $1",
+      [opened.caseId],
+    );
+    const result = await inA((tx) =>
+      openCase(tx, { responseId, severity: "high", reason: "late" }, {}, deps),
+    );
+    expect(result).toEqual({ caseId: opened.caseId, created: false, alerted: 0 });
+    const [c] = (await admin.unsafe(
+      "select severity from reputation.recovery_cases where id = $1",
+      [opened.caseId],
+    )) as { severity: string }[];
+    expect(c?.severity).toBe("medium");
+  });
+
   test("the team works a case from open to resolved; the owner and staff cannot", async () => {
     const responseId = await respond("case2", { rating: 1 });
     const { caseId } = await inA((tx) =>

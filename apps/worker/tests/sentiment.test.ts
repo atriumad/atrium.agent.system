@@ -189,6 +189,15 @@ describe("Sentiment and Recovery together", () => {
     expect(await labels(result.responseId)).toMatchObject({ concern: "high", safety: true });
   }, 60000);
 
+  test("a two-star answer whose words say poison ends with one high case", async () => {
+    const result = await respond({ rating: 2, comment: "Creo que fue poison, que feo." });
+    await waitFor(async () => (await labels(result.responseId))?.read_at !== null);
+    await waitFor(async () => (await casesFor(result.responseId)).length > 0);
+    await settle();
+    expect(await casesFor(result.responseId)).toEqual([{ severity: "high", status: "open" }]);
+    expect(await labels(result.responseId)).toMatchObject({ concern: "high", safety: true });
+  }, 60000);
+
   test("a low concern labels a happy answer and opens nothing", async () => {
     const result = await respond({ rating: 5, comment: "Un poco slow pero todo bien." });
     await waitFor(async () => (await labels(result.responseId))?.read_at !== null);
