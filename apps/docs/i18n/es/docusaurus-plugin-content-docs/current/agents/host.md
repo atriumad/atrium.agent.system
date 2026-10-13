@@ -42,4 +42,6 @@ description: "Reputation · Engine 03. Cuida la puerta: que quien compara nos el
 
 La única herramienta de Sentiment escribe etiquetas internas, por eso el motor de políticas la ejecuta en nivel 4; no puede abrir un caso, avisar a nadie ni tocar el link de reseña. Recovery decide.
 
+El tope diario de `open_case` de Recovery (200) lo comparten sus dos disparadores, así que una respuesta con comentario y calificación baja puede usar dos llamadas. Cuando se alcanza el tope, la llamada se rechaza como decisión y no se reintenta.
+
 Los niveles de autonomía se explican en [Autonomía](./autonomy). Cada subagente se define en un manifiesto versionado: ver [Cómo crear un subagente](../guides/create-a-subagent).

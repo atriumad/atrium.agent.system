@@ -68,6 +68,8 @@ Recovery listens to both events. It decides alone: a reading opens a case when c
 
 None of this changes who is asked for a review. The Google button never depends on the rating or on the reading ([0018](../adr/0018-no-review-gating)). If the model fails or is unavailable, the response stays unread and Recovery keeps working from the rating. Grouping themes across responses daily is later work, with the dashboard.
 
+Sentiment's daily cap (500 readings) also counts responses with no comment. A response refused at the cap stays unread; re-reading old responses is out of scope.
+
 ## MCP tools
 
 | Tool | Writes | Initial level |

@@ -42,4 +42,6 @@ description: "Reputation · Engine 03. Guards the door: whoever compares chooses
 
 Sentiment's only tool writes internal labels, so the policy engine runs it at level 4; it cannot open a case, notify anyone or touch the review link. Recovery decides.
 
+Recovery's `open_case` daily cap (200) is shared by both of its triggers, so a commented low-rated response can use two calls. When the cap is hit the call is refused as a decision and is not retried.
+
 Autonomy levels are explained in [Autonomy](./autonomy). Each subagent is defined in a versioned manifest: see [How to create a subagent](../guides/create-a-subagent).

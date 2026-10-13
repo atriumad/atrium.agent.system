@@ -90,8 +90,11 @@ not an architecture choice.
   counts as production.
 - **Degradation.** A free model that rate-limits, times out or returns invalid output leaves the
   response unread. This is the designed failure path, not an incident.
-- **Timeout and retries.** 15 s per call, up to 3 retries through the queue with exponential
-  backoff. A `429` is retried, not logged as an error.
+- **Timeout and retries.** 15 s per call. Retries are the event bus's default (`DEFAULT_RETRY`
+  in `modules/core/infra/event-bus.ts`): 5 retries, exponential backoff starting at 30 s and
+  capped at one hour. After the last attempt the job goes to the dead-letter queue and is logged
+  at error level (type, version, id and client, never the payload), so a rate-limited free model
+  is noisy by design. A `429` is retried like any other failure.
 
 ## Runtime and hosting
 

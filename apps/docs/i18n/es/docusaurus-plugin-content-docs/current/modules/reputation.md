@@ -68,6 +68,8 @@ Recovery escucha ambos eventos y decide por su cuenta: una lectura abre un caso 
 
 Nada de esto cambia a quién se le pide reseña. El botón de Google nunca depende de la calificación ni de la lectura ([0018](../adr/0018-no-review-gating)). Si el modelo falla o no está disponible, la respuesta queda sin leer y Recovery sigue funcionando con la calificación. Agrupar temas entre respuestas a diario es trabajo posterior, junto con el dashboard.
 
+El tope diario de Sentiment (500 lecturas) también cuenta las respuestas sin comentario. Una respuesta rechazada por el tope queda sin leer; volver a leer respuestas antiguas queda fuera del alcance.
+
 ## Herramientas MCP
 
 | Herramienta | Escribe | Nivel inicial |
