@@ -10,14 +10,8 @@ import {
   writeAudit,
 } from "@atrium/core";
 import { and, desc, eq } from "drizzle-orm";
-import {
-  type CaseStatus,
-  canTransition,
-  caseDueAt,
-  type Severity,
-  severityFor,
-  shouldOpenCase,
-} from "../domain/recovery";
+import { type CaseStatus, canTransition, caseDueAt, type Severity } from "../domain/recovery";
+import { escalatedSeverity, shouldOpenWithReading, storedReading } from "../domain/sentiment";
 import { recoveryCases, surveyResponses } from "../infra/schema";
 import { clock, envelope, type ReputationDeps } from "./shared";
 
@@ -28,8 +22,9 @@ export class CaseForbiddenError extends Error {}
 export type Classification = { severity: Severity | null; shouldOpen: boolean };
 
 /**
- * Recovery's reading of a response: how serious it is and whether it needs a case. It labels the
- * response with the severity and changes nothing else, so running it twice is harmless.
+ * Recovery's reading of a response: how serious it is, from the rating and, when the agent has read
+ * the words, from them too (the higher wins), and whether it needs a case. It labels the response
+ * with the severity and changes nothing else, so running it twice is harmless.
  */
 export async function classifyResponse(tx: Tx, responseId: string): Promise<Classification> {
   const [response] = await tx
@@ -38,11 +33,13 @@ export async function classifyResponse(tx: Tx, responseId: string): Promise<Clas
     .where(eq(surveyResponses.id, responseId));
   if (!response) throw new CaseNotFoundError("response not found");
 
-  const severity = severityFor(response.rating, response.wantsContact);
-  const shouldOpen = shouldOpenCase({
+  const reading = response.readAt ? storedReading(response) : null;
+  const severity = escalatedSeverity(response.rating, response.wantsContact, reading);
+  const shouldOpen = shouldOpenWithReading({
     rating: response.rating,
     wantsContact: response.wantsContact,
     hasContact: response.guestId !== null,
+    reading,
   });
   await tx.update(surveyResponses).set({ severity }).where(eq(surveyResponses.id, responseId));
   return { severity, shouldOpen };
