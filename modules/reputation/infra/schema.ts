@@ -48,6 +48,12 @@ export const surveyResponses = reputation.table("survey_responses", {
   wantsContact: boolean("wants_contact").notNull().default(false),
   severity: text("severity"),
   reviewClickedAt: at("review_clicked_at"),
+  sentiment: text("sentiment"),
+  topics: text("topics").array(),
+  concern: text("concern"),
+  safety: boolean("safety"),
+  readAt: at("read_at"),
+  readModel: text("read_model"),
   createdAt: at("created_at").notNull().defaultNow(),
 });
 
