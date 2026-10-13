@@ -10,9 +10,11 @@ import {
 import {
   askAgent,
   loadHostManifests,
+  type ResponseReader,
   recoveryAgent,
   erasureConsumer as reputationErasure,
   reputationTools,
+  sentimentAgent,
 } from "@atrium/reputation";
 import { ensureFuturePartitions, signalsConsumers, signalsJobs } from "@atrium/signals";
 
@@ -25,6 +27,8 @@ export type WorkerConfig = {
   transport?: NotificationTransport;
   /** Injectable clock for the agents, for tests. */
   now?: () => Date;
+  /** The model that reads guests' words. Without it, Sentiment does not run. */
+  reader?: ResponseReader;
 };
 
 /**
@@ -45,14 +49,22 @@ export function registry(
       ...(config.adminBaseUrl ? { adminBaseUrl: config.adminBaseUrl } : {}),
       publish: (event, tx) => bus.publish(event, tx),
       ...(config.transport ? { transport: config.transport } : {}),
+      ...(config.reader ? { reader: config.reader } : {}),
     }),
     ...(config.now ? { now: config.now } : {}),
   });
   const ask = askAgent(gateway, db, config.now);
   const recovery = recoveryAgent(gateway);
+  const sentiment = sentimentAgent(gateway);
 
   return {
-    consumers: [...signalsConsumers, reputationErasure, ...ask.consumers, ...recovery.consumers],
+    consumers: [
+      ...signalsConsumers,
+      reputationErasure,
+      ...ask.consumers,
+      ...recovery.consumers,
+      ...(config.reader ? sentiment.consumers : []),
+    ],
     jobs: [...coreJobs(db), ...signalsJobs(db), ...ask.jobs],
   };
 }
