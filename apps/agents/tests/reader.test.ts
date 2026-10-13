@@ -4,6 +4,7 @@ import {
   assertModelAllowed,
   buildUserPrompt,
   openRouterReader,
+  ReaderUnavailableError,
   readerFromEnv,
   SYSTEM_PROMPT,
 } from "../src/reader";
@@ -93,20 +94,68 @@ describe("the adapter", () => {
       timeoutMs: 50,
       generate: (args) =>
         new Promise((_, reject) => {
-          args.abortSignal.addEventListener("abort", () => reject(new Error("aborted")));
+          args.abortSignal.addEventListener("abort", () =>
+            reject(Object.assign(new Error("aborted SECRET COMMENT"), { name: "TimeoutError" })),
+          );
         }),
     });
-    await expect(reader.read(input)).rejects.toThrow("aborted");
+    const err = (await reader.read(input).catch((e) => e)) as ReaderUnavailableError;
+    expect(err).toBeInstanceOf(ReaderUnavailableError);
+    expect(err.kind).toBe("timeout");
+    expect(err.message).not.toContain("SECRET COMMENT");
   });
 
-  test("a provider error is passed up so the queue retries", async () => {
+  test("a provider error is passed up as a plain error that carries no guest text", async () => {
+    const apiError = Object.assign(new Error("Too Many Requests SECRET COMMENT"), {
+      name: "AI_APICallError",
+      statusCode: 429,
+      requestBodyValues: { prompt: "SECRET COMMENT" },
+      responseBody: '{"echo":"SECRET COMMENT"}',
+      cause: new Error("SECRET COMMENT"),
+    });
     const reader = openRouterReader({
       apiKey: "k",
       model: "vendor/paid-model",
       generate: async () => {
-        throw new Error("429 rate limited");
+        throw apiError;
       },
     });
-    await expect(reader.read(input)).rejects.toThrow("429");
+    const err = (await reader.read(input).catch((e) => e)) as ReaderUnavailableError;
+    expect(err).toBeInstanceOf(ReaderUnavailableError);
+    expect(err.kind).toBe("rate_limited");
+    expect(err.status).toBe(429);
+    expect(err.message).toBe("reader unavailable: rate_limited (429)");
+    expect(err.cause).toBeUndefined();
+    const dump = JSON.stringify(
+      Object.fromEntries(Object.getOwnPropertyNames(err).map((k) => [k, (err as never)[k]])),
+    );
+    expect(dump).not.toContain("SECRET COMMENT");
+    expect(err.message).not.toContain("SECRET COMMENT");
+  });
+
+  test("errors are classified: provider errors, schema failures, anything else", async () => {
+    const kindOf = async (thrown: unknown) => {
+      const reader = openRouterReader({
+        apiKey: "k",
+        model: "vendor/paid-model",
+        generate: async () => {
+          throw thrown;
+        },
+      });
+      return (await reader.read(input).catch((e) => e)) as ReaderUnavailableError;
+    };
+    expect((await kindOf(Object.assign(new Error("x"), { statusCode: 503 }))).kind).toBe(
+      "provider_error",
+    );
+    expect((await kindOf(Object.assign(new Error("x"), { status: 500 }))).status).toBe(500);
+    expect(
+      (await kindOf(Object.assign(new Error("x"), { name: "AI_NoObjectGeneratedError" }))).kind,
+    ).toBe("invalid_output");
+    expect(
+      (await kindOf(Object.assign(new Error("x"), { name: "AI_TypeValidationError" }))).kind,
+    ).toBe("invalid_output");
+    expect((await kindOf(new DOMException("x", "AbortError"))).kind).toBe("timeout");
+    expect((await kindOf("a string")).kind).toBe("provider_error");
+    expect((await kindOf(new Error("boom"))).message).toBe("reader unavailable: provider_error");
   });
 });

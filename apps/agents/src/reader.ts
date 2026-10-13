@@ -64,22 +64,62 @@ const generateWithSdk: Generate = async (args) => {
   return { object: result.output };
 };
 
+export type ReaderFailureKind = "rate_limited" | "timeout" | "provider_error" | "invalid_output";
+
+/**
+ * The only error the reader lets out. The SDK's own errors carry the guest's comment (request body,
+ * response body, the text that failed validation), and the queue stores a failed job's error where
+ * erasure cannot reach it. So this one holds a kind and a status, and nothing else.
+ */
+export class ReaderUnavailableError extends Error {
+  readonly kind: ReaderFailureKind;
+  readonly status?: number;
+  constructor(kind: ReaderFailureKind, status?: number) {
+    super(`reader unavailable: ${kind}${status === undefined ? "" : ` (${status})`}`);
+    this.name = "ReaderUnavailableError";
+    this.kind = kind;
+    if (status !== undefined) this.status = status;
+  }
+}
+
+function classify(error: unknown): ReaderUnavailableError {
+  const e = (typeof error === "object" && error !== null ? error : {}) as Record<string, unknown>;
+  const name = typeof e.name === "string" ? e.name : "";
+  const code = [e.statusCode, e.status].find((v) => typeof v === "number") as number | undefined;
+  if (name === "TimeoutError" || name === "AbortError")
+    return new ReaderUnavailableError("timeout");
+  if (code === 429) return new ReaderUnavailableError("rate_limited", 429);
+  if (code !== undefined) return new ReaderUnavailableError("provider_error", code);
+  if (
+    name === "AI_NoObjectGeneratedError" ||
+    name === "NoObjectGeneratedError" ||
+    name === "AI_TypeValidationError"
+  ) {
+    return new ReaderUnavailableError("invalid_output");
+  }
+  return new ReaderUnavailableError("provider_error");
+}
+
 export function openRouterReader(config: OpenRouterReaderConfig): ResponseReader {
   const provider = createOpenRouter({ apiKey: config.apiKey });
   const generate = config.generate ?? generateWithSdk;
   return {
     model: config.model,
     async read(input) {
-      const { object } = await generate({
-        model: provider(config.model),
-        schema: Reading,
-        system: SYSTEM_PROMPT,
-        prompt: buildUserPrompt(input),
-        // The queue retries; the SDK must not hold the transaction open on its own retries.
-        abortSignal: AbortSignal.timeout(config.timeoutMs ?? 15_000),
-        maxRetries: 0,
-      });
-      return object;
+      try {
+        const { object } = await generate({
+          model: provider(config.model),
+          schema: Reading,
+          system: SYSTEM_PROMPT,
+          prompt: buildUserPrompt(input),
+          // The queue retries; the SDK must not hold the transaction open on its own retries.
+          abortSignal: AbortSignal.timeout(config.timeoutMs ?? 15_000),
+          maxRetries: 0,
+        });
+        return object;
+      } catch (error) {
+        throw classify(error);
+      }
     },
   };
 }
