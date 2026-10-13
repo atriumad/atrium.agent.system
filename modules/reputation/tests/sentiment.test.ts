@@ -161,6 +161,44 @@ describe("readResponse", () => {
     expect(events.filter((e) => e.type === "survey.response.read").length).toBe(before + 1);
   });
 
+  test("two readers racing on one response: one publishes, both get labels, no row lock is held across the model", async () => {
+    const id = await respond({ rating: 5, comment: "Carrera de lecturas." });
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let started = 0;
+    const reader: ResponseReader = {
+      model: "test/race",
+      async read() {
+        started++;
+        await gate;
+        return { sentiment: "mixed", topics: ["wait"], concern: "low", safety: false };
+      },
+    };
+    const before = events.filter((e) => e.type === "survey.response.read").length;
+    const both = Promise.all([
+      inA((tx) => readResponse(tx, reader, id, deps)),
+      inA((tx) => readResponse(tx, reader, id, deps)),
+    ]);
+    const deadline = Date.now() + 3000;
+    while (started < 2 && Date.now() < deadline) await Bun.sleep(25);
+    release();
+    const outcomes = await both;
+
+    expect(started).toBe(2);
+    expect(outcomes.map((o) => o.status).sort()).toEqual(["already_read", "read"]);
+    for (const o of outcomes) {
+      expect(o).toMatchObject({ sentiment: "mixed", concern: "low", safety: false });
+    }
+    expect(events.filter((e) => e.type === "survey.response.read").length).toBe(before + 1);
+    expect(await row(id)).toMatchObject({
+      sentiment: "mixed",
+      topics: ["wait"],
+      read_model: "test/race",
+    });
+  });
+
   test("a response with no comment is not sent to the model and stays unread", async () => {
     const id = await respond({ rating: 4 });
     const { reader, calls } = fakeReader(SERIOUS);

@@ -1,6 +1,6 @@
 // modules/reputation/application/sentiment.ts
 import type { Tx } from "@atrium/core";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Reading, storedReading } from "../domain/sentiment";
 import { surveyResponses } from "../infra/schema";
 import { CaseNotFoundError } from "./recovery";
@@ -30,6 +30,13 @@ export type ReadOutcome = {
   safety: boolean | null;
 };
 
+const alreadyRead = (r: Reading): ReadOutcome => ({
+  status: "already_read",
+  sentiment: r.sentiment,
+  concern: r.concern,
+  safety: r.safety,
+});
+
 const none = (status: ReadOutcome["status"]): ReadOutcome => ({
   status,
   sentiment: null,
@@ -40,7 +47,8 @@ const none = (status: ReadOutcome["status"]): ReadOutcome => ({
 /**
  * Sentiment's reading of a response: asks the model what the guest's words say, keeps only the
  * labels and announces it. Changes nothing but those labels, so running it twice is harmless:
- * the row is locked, and a response that was already read answers from what is stored.
+ * a response that was already read answers from what is stored, and the write only lands on a row
+ * that is still unread. Under a race the model may be called twice; only one reading is kept.
  * A response with no comment has nothing to read and never reaches the model.
  */
 export async function readResponse(
@@ -53,19 +61,11 @@ export async function readResponse(
   const [response] = await tx
     .select()
     .from(surveyResponses)
-    .where(eq(surveyResponses.id, responseId))
-    .for("update");
+    .where(eq(surveyResponses.id, responseId));
   if (!response) throw new CaseNotFoundError("response not found");
 
   const existing = response.readAt ? storedReading(response) : null;
-  if (existing) {
-    return {
-      status: "already_read",
-      sentiment: existing.sentiment,
-      concern: existing.concern,
-      safety: existing.safety,
-    };
-  }
+  if (existing) return alreadyRead(existing);
   if (!response.comment?.trim()) return none("no_text");
 
   const raw = await reader.read({
@@ -80,7 +80,9 @@ export async function readResponse(
   }
   const reading = { ...parsed.data, topics: [...new Set(parsed.data.topics)] };
 
-  await tx
+  // No row lock is held across the model call: it would block Recovery's update of the same row for
+  // as long as the model takes. Whoever writes first wins; a concurrent reader answers from that.
+  const written = await tx
     .update(surveyResponses)
     .set({
       sentiment: reading.sentiment,
@@ -90,7 +92,17 @@ export async function readResponse(
       readAt: now,
       readModel: reader.model,
     })
-    .where(eq(surveyResponses.id, responseId));
+    .where(and(eq(surveyResponses.id, responseId), isNull(surveyResponses.readAt)))
+    .returning({ id: surveyResponses.id });
+  if (written.length === 0) {
+    const [current] = await tx
+      .select()
+      .from(surveyResponses)
+      .where(eq(surveyResponses.id, responseId));
+    const stored = current?.readAt ? storedReading(current) : null;
+    if (!stored) throw new ReadingInvalidError("the response changed while it was being read");
+    return alreadyRead(stored);
+  }
 
   await deps.publish?.(
     {
