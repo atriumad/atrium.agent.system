@@ -126,17 +126,17 @@ export function openRouterReader(config: OpenRouterReaderConfig): ResponseReader
 
 type Env = Record<string, string | undefined>;
 
-/** Real clients' guests never go to a free model by accident. */
+/**
+ * Real clients' guests never go to a free model by accident. Fails closed: nothing in the repo sets
+ * NODE_ENV, so an unset one counts as production.
+ */
 export function assertModelAllowed(model: string, env: Env): void {
-  if (
-    env.NODE_ENV === "production" &&
-    model.endsWith(":free") &&
-    env.SENTIMENT_ALLOW_FREE !== "true"
-  ) {
-    throw new Error(
-      `SENTIMENT_MODEL ${model} is a free model. Set SENTIMENT_ALLOW_FREE=true to run it in production on purpose.`,
-    );
-  }
+  if (!model.endsWith(":free")) return;
+  if (env.SENTIMENT_ALLOW_FREE === "true") return;
+  if (env.NODE_ENV === "development" || env.NODE_ENV === "test") return;
+  throw new Error(
+    `SENTIMENT_MODEL ${model} is a free model. It is refused unless NODE_ENV is development or test, or SENTIMENT_ALLOW_FREE=true is set on purpose.`,
+  );
 }
 
 /** The reader the worker uses, or none: without a key and a model Sentiment does not run. */

@@ -20,7 +20,7 @@ Sentiment reads what guests write in a survey. That needs a language model, and 
 
 The use case depends on a `ResponseReader` port. The adapter lives in `apps/agents` and calls OpenRouter through the Vercel AI SDK, with the reading schema as a Zod schema. The provider is a model id in `SENTIMENT_MODEL`. The model used is stored with every reading (`read_model`). Only the rating, the two chosen options and the comment reach the model: never a guest id, name or contact. The model can only raise a severity, never lower one or close a case.
 
-Real clients' responses go only to a paid model, or to a model whose data policy has been checked and recorded here. The worker refuses a `:free` model in production unless `SENTIMENT_ALLOW_FREE=true`.
+Real clients' responses go only to a paid model, or to a model whose data policy has been checked and recorded here. The worker refuses a `:free` model unless `NODE_ENV` is `development` or `test`, or `SENTIMENT_ALLOW_FREE=true`; an unset `NODE_ENV` counts as production.
 
 ## Consequences
 

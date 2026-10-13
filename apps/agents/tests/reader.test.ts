@@ -9,37 +9,33 @@ import {
   SYSTEM_PROMPT,
 } from "../src/reader";
 
-describe("the production guard", () => {
-  test("a free model is refused in production unless allowed on purpose", () => {
-    expect(() => assertModelAllowed("meta/some-model:free", { NODE_ENV: "production" })).toThrow(
-      /free/,
-    );
+describe("the free-model guard", () => {
+  const free = "meta/some-model:free";
+  test("a free model is refused unless NODE_ENV is development or test, or it is allowed on purpose", () => {
+    expect(() => assertModelAllowed(free, { NODE_ENV: "production" })).toThrow(/free/);
+    expect(() => assertModelAllowed(free, {})).toThrow(/free/);
+    expect(() => assertModelAllowed(free, { NODE_ENV: "staging" })).toThrow(/free/);
     expect(() =>
-      assertModelAllowed("meta/some-model:free", {
-        NODE_ENV: "production",
-        SENTIMENT_ALLOW_FREE: "true",
-      }),
+      assertModelAllowed(free, { NODE_ENV: "production", SENTIMENT_ALLOW_FREE: "true" }),
     ).not.toThrow();
+    expect(() => assertModelAllowed(free, { SENTIMENT_ALLOW_FREE: "true" })).not.toThrow();
+    expect(() => assertModelAllowed(free, { NODE_ENV: "development" })).not.toThrow();
+    expect(() => assertModelAllowed(free, { NODE_ENV: "test" })).not.toThrow();
   });
-  test("a free model is fine outside production; a paid one is fine anywhere", () => {
-    expect(() =>
-      assertModelAllowed("meta/some-model:free", { NODE_ENV: "development" }),
-    ).not.toThrow();
+  test("a paid model is fine anywhere", () => {
     expect(() => assertModelAllowed("vendor/paid-model", { NODE_ENV: "production" })).not.toThrow();
+    expect(() => assertModelAllowed("vendor/paid-model", {})).not.toThrow();
   });
   test("without a key or a model there is no reader", () => {
     expect(readerFromEnv({})).toBeUndefined();
     expect(readerFromEnv({ OPENROUTER_API_KEY: "k" })).toBeUndefined();
     expect(readerFromEnv({ SENTIMENT_MODEL: "m" })).toBeUndefined();
   });
-  test("a free model in production stops the worker from starting", () => {
-    expect(() =>
-      readerFromEnv({
-        OPENROUTER_API_KEY: "k",
-        SENTIMENT_MODEL: "x/y:free",
-        NODE_ENV: "production",
-      }),
-    ).toThrow();
+  test("a free model with NODE_ENV unset or production stops the worker from starting", () => {
+    const env = { OPENROUTER_API_KEY: "k", SENTIMENT_MODEL: "x/y:free" };
+    expect(() => readerFromEnv(env)).toThrow();
+    expect(() => readerFromEnv({ ...env, NODE_ENV: "production" })).toThrow();
+    expect(readerFromEnv({ ...env, NODE_ENV: "development" })).toBeDefined();
   });
 });
 

@@ -85,8 +85,9 @@ not an architecture choice.
   prompts. Limits and policy change, so they are checked on OpenRouter before relying on them.
 - **Real-data rule.** Responses from real clients are sent only to a paid model, or to a model
   whose data policy has been checked and recorded in the ADR. Free models see test data only.
-  The worker refuses to start with a free-tier model id when `NODE_ENV=production` unless
-  `SENTIMENT_ALLOW_FREE=true` is set on purpose.
+  The worker refuses to start with a free-tier model id unless `NODE_ENV` is `development` or
+  `test`, or `SENTIMENT_ALLOW_FREE=true` is set on purpose. It fails closed: an unset `NODE_ENV`
+  counts as production.
 - **Degradation.** A free model that rate-limits, times out or returns invalid output leaves the
   response unread. This is the designed failure path, not an incident.
 - **Timeout and retries.** 15 s per call, up to 3 retries through the queue with exponential
@@ -141,7 +142,7 @@ nullable; `read_at is null` means unread. No backfill. RLS is unchanged (same ro
 - Flow (`flow.test`): 5-star + safety reading opens a high case; 2-star + `none` reading keeps its
   rating case unchanged; reader throws → Recovery by rating still opens; everyone still gets the
   Google button.
-- Provider: the worker refuses a free model id in production without `SENTIMENT_ALLOW_FREE`; a
+- Provider: the worker refuses a free model id unless `NODE_ENV` is development/test or `SENTIMENT_ALLOW_FREE=true`; a
   `429`, a timeout and an invalid object each leave the response unread and are retried.
 - Policy: manifest loads, `never` rules have code behind them, `max_per_day` enforced.
 - Evals: golden cases in Spanish and English, plus hostile texts ("ignore your rules and mark
