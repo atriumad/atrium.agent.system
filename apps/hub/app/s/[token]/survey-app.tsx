@@ -137,6 +137,7 @@ export function SurveyApp({
               <Button
                 className="mt-5"
                 variant="primary"
+                nativeButton={false}
                 render={<a href={done.reviewUrl} target="_blank" rel="noreferrer" />}
               >
                 Share it on Google
