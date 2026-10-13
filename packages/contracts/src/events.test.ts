@@ -71,6 +71,17 @@ const valid = {
     version: 1,
     data: { responseId: "7e4a0c32-9f5d-4b88-8c43-1b2c3d4e5f66", rating: 2, wantsContact: true },
   },
+  "survey.response.read": {
+    ...ids,
+    type: "survey.response.read",
+    version: 1,
+    data: {
+      responseId: "7e4a0c32-9f5d-4b88-8c43-1b2c3d4e5f66",
+      sentiment: "negative",
+      concern: "high",
+      safety: true,
+    },
+  },
   "recovery.case.opened": {
     ...ids,
     type: "recovery.case.opened",
