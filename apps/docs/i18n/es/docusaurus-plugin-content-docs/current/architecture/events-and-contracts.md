@@ -58,7 +58,8 @@ export type ReviewReceivedV1 = z.infer<typeof ReviewReceivedV1>;
 | `review.received` | reputation | Echo, Sentiment, Scorekeeper |
 | `review.replied` | reputation | Scorekeeper |
 | `survey.sent` | reputation | Scorekeeper |
-| `survey.response.submitted` | reputation | Recovery, Memory, Ask |
+| `survey.response.submitted` | reputation | Recovery, Sentiment, Memory, Ask |
+| `survey.response.read` | reputation | Recovery |
 | `recovery.case.opened` | reputation | Notificaciones (alerta al dueño y al AM) |
 | `recovery.case.resolved` | reputation | Scorekeeper |
 | `review.link.clicked` | reputation | Scorekeeper |

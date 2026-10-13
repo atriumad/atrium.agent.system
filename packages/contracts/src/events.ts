@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PACKAGES } from "./packages";
+import { CONCERNS, SENTIMENTS } from "./sentiment";
 import { SignalSource } from "./signals";
 
 /**
@@ -87,6 +88,14 @@ export const SurveyResponseSubmittedV1 = defineEvent("survey.response.submitted"
   wantsContact: z.boolean(),
 });
 
+/** The agent read the words of a response. Labels only: never the text. */
+export const SurveyResponseReadV1 = defineEvent("survey.response.read", 1, {
+  responseId: z.string().uuid(),
+  sentiment: z.enum(SENTIMENTS),
+  concern: z.enum(CONCERNS),
+  safety: z.boolean(),
+});
+
 export const RecoveryCaseOpenedV1 = defineEvent("recovery.case.opened", 1, {
   caseId: z.string().uuid(),
   severity: z.enum(["low", "medium", "high"]),
@@ -113,6 +122,7 @@ export const EVENT_SCHEMAS = [
   VisitIdentifiedV1,
   SurveySentV1,
   SurveyResponseSubmittedV1,
+  SurveyResponseReadV1,
   RecoveryCaseOpenedV1,
   RecoveryCaseResolvedV1,
   ReviewLinkClickedV1,

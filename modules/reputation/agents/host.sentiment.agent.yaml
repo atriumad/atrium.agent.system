@@ -1,0 +1,14 @@
+id: host.sentiment
+version: 1
+engine: reputation
+goal: "Read what guests wrote in a survey and label it, so a person sees what matters"
+tools:
+  reputation.read_response: { level: 4, max_per_day: 500 }
+scopes: [reputation:read, reputation:write]
+never:
+  - make the review link depend on the rating or the reading
+  - lower a severity or close a case
+untrusted_input: [response.comment, response.best_part, response.improve]
+escalate_to: account_manager
+kill_switch: per_client
+evals: evals/sentiment/*.yaml

@@ -3,7 +3,9 @@ import { defineTool, reasonField, type Tool } from "@atrium/policy";
 import { z } from "zod";
 import { classifyResponse, openCase } from "../application/recovery";
 import { sendReviewRequest } from "../application/requests";
+import { type ResponseReader, readResponse } from "../application/sentiment";
 import type { ReputationDeps } from "../application/shared";
+import { CONCERNS, SENTIMENTS } from "../domain/sentiment";
 
 /**
  * The tools Host's subagents act through. Each calls a use case in `application/`, takes ids and
@@ -15,6 +17,8 @@ export type ReputationToolConfig = {
   publicBaseUrl: string;
   /** Where alerts point the team: the admin address. Optional. */
   adminBaseUrl?: string;
+  /** The model that reads guests' words. Without it, `read_response` refuses to run. */
+  reader?: ResponseReader;
 } & Pick<ReputationDeps, "publish" | "transport">;
 
 const uuid = z.string().uuid();
@@ -117,5 +121,46 @@ export function reputationTools(config: ReputationToolConfig): Tool<never, unkno
     },
   });
 
-  return [classify, open, send] as unknown as Tool<never, unknown, Tx>[];
+  const read = defineTool<
+    { responseId: string; reason: string },
+    {
+      status: "read" | "already_read" | "no_text";
+      sentiment: (typeof SENTIMENTS)[number] | null;
+      concern: (typeof CONCERNS)[number] | null;
+      safety: boolean | null;
+    },
+    Tx
+  >({
+    name: "reputation.read_response",
+    description:
+      "Reads the words a guest left in a survey response and labels sentiment, topics and concern. Changes only those labels.",
+    input: z.object({ responseId: uuid, reason: reasonField }),
+    output: z.object({
+      status: z.enum(["read", "already_read", "no_text"]),
+      sentiment: z.enum(SENTIMENTS).nullable(),
+      concern: z.enum(CONCERNS).nullable(),
+      safety: z.boolean().nullable(),
+    }),
+    writes: true,
+    feature: "reputation",
+    scopes: ["reputation:read", "reputation:write"],
+    never: [
+      {
+        rule: "make the review link depend on the rating or the reading",
+        enforcedBy:
+          "the survey's final screen reads the link from the location only (flow.test: everyone gets the Google button)",
+      },
+      {
+        rule: "lower a severity or close a case",
+        enforcedBy:
+          "readResponse writes labels only and classifyResponse takes the higher severity (sentiment-domain.test: a reading never lowers a severity)",
+      },
+    ],
+    handler: async (input, context, tx) => {
+      if (!config.reader) throw new Error("no response reader is configured");
+      return readResponse(tx, config.reader, input.responseId, deps(context.now));
+    },
+  });
+
+  return [classify, open, send, read] as unknown as Tool<never, unknown, Tx>[];
 }

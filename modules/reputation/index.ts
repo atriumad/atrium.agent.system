@@ -3,6 +3,7 @@
 export { loadHostManifests } from "./agents";
 export { askAgent } from "./agents/ask";
 export { recoveryAgent } from "./agents/recovery";
+export { sentimentAgent } from "./agents/sentiment";
 export type {
   SurveyForm,
   SurveyRequestRow,
@@ -46,6 +47,8 @@ export {
   sendReviewRequest,
   skipReviewRequest,
 } from "./application/requests";
+export type { ReaderInput, ReadOutcome, ResponseReader } from "./application/sentiment";
+export { ReadingInvalidError, readResponse } from "./application/sentiment";
 export type { LocationSettings } from "./application/settings";
 export {
   assertReviewUrl,
@@ -66,6 +69,7 @@ export {
 } from "./application/survey";
 export * from "./domain/invitations";
 export * from "./domain/recovery";
+export * from "./domain/sentiment";
 export * from "./domain/timing";
 export type { ReputationToolConfig } from "./mcp/tools";
 export { reputationTools } from "./mcp/tools";

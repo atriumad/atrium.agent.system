@@ -60,6 +60,16 @@ stateDiagram-v2
 
 Immediate email alert to the owner and the Account Manager. A public review is never linked to a guest by guessing: a case opens from a survey response, or when the Account Manager links the review.
 
+## Reading guests' words
+
+When a response is submitted, the Sentiment subagent reads the comment and the two chosen options through a language model ([0019](../adr/0019-llm-provider-behind-a-port)) and stores internal labels on the response: sentiment, topics, a concern level (low, medium or high) and a safety flag. The tool is `reputation.read_response`, and the reading ends with the event `survey.response.read`. Only labels travel in events, never the guest's text.
+
+Recovery listens to both events. It decides alone: a reading opens a case when concern is medium or high, or when safety is true. Severity only escalates: a case takes the higher of the rating's severity and the reading's, and if one already exists for the response it is raised, never lowered. Sentiment cannot open a case, notify anyone or touch the review link.
+
+None of this changes who is asked for a review. The Google button never depends on the rating or on the reading ([0018](../adr/0018-no-review-gating)). If the model fails or is unavailable, the response stays unread and Recovery keeps working from the rating. Grouping themes across responses daily is later work, with the dashboard.
+
+Sentiment's daily cap (500 readings) also counts responses with no comment. A response refused at the cap stays unread; re-reading old responses is out of scope.
+
 ## MCP tools
 
 | Tool | Writes | Initial level |
@@ -67,6 +77,7 @@ Immediate email alert to the owner and the Account Manager. A public review is n
 | `reputation.list_reviews` | No | 4 |
 | `reputation.list_responses` | No | 4 |
 | `reputation.classify_response` | Yes (labels) | 4 |
+| `reputation.read_response` | Yes (labels) | 4 |
 | `reputation.open_case` | Yes | 4 |
 | `reputation.draft_reply` | Yes (draft) | 2 |
 | `reputation.publish_reply` | Yes | 3 (negatives stay at 3) |
@@ -74,7 +85,7 @@ Immediate email alert to the owner and the Account Manager. A public review is n
 
 ## Events
 
-**Publishes:** `review.received`, `review.replied`, `survey.sent`, `survey.response.submitted`, `recovery.case.opened`, `recovery.case.resolved`, `review.link.clicked`.
+**Publishes:** `review.received`, `review.replied`, `survey.sent`, `survey.response.submitted`, `survey.response.read`, `recovery.case.opened`, `recovery.case.resolved`, `review.link.clicked`.
 **Consumes (optional):** `contact.captured`.
 
 ## Metrics
