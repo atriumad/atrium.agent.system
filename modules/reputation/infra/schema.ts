@@ -2,6 +2,7 @@ import {
   boolean,
   date,
   integer,
+  jsonb,
   pgSchema,
   smallint,
   text,
@@ -100,4 +101,20 @@ export const surveyRequests = reputation.table("survey_requests", {
   handledAt: at("handled_at"),
   handledBy: text("handled_by"),
   response: text("response"),
+  lastMessageAt: at("last_message_at"),
+  lastAuthorSide: text("last_author_side"),
+  lastPreview: text("last_preview"),
+});
+
+/** One message in a help conversation. Never updated or deleted. */
+export const surveyRequestMessages = reputation.table("survey_request_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requestId: uuid("request_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  authorId: text("author_id").notNull(),
+  authorName: text("author_name").notNull(),
+  side: text("side").notNull(),
+  body: text("body").notNull(),
+  attachment: jsonb("attachment"),
+  createdAt: at("created_at").notNull().defaultNow(),
 });
