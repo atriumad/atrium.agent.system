@@ -53,6 +53,23 @@ const respond = async (overrides: Record<string, unknown>) =>
     )
   ).responseId;
 
+const readEventsFor = (responseId: string) =>
+  events.filter(
+    (e) =>
+      e.type === "survey.response.read" &&
+      (e.data as { responseId?: string }).responseId === responseId,
+  );
+
+/** Inserts a response with a raw comment through the owner connection, past the contract. */
+async function respondWithRawComment(comment: string) {
+  const id = crypto.randomUUID();
+  await admin.unsafe(
+    "insert into reputation.survey_responses (id, client_id, location_id, rating, comment) values ($1, $2, $3, 4, $4)",
+    [id, a, locA, comment],
+  );
+  return id;
+}
+
 function fakeReader(answer: unknown) {
   const calls: ReaderInput[] = [];
   const reader: ResponseReader = {
@@ -206,6 +223,27 @@ describe("readResponse", () => {
     expect(outcome).toEqual({ status: "no_text", sentiment: null, concern: null, safety: null });
     expect(calls.length).toBe(0);
     expect((await row(id))?.read_at).toBeNull();
+    expect(readEventsFor(id)).toEqual([]);
+  });
+
+  test("a whitespace-only comment is not sent to the model and stays unread", async () => {
+    // The contract trims "   " to null, so also insert one raw through the owner connection to
+    // prove the reader's own guard.
+    const viaContract = await respond({ rating: 4, comment: "   " });
+    expect(
+      (await admin.unsafe("select comment from reputation.survey_responses where id = $1", [
+        viaContract,
+      ])) as unknown[],
+    ).toEqual([{ comment: null }]);
+    const raw = await respondWithRawComment("   ");
+    for (const id of [viaContract, raw]) {
+      const { reader, calls } = fakeReader(SERIOUS);
+      const outcome = await inA((tx) => readResponse(tx, reader, id, deps));
+      expect(outcome).toEqual({ status: "no_text", sentiment: null, concern: null, safety: null });
+      expect(calls.length).toBe(0);
+      expect((await row(id))?.read_at).toBeNull();
+      expect(readEventsFor(id)).toEqual([]);
+    }
   });
 
   test("an answer outside the schema is rejected and the response stays unread", async () => {
@@ -227,6 +265,7 @@ describe("readResponse", () => {
       );
     }
     expect((await row(id))?.read_at).toBeNull();
+    expect(readEventsFor(id)).toEqual([]);
   });
 
   test("a reader that throws leaves the response unread", async () => {
