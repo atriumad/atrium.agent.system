@@ -3,6 +3,22 @@
 export { loadHostManifests } from "./agents";
 export { askAgent } from "./agents/ask";
 export { recoveryAgent } from "./agents/recovery";
+export type {
+  SurveyForm,
+  SurveyRequestRow,
+  SurveyResponseRow,
+} from "./application/admin";
+export {
+  createManualInvitation,
+  createSurveyRequest,
+  handleSurveyRequest,
+  listSurveyForms,
+  listSurveyRequests,
+  listSurveyResponses,
+  SurveyForbiddenError,
+  SurveyNotFoundError,
+  SurveyStateError,
+} from "./application/admin";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
 export type {
   CaseDetail,

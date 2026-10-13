@@ -86,6 +86,20 @@ afterAll(async () => {
   expect(errors).toEqual([]);
 });
 
+describe("GET /s/:token/info", () => {
+  test("gives the venue name for a valid link and 410 with the reason for a dead one", async () => {
+    const ok = await app.request(`/s/${await invitation()}/info`);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ locationName: "Bellaire <b>" });
+
+    const used = await invitation({ usedAt: new Date(NOW.getTime() - 1000) });
+    const dead = await app.request(`/s/${used}/info`);
+    expect(dead.status).toBe(410);
+    expect(await dead.json()).toEqual({ error: "used" });
+    expect((await app.request("/s/svy_nope/info")).status).toBe(410);
+  });
+});
+
 describe("GET /s/:token", () => {
   test("shows the form for a valid link, without a connector token", async () => {
     const res = await app.request(`/s/${await invitation()}`);

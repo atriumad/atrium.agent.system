@@ -80,3 +80,18 @@ export const reviewRequests = reputation.table("review_requests", {
   invitationId: uuid("invitation_id"),
   createdAt: at("created_at").notNull().defaultNow(),
 });
+
+/** A client owner asking the agency for a survey form or link. Only the agency fulfils it. */
+export const surveyRequests = reputation.table("survey_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id").notNull(),
+  locationId: uuid("location_id").notNull(),
+  requestedBy: text("requested_by").notNull(),
+  requestedByName: text("requested_by_name").notNull(),
+  note: text("note"),
+  status: text("status").notNull().default("open"),
+  createdAt: at("created_at").notNull().defaultNow(),
+  handledAt: at("handled_at"),
+  handledBy: text("handled_by"),
+  response: text("response"),
+});
