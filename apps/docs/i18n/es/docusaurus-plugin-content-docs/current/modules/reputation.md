@@ -60,6 +60,14 @@ stateDiagram-v2
 
 Alerta inmediata por email al dueño y al Account Manager. Una reseña pública nunca se vincula a un guest por suposición: un caso se abre desde una respuesta de encuesta, o cuando el Account Manager vincula la reseña.
 
+## Leer las palabras de los guests
+
+Cuando se envía una respuesta, el subagente Sentiment lee el comentario y las dos opciones elegidas con un modelo de lenguaje ([0019](../adr/0019-llm-provider-behind-a-port)) y guarda etiquetas internas en la respuesta: sentimiento, temas, un nivel de preocupación (bajo, medio o alto) y una marca de seguridad. La herramienta es `reputation.read_response`, y la lectura termina con el evento `survey.response.read`. En los eventos viajan solo etiquetas, nunca el texto del guest.
+
+Recovery escucha ambos eventos y decide por su cuenta: una lectura abre un caso cuando la preocupación es media o alta, o cuando la marca de seguridad está activa. La severidad solo escala: un caso toma la mayor entre la de la calificación y la de la lectura, y si ya existe uno para la respuesta se sube, nunca se baja. Sentiment no puede abrir un caso, avisar a nadie ni tocar el link de reseña.
+
+Nada de esto cambia a quién se le pide reseña. El botón de Google nunca depende de la calificación ni de la lectura ([0018](../adr/0018-no-review-gating)). Si el modelo falla o no está disponible, la respuesta queda sin leer y Recovery sigue funcionando con la calificación. Agrupar temas entre respuestas a diario es trabajo posterior, junto con el dashboard.
+
 ## Herramientas MCP
 
 | Herramienta | Escribe | Nivel inicial |
@@ -67,6 +75,7 @@ Alerta inmediata por email al dueño y al Account Manager. Una reseña pública 
 | `reputation.list_reviews` | No | 4 |
 | `reputation.list_responses` | No | 4 |
 | `reputation.classify_response` | Sí (etiquetas) | 4 |
+| `reputation.read_response` | Sí (etiquetas) | 4 |
 | `reputation.open_case` | Sí | 4 |
 | `reputation.draft_reply` | Sí (borrador) | 2 |
 | `reputation.publish_reply` | Sí | 3 (las negativas se quedan en 3) |
@@ -74,7 +83,7 @@ Alerta inmediata por email al dueño y al Account Manager. Una reseña pública 
 
 ## Eventos
 
-**Publica:** `review.received`, `review.replied`, `survey.sent`, `survey.response.submitted`, `recovery.case.opened`, `recovery.case.resolved`, `review.link.clicked`.
+**Publica:** `review.received`, `review.replied`, `survey.sent`, `survey.response.submitted`, `survey.response.read`, `recovery.case.opened`, `recovery.case.resolved`, `review.link.clicked`.
 **Consume (opcional):** `contact.captured`.
 
 ## Métricas

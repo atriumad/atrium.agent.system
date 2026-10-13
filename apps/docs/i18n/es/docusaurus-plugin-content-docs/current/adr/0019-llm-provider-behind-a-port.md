@@ -1,0 +1,37 @@
+---
+id: 0019-llm-provider-behind-a-port
+sidebar_position: 20
+title: "0019 · El modelo de lenguaje vive detrás de un puerto"
+sidebar_label: "0019 · El modelo de lenguaje vive detrás de un puerto"
+description: "El modelo de lenguaje vive detrás de un puerto"
+---
+
+# ADR 0019: El modelo de lenguaje vive detrás de un puerto
+
+| Estado | Fecha | Decisores |
+| --- | --- | --- |
+| **Aceptada** | 2026-10-13 | Atrium · producto y tecnología |
+
+## Contexto
+
+Sentiment lee lo que los guests escriben en una encuesta. Eso requiere un modelo de lenguaje, y el proveedor va a cambiar: empezamos con un modelo gratuito para construir, y pasamos a uno pago antes de tener clientes reales. Las palabras de los guests son datos de terceros.
+
+## Decisión
+
+El caso de uso depende de un puerto `ResponseReader`. El adaptador vive en `apps/agents` y llama a OpenRouter a través del Vercel AI SDK, con el esquema de la lectura como esquema Zod. El proveedor es un id de modelo en `SENTIMENT_MODEL`. El modelo usado se guarda con cada lectura (`read_model`). Al modelo solo llegan la calificación, las dos opciones elegidas y el comentario: nunca un id, nombre o contacto del guest. El modelo solo puede subir una severidad, nunca bajarla ni cerrar un caso.
+
+Las respuestas de clientes reales van solo a un modelo pago, o a un modelo cuya política de datos se haya revisado y quede registrada aquí. El worker rechaza un modelo `:free` en producción salvo que `SENTIMENT_ALLOW_FREE=true`.
+
+## Consecuencias
+
+- Cambiar de proveedor cambia un texto, no el módulo.
+- Un modelo gratuito que limita el uso o falla deja respuestas sin leer; Recovery sigue funcionando con la calificación.
+- Una llamada de lectura mantiene una transacción de base de datos como máximo 15 segundos.
+- Los agentes siguen corriendo en `apps/worker` en Railway con pg-boss ([0006](./0006-events-with-pg-boss)).
+- Antes de habilitar un modelo para clientes reales, correr una vez los casos dorados y hostiles contra ese modelo (`bun apps/agents/scripts/eval-sentiment.ts` con `OPENROUTER_API_KEY` y `SENTIMENT_MODEL` definidos) y registrar en este ADR el modelo y su política de datos. La llamada real al SDK todavía no se ejercitó contra un proveedor real.
+
+## Alternativas descartadas
+
+- Llamar al proveedor desde dentro de Recovery: haría que los casos dependan de un servicio externo.
+- Vercel Functions o Queues para los agentes: reemplazarían la cola transaccional del ADR 0006.
+- Listas de palabras clave por cliente (la forma anterior): frágiles y mantenidas a mano.

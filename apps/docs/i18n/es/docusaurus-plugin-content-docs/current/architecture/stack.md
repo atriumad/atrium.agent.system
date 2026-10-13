@@ -32,5 +32,6 @@ Cada elección tiene su ADR con el contexto completo.
 | Datos sociales | Metricool | Un feed para IG, FB, TikTok y YouTube, con filas por post | APIs por red | [0014](../adr/0014-n8n-connectors-with-ingestion-api) |
 | Agentes | MCP (SDK TypeScript) + motor de políticas + Claude | Herramientas como única puerta, reglas en código | Acceso directo a API o base | [0009](../adr/0009-agents-mcp-and-policies) |
 | Hosting | Vercel (web) + Railway (API, worker, agentes, N8N) | El worker y N8N necesitan procesos siempre encendidos | Todo serverless | — |
+| LLM | OpenRouter a través del Vercel AI SDK, detrás de un puerto | El proveedor es un id de modelo; gratis para empezar, pago para clientes reales | Llamar directo a un solo proveedor | [0019](../adr/0019-llm-provider-behind-a-port) |
 | Observabilidad | Sentry + logs estructurados (pino) | Errores, trabajos fallidos, frescura de conectores y tiempos con el client en cada log | — | — |
 | Calidad | Biome, bun test, Playwright, k6, axe, evals | Pruebas contra Postgres real; evals por agente | ESLint + Prettier | — |
