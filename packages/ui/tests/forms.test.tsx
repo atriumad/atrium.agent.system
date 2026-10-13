@@ -124,6 +124,20 @@ describe("Checkbox, Radio, Switch", () => {
     await user.click(sw);
     expect(sw.getAttribute("aria-checked")).toBe("true");
   });
+
+  test("switch thumb is centred by its root and follows the state", async () => {
+    // jsdom computes no layout, so this pins the centring classes, not pixels.
+    const { user } = setup(<Switch label="Weekly summary" />);
+    const sw = screen.getByRole("switch", { name: "Weekly summary" });
+    expect(sw.className).toContain("inline-flex");
+    expect(sw.className).toContain("items-center");
+    const thumb = sw.firstElementChild as HTMLElement;
+    expect(thumb.hasAttribute("data-checked")).toBe(false);
+    await user.click(sw);
+    expect(thumb.hasAttribute("data-checked")).toBe(true);
+    await user.click(sw);
+    expect(thumb.hasAttribute("data-checked")).toBe(false);
+  });
 });
 
 describe("Select", () => {

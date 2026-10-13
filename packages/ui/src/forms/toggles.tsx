@@ -77,7 +77,7 @@ export function Switch({ label: text, className, ...rest }: SwitchProps) {
     <label className={label}>
       <BaseSwitch.Root
         className={cx(
-          "relative h-[22px] w-[38px] shrink-0 cursor-pointer rounded-xs border border-field bg-cream-300 transition-colors duration-(--dur-base) ease-out",
+          "relative inline-flex h-[22px] w-[38px] shrink-0 items-center cursor-pointer rounded-xs border border-field bg-cream-300 transition-colors duration-(--dur-base) ease-out",
           "data-checked:border-charcoal-800 data-checked:bg-lime-500 data-disabled:cursor-not-allowed dark:bg-charcoal-700",
           className,
         )}
