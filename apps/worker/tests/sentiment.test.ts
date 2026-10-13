@@ -180,6 +180,15 @@ describe("Sentiment and Recovery together", () => {
     expect(await casesFor(result.responseId)).toEqual([{ severity: "medium", status: "open" }]);
   }, 60000);
 
+  test("a one-star answer with a serious reading: both Recovery consumers fire for the same response and only one case exists", async () => {
+    const result = await respond({ rating: 1, comment: "Creo que fue poison, me enfermé." });
+    await waitFor(async () => (await labels(result.responseId))?.read_at !== null);
+    await waitFor(async () => (await casesFor(result.responseId)).length > 0);
+    await settle();
+    expect(await casesFor(result.responseId)).toEqual([{ severity: "high", status: "open" }]);
+    expect(await labels(result.responseId)).toMatchObject({ concern: "high", safety: true });
+  }, 60000);
+
   test("a low concern labels a happy answer and opens nothing", async () => {
     const result = await respond({ rating: 5, comment: "Un poco slow pero todo bien." });
     await waitFor(async () => (await labels(result.responseId))?.read_at !== null);
