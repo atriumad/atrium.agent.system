@@ -3,6 +3,7 @@
 export { loadHostManifests } from "./agents";
 export { askAgent } from "./agents/ask";
 export { recoveryAgent } from "./agents/recovery";
+export { sentimentAgent } from "./agents/sentiment";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
 export type {
   CaseDetail,
