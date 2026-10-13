@@ -5,6 +5,7 @@ export * from "./file-drop";
 export * from "./input";
 export * from "./number-field";
 export * from "./otp-field";
+export * from "./rating-scale";
 export * from "./select";
 export * from "./slider";
 export * from "./toggles";

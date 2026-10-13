@@ -9,6 +9,7 @@ import {
   Emphasis,
   Eyebrow,
   Field,
+  RatingScale,
   Skeleton,
   Switch,
   TextareaField,
@@ -77,7 +78,7 @@ export function SurveyApp({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (rating === null) return setError("Pick a rating from 1 to 5.");
+    if (rating === null) return setError("Pick how your visit was.");
     if (wantsContact && !email.trim() && !phone.trim())
       return setError("Add an email or a phone so we can reach you.");
     setError(null);
@@ -152,11 +153,10 @@ export function SurveyApp({
             </div>
 
             <Field label="Rating">
-              <ChipGroup
-                aria-label="Rating from 1 to 5"
-                value={rating === null ? [] : [String(rating)]}
-                onValueChange={(v: string[]) => setRating(v[0] ? Number(v[0]) : null)}
-                options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n} ★` }))}
+              <RatingScale
+                aria-label="How was your visit?"
+                value={rating}
+                onValueChange={setRating}
               />
             </Field>
 
