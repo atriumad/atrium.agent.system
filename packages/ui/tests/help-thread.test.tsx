@@ -403,13 +403,14 @@ describe("HelpThreads", () => {
   test("a survey response is picked from the list and posts by id", async () => {
     const calls = fakeFetch({
       ...routes(),
-      "/api/surveys/responses/pickable": {
+      [`/api/surveys/responses/pickable?requestId=${ID}`]: {
         responses: [
           {
             id: "22222222-2222-4222-8222-222222222222",
             createdAt: new Date().toISOString(),
             rating: 2,
             excerpt: "Cold food and slow",
+            locationId: "l1",
             locationName: "Bellaire",
           },
         ],
@@ -422,6 +423,7 @@ describe("HelpThreads", () => {
     await user.click(screen.getByRole("button", { name: "Attach" }));
     await user.click(screen.getByRole("menuitem", { name: "Survey response" }));
     const choices = await screen.findByRole("list", { name: "Survey responses" });
+    expect(within(choices).getByText(/Bellaire/)).toBeTruthy();
     await user.click(within(choices).getByText(/cold food and slow/i));
     await user.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(posted(calls, "/messages")).toHaveLength(1));
@@ -429,6 +431,39 @@ describe("HelpThreads", () => {
       body: "This one",
       attachment: { kind: "response", responseId: "22222222-2222-4222-8222-222222222222" },
     });
+  });
+
+  test("a response that is not available for the client gets its own message", async () => {
+    fakeFetch({
+      ...routes(),
+      [`/api/surveys/responses/pickable?requestId=${ID}`]: {
+        responses: [
+          {
+            id: "22222222-2222-4222-8222-222222222222",
+            createdAt: new Date().toISOString(),
+            rating: 2,
+            excerpt: "Cold food and slow",
+            locationId: "l1",
+            locationName: "Bellaire",
+          },
+        ],
+      },
+    });
+    const inner = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).endsWith("/messages") && init?.method === "POST"
+        ? new Response(JSON.stringify({ error: "attachment_not_found" }), { status: 422 })
+        : inner(input, init)) as typeof fetch;
+    const { user } = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await open(user);
+    await user.type(await screen.findByLabelText("Message"), "This one");
+    await user.click(screen.getByRole("button", { name: "Attach" }));
+    await user.click(screen.getByRole("menuitem", { name: "Survey response" }));
+    const choices = await screen.findByRole("list", { name: "Survey responses" });
+    await user.click(within(choices).getByText(/cold food and slow/i));
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText("That response is not available for this client.")).toBeTruthy();
+    expect(screen.queryByText("We could not send that. Try again.")).toBeNull();
   });
 
   test("an empty list says so, differently for the client", async () => {

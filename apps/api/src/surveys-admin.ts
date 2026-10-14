@@ -79,12 +79,15 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
   // Registered before any parametrised /surveys/responses/... route.
   api.get("/surveys/responses/pickable", (c) =>
     guard(c, async () => {
-      const locationId = c.req.query("locationId");
-      if (locationId !== undefined && !UUID.test(locationId)) {
-        return c.json({ error: "invalid_request" }, 422);
+      const filter: { locationId?: string; requestId?: string; id?: string } = {};
+      for (const key of ["locationId", "requestId", "id"] as const) {
+        const value = c.req.query(key);
+        if (value === undefined) continue;
+        if (!UUID.test(value)) return c.json({ error: "invalid_request" }, 422);
+        filter[key] = value;
       }
       const responses = await withScope(deps.db, c.get("scope"), (tx) =>
-        listPickableResponses(tx, c.get("scope"), locationId ? { locationId } : {}),
+        listPickableResponses(tx, c.get("scope"), filter),
       );
       return c.json({ responses });
     }),

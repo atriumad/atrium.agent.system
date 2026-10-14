@@ -8,6 +8,7 @@ import {
   createLocation,
   type Scope,
   setPackage,
+  unassignClient,
   withAgency,
   withScope,
 } from "@atrium/core";
@@ -496,6 +497,7 @@ describe("lists", () => {
     expect(pick.length).toBeGreaterThan(0);
     expect(pick.length).toBeLessThanOrEqual(20);
     expect(pick.every((p) => p.excerpt.length <= 60)).toBe(true);
+    expect(pick.every((p) => p.locationId.length > 0)).toBe(true);
     const scoped: Scope = {
       kind: "client",
       userId: ids.ownerA,
@@ -504,9 +506,51 @@ describe("lists", () => {
       locationIds: [locA],
     };
     const some = await as(scoped, (tx) => listPickableResponses(tx, scoped));
+    expect(some.length).toBeGreaterThan(0);
     expect(some.every((p) => p.locationName === "Bellaire")).toBe(true);
+  });
+
+  test("client staff cannot list pickable responses", async () => {
     await expect(
       as(clientStaff(), (tx) => listPickableResponses(tx, clientStaff())),
-    ).resolves.toBeDefined();
+    ).rejects.toBeInstanceOf(SurveyForbiddenError);
+  });
+
+  test("an account manager with two clients sees only the request's client when a request is given", async () => {
+    const ownResponse = await respond(a, locA, { comment: `own-${suffix}` });
+    const otherResponse = await respond(b, locB, { comment: `other-${suffix}` });
+    await withAgency(db, (tx) => assignClient(tx, ids.am, b, actor));
+    try {
+      const id = await open();
+      const all = await as(am(), (tx) => listPickableResponses(tx, am()));
+      expect(all.map((p) => p.id)).toContain(otherResponse);
+      const scoped = await as(am(), (tx) => listPickableResponses(tx, am(), { requestId: id }));
+      expect(scoped.map((p) => p.id)).toContain(ownResponse);
+      expect(scoped.map((p) => p.id)).not.toContain(otherResponse);
+      await expect(
+        as(ownerB(), (tx) => listPickableResponses(tx, ownerB(), { requestId: id })),
+      ).rejects.toBeInstanceOf(SurveyNotFoundError);
+    } finally {
+      await withAgency(db, (tx) => unassignClient(tx, ids.am, b, actor));
+    }
+  });
+
+  test("a single response is found by id within the caller's client only", async () => {
+    const mine = await respond(a, locA, { comment: "find me" });
+    const theirs = await respond(b, locB, { comment: "not yours" });
+    const found = await as(ownerA(), (tx) => listPickableResponses(tx, ownerA(), { id: mine }));
+    expect(found.map((p) => p.id)).toEqual([mine]);
+    expect(found[0]).toMatchObject({ locationId: locA, locationName: "Bellaire" });
+    expect(await as(ownerA(), (tx) => listPickableResponses(tx, ownerA(), { id: theirs }))).toEqual(
+      [],
+    );
+    const hidden: Scope = {
+      kind: "client",
+      userId: ids.ownerA,
+      role: "client_owner",
+      clientId: a,
+      locationIds: [locA2],
+    };
+    expect(await as(hidden, (tx) => listPickableResponses(tx, hidden, { id: mine }))).toEqual([]);
   });
 });

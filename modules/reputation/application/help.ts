@@ -12,7 +12,6 @@ import { canCloseAs, type HelpSide, preview } from "../domain/help";
 import { surveyRequestMessages, surveyRequests, surveyResponses } from "../infra/schema";
 import {
   actorOf,
-  assertCan,
   SurveyForbiddenError,
   SurveyNotFoundError,
   type SurveyRequestRow,
@@ -261,18 +260,36 @@ export async function closeRequest(
   );
 }
 
+export type PickableResponse = {
+  id: string;
+  createdAt: Date;
+  rating: number;
+  excerpt: string;
+  locationId: string;
+  locationName: string;
+};
+
+/**
+ * The recent responses a person can attach. With `requestId` the list is the request's client only
+ * (an account manager with several clients never sees the others here); `id` finds one response.
+ */
 export async function listPickableResponses(
   tx: Tx,
   scope: Scope,
-  filter: { locationId?: string } = {},
-): Promise<
-  { id: string; createdAt: Date; rating: number; excerpt: string; locationName: string }[]
-> {
-  assertCan(scope, "read");
+  filter: { locationId?: string; requestId?: string; id?: string } = {},
+): Promise<PickableResponse[]> {
+  assertCanRead(scope);
+  const clientId = filter.requestId ? (await loadRequest(tx, filter.requestId)).clientId : null;
   const rows = await tx
     .select()
     .from(surveyResponses)
-    .where(filter.locationId ? eq(surveyResponses.locationId, filter.locationId) : undefined)
+    .where(
+      and(
+        filter.locationId ? eq(surveyResponses.locationId, filter.locationId) : undefined,
+        filter.id ? eq(surveyResponses.id, filter.id) : undefined,
+        clientId ? eq(surveyResponses.clientId, clientId) : undefined,
+      ),
+    )
     .orderBy(desc(surveyResponses.createdAt))
     .limit(60);
   const visible = rows.filter((r) => locationVisible(scope, r.locationId)).slice(0, 20);
@@ -282,6 +299,7 @@ export async function listPickableResponses(
     createdAt: r.createdAt,
     rating: r.rating,
     excerpt: preview(r.comment ?? "(no comment)", 60),
+    locationId: r.locationId,
     locationName: labels.get(r.locationId)?.locationName ?? "",
   }));
 }

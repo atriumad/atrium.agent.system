@@ -18,6 +18,7 @@ export type Me = {
 export type SurveyResponse = {
   id: string;
   clientName: string;
+  locationId: string;
   locationName: string;
   rating: number;
   bestPart: string | null;
@@ -96,6 +97,7 @@ export type PickableResponse = {
   createdAt: string;
   rating: number;
   excerpt: string;
+  locationId: string;
   locationName: string;
 };
 
@@ -238,10 +240,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ to, ...(message?.trim() ? { message: message.trim() } : {}) }),
     }),
-  pickableResponses: (locationId?: string) =>
-    call<{ responses: PickableResponse[] }>(
-      `/api/surveys/responses/pickable${locationId ? `?locationId=${locationId}` : ""}`,
-    ).then((r) => r.responses),
+  pickableResponses: (opts: { requestId?: string; locationId?: string; id?: string } = {}) => {
+    const query = new URLSearchParams();
+    for (const key of ["requestId", "locationId", "id"] as const) {
+      const value = opts[key];
+      if (value) query.set(key, value);
+    }
+    const qs = query.toString();
+    return call<{ responses: PickableResponse[] }>(
+      `/api/surveys/responses/pickable${qs ? `?${qs}` : ""}`,
+    ).then((r) => r.responses);
+  },
   access: () => call<{ access: Record<string, string> }>("/api/access").then((r) => r.access),
   places: () => call<{ locations: Place[] }>("/api/locations").then((r) => r.locations),
   requestPlace: (name: string, timeZone: string) =>

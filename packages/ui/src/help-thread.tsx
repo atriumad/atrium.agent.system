@@ -4,6 +4,7 @@ import { ExternalLink, Paperclip, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import {
+  ApiError,
   api,
   type HelpAttachmentInput,
   type HelpThreadData,
@@ -34,6 +35,9 @@ const STATUS = {
 
 const SEND_FAILED = "We could not send that. Try again.";
 const CLOSE_FAILED = "We could not close it. Try again.";
+const ATTACHMENT_GONE = "That response is not available for this client.";
+
+const isAttachmentGone = (e: unknown) => e instanceof ApiError && e.code === "attachment_not_found";
 
 const viewerSideOf = (me: Me): Side => (me.kind === "client" ? "client" : "agency");
 
@@ -220,9 +224,11 @@ function ReviewForm({ onAdd, onCancel }: { onAdd: (a: Attached) => void; onCance
 }
 
 function ResponsePicker({
+  requestId,
   onAdd,
   onCancel,
 }: {
+  requestId: string;
   onAdd: (a: Attached) => void;
   onCancel: () => void;
 }) {
@@ -231,10 +237,10 @@ function ResponsePicker({
   const load = useCallback(() => {
     setFailed(false);
     api
-      .pickableResponses()
+      .pickableResponses({ requestId })
       .then(setItems)
       .catch(() => setFailed(true));
-  }, []);
+  }, [requestId]);
   useEffect(load, [load]);
 
   return (
@@ -260,7 +266,7 @@ function ResponsePicker({
                   }
                   className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface-sunken"
                 >
-                  {when} · {r.rating}/5 · {r.excerpt}
+                  {when} · {r.locationName} · {r.rating}/5 · {r.excerpt}
                 </button>
               </li>
             );
@@ -308,8 +314,8 @@ function Composer({
     setError(null);
     try {
       await api.postHelpMessage(request.id, draft, attached?.input);
-    } catch {
-      setError(SEND_FAILED);
+    } catch (e) {
+      setError(isAttachmentGone(e) ? ATTACHMENT_GONE : SEND_FAILED);
       setBusy(null);
       return;
     }
@@ -331,8 +337,8 @@ function Composer({
       // draft and the attachment are spent: clear them, so a retry cannot post it twice.
       try {
         await api.postHelpMessage(request.id, draft, attached.input);
-      } catch {
-        setError(CLOSE_FAILED);
+      } catch (e) {
+        setError(isAttachmentGone(e) ? ATTACHMENT_GONE : CLOSE_FAILED);
         setBusy(null);
         return;
       }
@@ -386,7 +392,7 @@ function Composer({
       ) : null}
       {picker === "review" ? <ReviewForm onAdd={add} onCancel={() => setPicker(null)} /> : null}
       {picker === "response" ? (
-        <ResponsePicker onAdd={add} onCancel={() => setPicker(null)} />
+        <ResponsePicker requestId={request.id} onAdd={add} onCancel={() => setPicker(null)} />
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <Button loading={busy === "send"} disabled={!draft.trim() || busy !== null} onClick={send}>

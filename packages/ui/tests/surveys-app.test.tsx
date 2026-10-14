@@ -69,6 +69,7 @@ const aRequest = {
 const aResponse = {
   id: RESP_ID,
   clientName: "Casa Olivo",
+  locationId: "l1",
   locationName: "Bellaire",
   rating: 2,
   bestPart: null,
@@ -86,13 +87,14 @@ const places = {
   },
 };
 const pickable = {
-  "/api/surveys/responses/pickable": {
+  [`/api/surveys/responses/pickable?id=${RESP_ID}`]: {
     responses: [
       {
         id: RESP_ID,
         createdAt: new Date().toISOString(),
         rating: 2,
         excerpt: "Slow service",
+        locationId: "l1",
         locationName: "Bellaire",
       },
     ],
@@ -172,13 +174,14 @@ describe("HelpPage", () => {
       const calls = fakeFetch({
         ...places,
         "/api/surveys/requests": { requests: [] },
-        "/api/surveys/responses/pickable": {
+        [`/api/surveys/responses/pickable?id=${RESP_ID}`]: {
           responses: [
             {
               id: RESP_ID,
               createdAt: new Date().toISOString(),
               rating: 2,
               excerpt: "Slow service",
+              locationId: "l1",
               locationName: "Bellaire",
             },
           ],
@@ -196,6 +199,76 @@ describe("HelpPage", () => {
           attachment: { kind: "response", responseId: RESP_ID },
         });
       });
+    } finally {
+      restore();
+    }
+  });
+
+  test("the lookup asks for that one response, and the place from the link is preset", async () => {
+    const restore = at(`/help?response=${RESP_ID}&location=l2`);
+    try {
+      const calls = fakeFetch({
+        "/api/surveys/locations": {
+          locations: [
+            { id: "l1", locationName: "Bellaire", clientName: "Casa Olivo" },
+            { id: "l2", locationName: "Heights", clientName: "Casa Olivo" },
+          ],
+        },
+        "/api/surveys/requests": { requests: [] },
+        ...pickable,
+      });
+      const { user } = asMe(ownerMe, <HelpPage />);
+      expect(await screen.findByText(/Survey response: Slow service/)).toBeTruthy();
+      expect(calls.some((c) => c.path === `/api/surveys/responses/pickable?id=${RESP_ID}`)).toBe(
+        true,
+      );
+      await user.type(screen.getByLabelText(/What do you need/), "About this one");
+      await user.click(screen.getByText("Send request"));
+      await waitFor(() => {
+        const post = calls.find((c) => c.init?.method === "POST");
+        expect(JSON.parse(String(post?.init?.body)).locationId).toBe("l2");
+      });
+    } finally {
+      restore();
+    }
+  });
+
+  test("a place in the link that the person cannot pick is ignored", async () => {
+    const restore = at(`/help?location=not-a-place`);
+    try {
+      const calls = fakeFetch({
+        "/api/surveys/locations": {
+          locations: [
+            { id: "l1", locationName: "Bellaire", clientName: "Casa Olivo" },
+            { id: "l2", locationName: "Heights", clientName: "Casa Olivo" },
+          ],
+        },
+        "/api/surveys/requests": { requests: [] },
+      });
+      const { user } = asMe(ownerMe, <HelpPage />);
+      await user.type(await screen.findByLabelText(/What do you need/), "Hello");
+      await user.click(screen.getByText("Send request"));
+      expect(await screen.findByText("Pick the place the form is for.")).toBeTruthy();
+      expect(calls.some((c) => c.init?.method === "POST")).toBe(false);
+    } finally {
+      restore();
+    }
+  });
+
+  test("after a successful send the link no longer stages the response on reload", async () => {
+    const restore = at(`/help?response=${RESP_ID}&location=l1&keep=1`);
+    try {
+      const calls = fakeFetch({
+        ...places,
+        ...pickable,
+        "/api/surveys/requests": { requests: [] },
+      });
+      const { user } = asMe(ownerMe, <HelpPage />);
+      expect(await screen.findByText(/Slow service/)).toBeTruthy();
+      await user.type(screen.getByLabelText(/What do you need/), "About this one");
+      await user.click(screen.getByText("Send request"));
+      await waitFor(() => expect(calls.some((c) => c.init?.method === "POST")).toBe(true));
+      await waitFor(() => expect(window.location.search).toBe("?keep=1"));
     } finally {
       restore();
     }
@@ -246,7 +319,7 @@ describe("HelpPage", () => {
       const calls = fakeFetch({
         ...places,
         "/api/surveys/requests": { requests: [] },
-        "/api/surveys/responses/pickable": { responses: [] },
+        [`/api/surveys/responses/pickable?id=${RESP_ID}`]: { responses: [] },
       });
       const { user } = asMe(ownerMe, <HelpPage />);
       expect(await screen.findByText("We could not attach that response.")).toBeTruthy();
@@ -283,7 +356,7 @@ describe("ResponsesPage ask for help", () => {
     // The Button contract for links renders an <a href> carrying role="button".
     const link = await screen.findByRole("button", { name: "Ask for help about this" });
     expect(link.tagName).toBe("A");
-    expect(link.getAttribute("href")).toBe(`/help?response=${RESP_ID}`);
+    expect(link.getAttribute("href")).toBe(`/help?response=${RESP_ID}&location=l1`);
   });
 
   test("agency roles do not get it", async () => {

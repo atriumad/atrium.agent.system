@@ -141,7 +141,7 @@ function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
               size="sm"
               variant="outline"
               nativeButton={false}
-              render={<a href={`/help?response=${r.id}`} />}
+              render={<a href={`/help?response=${r.id}&location=${r.locationId}`} />}
             >
               Ask for help about this
             </Button>
@@ -395,18 +395,25 @@ function HelpPanel() {
     value: p.id,
     label: p.locationName,
   }));
-  const chosen = place ?? (options.length === 1 ? (options[0]?.value ?? null) : null);
+  // "Ask for help about this" arrives as ?response=<id>&location=<id>: the place is preset when it
+  // is one the person can pick.
+  const linkedPlace = (() => {
+    if (typeof window === "undefined") return null;
+    const id = new URLSearchParams(window.location.search).get("location");
+    return id && options.some((o) => o.value === id) ? id : null;
+  })();
+  const chosen =
+    place ?? linkedPlace ?? (options.length === 1 ? (options[0]?.value ?? null) : null);
 
-  // "Ask for help about this" on a response arrives as ?response=<id>.
   useEffect(() => {
     const responseId = new URLSearchParams(window.location.search).get("response");
     if (!responseId || !UUID.test(responseId)) return;
     let live = true;
     api
-      .pickableResponses()
-      .then((all) => {
+      .pickableResponses({ id: responseId })
+      .then((found) => {
         if (!live) return;
-        const hit = all.find((x) => x.id === responseId);
+        const hit = found.find((x) => x.id === responseId);
         if (hit) setAttachment({ responseId, label: `Survey response: ${hit.excerpt}` });
         else setAttachNote(ATTACH_FAILED);
       })
@@ -431,6 +438,12 @@ function HelpPanel() {
       );
       setNote("");
       setAttachment(null);
+      setAttachNote(null);
+      // The link has done its job: a reload must not stage the same response again.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("response");
+      url.searchParams.delete("location");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
       setSent(true);
       setVersion((v) => v + 1);
     } catch {
