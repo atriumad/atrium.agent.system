@@ -1,8 +1,9 @@
+import { HelpRequestInput } from "@atrium/contracts";
 import { can, describeLocations, listLocationLabels, type Scope, withScope } from "@atrium/core";
 import {
   createManualInvitation,
   createSurveyRequest,
-  handleSurveyRequest,
+  HelpAttachmentError,
   listSurveyForms,
   listSurveyRequests,
   listSurveyResponses,
@@ -16,7 +17,6 @@ import type { Hono } from "hono";
 import type { AppDeps } from "./app";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const TEXT_MAX = 1000;
 
 type Env = { Variables: { scope: Scope; userName: string } };
 
@@ -47,6 +47,9 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
       return await run();
     } catch (error) {
       if (error instanceof SurveyForbiddenError) return c.json({ error: "forbidden" }, 403);
+      if (error instanceof HelpAttachmentError) {
+        return c.json({ error: "attachment_not_found" }, 422);
+      }
       if (error instanceof SurveyNotFoundError) return c.json({ error: "not_found" }, 404);
       if (error instanceof SurveyStateError) {
         return c.json({ error: "invalid_state", message: error.message }, 409);
@@ -178,59 +181,23 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
 
   api.post("/surveys/requests", (c) =>
     guard(c, async () => {
-      const body = (await c.req.json().catch(() => null)) as {
-        locationId?: unknown;
-        note?: unknown;
-      } | null;
-      const note = body?.note ?? null;
-      if (
-        typeof body?.locationId !== "string" ||
-        !UUID.test(body.locationId) ||
-        (note !== null && (typeof note !== "string" || note.length > TEXT_MAX))
-      ) {
-        return c.json({ error: "invalid_request" }, 422);
-      }
-      const locationId = body.locationId;
+      const parsed = HelpRequestInput.safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: "invalid_request" }, 422);
+      const input = parsed.data;
       const id = await withScope(deps.db, c.get("scope"), (tx) =>
         createSurveyRequest(
           tx,
           c.get("scope"),
           c.get("userName"),
-          { locationId, note: typeof note === "string" ? note.trim() || null : null },
+          {
+            locationId: input.locationId,
+            note: input.note,
+            ...(input.attachment ? { attachment: input.attachment } : {}),
+          },
           options,
         ),
       );
       return c.json({ id }, 201);
-    }),
-  );
-
-  api.post("/surveys/requests/:id/handle", (c) =>
-    guard(c, async () => {
-      const id = c.req.param("id");
-      if (!UUID.test(id)) return c.json({ error: "not_found" }, 404);
-      const body = (await c.req.json().catch(() => null)) as {
-        to?: unknown;
-        response?: unknown;
-      } | null;
-      const response = body?.response ?? null;
-      if (
-        (body?.to !== "fulfilled" && body?.to !== "dismissed") ||
-        (response !== null && (typeof response !== "string" || response.length > TEXT_MAX))
-      ) {
-        return c.json({ error: "invalid_request" }, 422);
-      }
-      const to = body.to;
-      await withScope(deps.db, c.get("scope"), (tx) =>
-        handleSurveyRequest(
-          tx,
-          c.get("scope"),
-          id,
-          to,
-          typeof response === "string" ? response.trim() || null : null,
-          options,
-        ),
-      );
-      return c.json({ ok: true });
     }),
   );
 }

@@ -12,7 +12,6 @@ export type {
 export {
   createManualInvitation,
   createSurveyRequest,
-  handleSurveyRequest,
   listSurveyForms,
   listSurveyRequests,
   listSurveyResponses,
@@ -21,6 +20,19 @@ export {
   SurveyStateError,
 } from "./application/admin";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
+export type {
+  ResponseCard,
+  Thread,
+  ThreadAttachment,
+  ThreadMessage,
+} from "./application/help";
+export {
+  closeRequest,
+  getThread,
+  HelpAttachmentError,
+  listPickableResponses,
+  postMessage,
+} from "./application/help";
 export type {
   CaseDetail,
   CaseSummary,

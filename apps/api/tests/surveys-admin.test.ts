@@ -228,7 +228,12 @@ describe("who can do what", () => {
     expect((await call("staff", "GET", "/api/surveys/forms")).status).toBe(200);
     expect((await call("staff", "POST", `/api/surveys/forms/${locA}/link`)).status).toBe(403);
     expect(
-      (await call("staff", "POST", "/api/surveys/requests", { locationId: locA })).status,
+      (
+        await call("staff", "POST", "/api/surveys/requests", {
+          locationId: locA,
+          note: "hi",
+        })
+      ).status,
     ).toBe(403);
   });
 });
@@ -339,7 +344,12 @@ describe("requests", () => {
 
     // A client cannot ask for a location that is not theirs.
     expect(
-      (await call("owner-a", "POST", "/api/surveys/requests", { locationId: locB })).status,
+      (
+        await call("owner-a", "POST", "/api/surveys/requests", {
+          locationId: locB,
+          note: "hi",
+        })
+      ).status,
     ).toBe(404);
 
     const rows = async (l: string) =>
@@ -353,25 +363,11 @@ describe("requests", () => {
       locationName: "Bellaire",
     });
 
-    // The client cannot close its own request.
-    expect(
-      (await call("owner-a", "POST", `/api/surveys/requests/${id}/handle`, { to: "fulfilled" }))
-        .status,
-    ).toBe(403);
-    expect(
-      (
-        await call("am", "POST", `/api/surveys/requests/${id}/handle`, {
-          to: "fulfilled",
-          response: "Sent the QR",
-        })
-      ).status,
-    ).toBe(200);
-    expect(
-      (await call("am", "POST", `/api/surveys/requests/${id}/handle`, { to: "dismissed" })).status,
-    ).toBe(409);
+    // Closing moves to the thread routes (Task 4); the use cases are covered in the module tests.
     expect((await rows("owner-a"))[0]).toMatchObject({
-      status: "fulfilled",
-      response: "Sent the QR",
+      status: "open",
+      awaiting: "agency",
+      lastPreview: "A form for the patio",
     });
   });
 });

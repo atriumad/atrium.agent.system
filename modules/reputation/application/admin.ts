@@ -1,3 +1,4 @@
+import type { HelpAttachment } from "@atrium/contracts";
 import {
   type Actor,
   can,
@@ -10,25 +11,28 @@ import {
   writeAudit,
 } from "@atrium/core";
 import { and, desc, eq, sql } from "drizzle-orm";
+import { awaitingSide, type HelpSide, preview, type RequestStatus } from "../domain/help";
 import { generateInvitationToken, hashInvitationToken, signQrToken } from "../domain/invitations";
 import {
   locationSettings,
   recoveryCases,
   surveyInvitations,
+  surveyRequestMessages,
   surveyRequests,
   surveyResponses,
 } from "../infra/schema";
+import { attachmentValue, checkAttachment, notifyOthers } from "./help-shared";
 import { clock, type ReputationDeps } from "./shared";
 
 export class SurveyForbiddenError extends Error {}
 export class SurveyNotFoundError extends Error {}
 export class SurveyStateError extends Error {}
 
-const actorOf = (scope: Scope): Actor => ({ type: "user", id: scope.userId });
+export const actorOf = (scope: Scope): Actor => ({ type: "user", id: scope.userId });
 
 type SurveyAction = "read" | "forms" | "operate" | "manage" | "request";
 
-function assertCan(scope: Scope, action: SurveyAction) {
+export function assertCan(scope: Scope, action: SurveyAction) {
   if (!can(scope.role, "survey", action)) {
     throw new SurveyForbiddenError(`role ${scope.role} cannot ${action} surveys`);
   }
@@ -181,11 +185,40 @@ export type SurveyRequestRow = {
   locationName: string;
   requestedByName: string;
   note: string | null;
-  status: "open" | "fulfilled" | "dismissed";
+  status: RequestStatus;
   createdAt: Date;
   handledAt: Date | null;
   response: string | null;
+  lastMessageAt: Date | null;
+  lastAuthorSide: HelpSide | null;
+  lastPreview: string | null;
+  awaiting: HelpSide | null;
 };
+
+export function toRequestRow(
+  r: typeof surveyRequests.$inferSelect,
+  labels: Map<string, { clientName: string; locationName: string }>,
+): SurveyRequestRow {
+  const lastAuthorSide = (r.lastAuthorSide as HelpSide | null) ?? null;
+  const status = r.status as RequestStatus;
+  return {
+    id: r.id,
+    clientId: r.clientId,
+    clientName: labels.get(r.locationId)?.clientName ?? "",
+    locationId: r.locationId,
+    locationName: labels.get(r.locationId)?.locationName ?? "",
+    requestedByName: r.requestedByName,
+    note: r.note,
+    status,
+    createdAt: r.createdAt,
+    handledAt: r.handledAt,
+    response: r.response,
+    lastMessageAt: r.lastMessageAt,
+    lastAuthorSide,
+    lastPreview: r.lastPreview,
+    awaiting: awaitingSide(status, lastAuthorSide),
+  };
+}
 
 export async function listSurveyRequests(tx: Tx, scope: Scope): Promise<SurveyRequestRow[]> {
   // Requests span every location of a client and their policy is client-wide, so a location
@@ -196,38 +229,29 @@ export async function listSurveyRequests(tx: Tx, scope: Scope): Promise<SurveyRe
   const rows = await tx
     .select()
     .from(surveyRequests)
-    .orderBy(desc(surveyRequests.createdAt))
+    .orderBy(sql`coalesce(${surveyRequests.lastMessageAt}, ${surveyRequests.createdAt}) desc`)
     .limit(200);
   const labels = await describeLocations(
     tx,
     rows.map((r) => r.locationId),
   );
-  return rows.map((r) => ({
-    id: r.id,
-    clientId: r.clientId,
-    clientName: labels.get(r.locationId)?.clientName ?? "",
-    locationId: r.locationId,
-    locationName: labels.get(r.locationId)?.locationName ?? "",
-    requestedByName: r.requestedByName,
-    note: r.note,
-    status: r.status as SurveyRequestRow["status"],
-    createdAt: r.createdAt,
-    handledAt: r.handledAt,
-    response: r.response,
-  }));
+  return rows.map((r) => toRequestRow(r, labels));
 }
 
-/** The one thing a client can do about surveys: ask the agency for a form or link. */
+/** A client opens a help conversation: its first message is the note, optionally with an attachment. */
 export async function createSurveyRequest(
   tx: Tx,
   scope: Scope,
   userName: string,
-  input: { locationId: string; note: string | null },
+  input: { locationId: string; note: string; attachment?: HelpAttachment | null },
   deps: ReputationDeps = {},
 ) {
   assertCan(scope, "request");
+  const note = input.note.trim();
+  if (!note) throw new Error("the request needs a message");
   const label = (await describeLocations(tx, [input.locationId])).get(input.locationId);
   if (!label) throw new SurveyNotFoundError("location not found");
+  const now = clock(deps);
   const [row] = await tx
     .insert(surveyRequests)
     .values({
@@ -235,47 +259,34 @@ export async function createSurveyRequest(
       locationId: input.locationId,
       requestedBy: scope.userId,
       requestedByName: userName,
-      note: input.note,
-      createdAt: clock(deps),
+      note,
+      createdAt: now,
+      lastMessageAt: now,
+      lastAuthorSide: "client",
+      lastPreview: preview(note),
     })
     .returning({ id: surveyRequests.id });
   if (!row) throw new Error("request was not stored");
+  const request = { id: row.id, clientId: label.clientId, locationId: input.locationId };
+  const attachment = await checkAttachment(tx, scope, request.clientId, input.attachment ?? null);
+  await tx.insert(surveyRequestMessages).values({
+    requestId: row.id,
+    clientId: label.clientId,
+    authorId: scope.userId,
+    authorName: userName,
+    side: "client",
+    body: note,
+    attachment: attachmentValue(attachment),
+    createdAt: now,
+  });
   await writeAudit(tx, {
     actor: actorOf(scope),
     clientId: label.clientId,
     locationId: input.locationId,
     action: "reputation.request_survey",
     decision: "executed",
-    reason: input.note,
+    reason: preview(note),
   });
+  await notifyOthers(tx, scope, request, label.locationName, note, "New help request", deps);
   return row.id;
-}
-
-/** The agency closes a request: done (with a message back) or dismissed. */
-export async function handleSurveyRequest(
-  tx: Tx,
-  scope: Scope,
-  requestId: string,
-  to: "fulfilled" | "dismissed",
-  response: string | null,
-  deps: ReputationDeps = {},
-) {
-  assertCan(scope, "manage");
-  const [current] = await tx.select().from(surveyRequests).where(eq(surveyRequests.id, requestId));
-  if (!current) throw new SurveyNotFoundError("request not found");
-  if (current.status !== "open")
-    throw new SurveyStateError(`the request is already ${current.status}`);
-  await tx
-    .update(surveyRequests)
-    .set({ status: to, handledAt: clock(deps), handledBy: scope.userId, response })
-    .where(and(eq(surveyRequests.id, requestId), eq(surveyRequests.status, "open")));
-  await writeAudit(tx, {
-    actor: actorOf(scope),
-    clientId: current.clientId,
-    locationId: current.locationId,
-    action: `reputation.survey_request_${to}`,
-    input: { requestId },
-    decision: "executed",
-    reason: response,
-  });
 }
