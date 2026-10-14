@@ -72,7 +72,7 @@ Sentiment's daily cap (500 readings) also counts responses with no comment. A re
 
 ## Help requests as conversations
 
-A help request is a thread between a client and the agency, not a one-shot note. The client opens it from the Manager (Help) with a first message, which is required, and the agency answers in the same thread from the Platform or the Manager. Each message carries its author, the author's side (client or agency) and a time. Legacy requests with no note show the placeholder `(no message)`.
+A help request is a thread between a client and the agency, not a one-shot note. The client opens it in the Platform (Help page) with a first message, which is required, and answers there. The agency answers in the same thread in the Manager (Help requests). Each message carries its author, the author's side (client or agency) and a time. Legacy requests with no note show the placeholder `(no message)`.
 
 | Role | Reads | Writes | Closes |
 | --- | --- | --- | --- |
@@ -86,10 +86,10 @@ A message posted in a closed case reopens it, so a reply after Solved puts the t
 
 A message can carry one attachment, of two kinds:
 
-- **A survey response**, shown as a card with the rating, the comment, the agent's labels, the date and the location. The card never shows contact details. In the Platform, Responses has "Ask for help about this", which opens Help with the response already attached.
+- **A survey response**, shown as a card with the rating, the comment, the agent's labels, the date and the location. The card never shows contact details. In the Platform, Responses has "Ask for help about this", which opens Help with the response and its place already chosen. The response must belong to the request's client and to a place the author can see; otherwise it is refused with `422 attachment_not_found`. The attach picker lists only the recent responses of that client.
 - **An external review**, as an `https` link plus optional text and stars.
 
-Every message notifies the other side with the kind `reputation.help_message`. The notification carries a preview of at most 140 characters and links to the thread. The list and the open thread refresh every 15 seconds while the tab is visible.
+Every message or close notifies everyone who handles the client except its author (the owners and the assigned team) with the kind `reputation.help_message`. The notification carries a preview of at most 140 characters and links to the Help page, not to the specific thread. The list and the open thread refresh every 15 seconds while the tab is visible.
 
 The API replaced `POST /surveys/requests/:id/handle` with `GET /surveys/requests/:id`, `POST /surveys/requests/:id/messages`, `POST /surveys/requests/:id/close` and `GET /surveys/responses/pickable`.
 
