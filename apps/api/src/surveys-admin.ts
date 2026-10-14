@@ -1,12 +1,16 @@
-import { HelpRequestInput } from "@atrium/contracts";
+import { HelpCloseInput, HelpMessageInput, HelpRequestInput } from "@atrium/contracts";
 import { can, describeLocations, listLocationLabels, type Scope, withScope } from "@atrium/core";
 import {
+  closeRequest,
   createManualInvitation,
   createSurveyRequest,
+  getThread,
   HelpAttachmentError,
+  listPickableResponses,
   listSurveyForms,
   listSurveyRequests,
   listSurveyResponses,
+  postMessage,
   rotateQr,
   SurveyForbiddenError,
   SurveyNotFoundError,
@@ -30,7 +34,8 @@ export type SurveyAdminConfig = {
 /**
  * Survey administration, on the session-authenticated API. Reading responses, building forms and
  * links, and closing requests belong to the agency (agency admin, account manager; staff read).
- * A client owner can do exactly one thing here: ask for a form (`POST /surveys/requests`).
+ * A client owner can ask for help (`POST /surveys/requests`) and take part in the conversation
+ * (read it, reply, mark it solved).
  * The role check lives in the use cases; these routes only translate errors.
  */
 export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAdminConfig) {
@@ -70,6 +75,20 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
     const locations = await withScope(deps.db, c.get("scope"), (tx) => listLocationLabels(tx));
     return c.json({ locations });
   });
+
+  // Registered before any parametrised /surveys/responses/... route.
+  api.get("/surveys/responses/pickable", (c) =>
+    guard(c, async () => {
+      const locationId = c.req.query("locationId");
+      if (locationId !== undefined && !UUID.test(locationId)) {
+        return c.json({ error: "invalid_request" }, 422);
+      }
+      const responses = await withScope(deps.db, c.get("scope"), (tx) =>
+        listPickableResponses(tx, c.get("scope"), locationId ? { locationId } : {}),
+      );
+      return c.json({ responses });
+    }),
+  );
 
   api.get("/surveys/responses", (c) =>
     guard(c, async () => {
@@ -198,6 +217,61 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
         ),
       );
       return c.json({ id }, 201);
+    }),
+  );
+
+  api.get("/surveys/requests/:id", (c) =>
+    guard(c, async () => {
+      const id = c.req.param("id");
+      if (!UUID.test(id)) return c.json({ error: "not_found" }, 404);
+      const thread = await withScope(deps.db, c.get("scope"), (tx) =>
+        getThread(tx, c.get("scope"), id),
+      );
+      return c.json(thread);
+    }),
+  );
+
+  api.post("/surveys/requests/:id/messages", (c) =>
+    guard(c, async () => {
+      const id = c.req.param("id");
+      if (!UUID.test(id)) return c.json({ error: "not_found" }, 404);
+      const parsed = HelpMessageInput.safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: "invalid_request" }, 422);
+      const message = await withScope(deps.db, c.get("scope"), (tx) =>
+        postMessage(
+          tx,
+          c.get("scope"),
+          c.get("userName"),
+          id,
+          {
+            body: parsed.data.body,
+            ...(parsed.data.attachment ? { attachment: parsed.data.attachment } : {}),
+          },
+          options,
+        ),
+      );
+      return c.json({ message }, 201);
+    }),
+  );
+
+  api.post("/surveys/requests/:id/close", (c) =>
+    guard(c, async () => {
+      const id = c.req.param("id");
+      if (!UUID.test(id)) return c.json({ error: "not_found" }, 404);
+      const parsed = HelpCloseInput.safeParse(await c.req.json().catch(() => null));
+      if (!parsed.success) return c.json({ error: "invalid_request" }, 422);
+      await withScope(deps.db, c.get("scope"), (tx) =>
+        closeRequest(
+          tx,
+          c.get("scope"),
+          c.get("userName"),
+          id,
+          parsed.data.to,
+          parsed.data.message ?? null,
+          options,
+        ),
+      );
+      return c.json({ ok: true });
     }),
   );
 }
