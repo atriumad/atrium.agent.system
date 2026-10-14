@@ -7,10 +7,12 @@ import {
   createDatabase,
   createLocation,
   withAgency,
+  withScope,
 } from "@atrium/core";
 import { SQL } from "bun";
 import { sql } from "drizzle-orm";
 import { migrate } from "../../../scripts/migrate";
+import { closeRequest, createSurveyRequest } from "../index";
 
 const ADMIN_URL =
   process.env.DATABASE_ADMIN_URL ?? "postgres://atrium:atrium@localhost:5432/atrium";
@@ -138,5 +140,28 @@ describe("0008 backfill", () => {
     expect(await messages(id)).toEqual([
       { side: "client", body: "(no message)", author_name: "Olivia Owner" },
     ]);
+  });
+
+  test("a request made by the new code is never touched by the backfill", async () => {
+    const [{ id: creator }] = (await admin.unsafe("select id from core.users limit 1")) as {
+      id: string;
+    }[];
+    expect(creator).toBeDefined();
+    const scope = {
+      kind: "client",
+      userId: creator,
+      role: "client_owner",
+      clientId: clientA,
+    } as const;
+    const requestId = await withScope(db, scope, (tx) =>
+      createSurveyRequest(tx, scope, "Olivia Owner", { locationId: locA, note: "Fresh" }),
+    );
+    await withScope(db, scope, (tx) =>
+      closeRequest(tx, scope, "Olivia Owner", requestId, "fulfilled", "All good now"),
+    );
+    const before = await messages(requestId);
+    expect(before.length).toBe(2);
+    await admin.unsafe(backfill);
+    expect(await messages(requestId)).toEqual(before);
   });
 });

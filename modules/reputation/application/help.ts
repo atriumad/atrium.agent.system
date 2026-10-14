@@ -63,8 +63,10 @@ function assertCanRead(scope: Scope) {
   }
 }
 
-async function loadRequest(tx: Tx, requestId: string) {
-  const [request] = await tx.select().from(surveyRequests).where(eq(surveyRequests.id, requestId));
+/** `lock` takes the row for update, so a message and a close on the same request run one after the other. */
+async function loadRequest(tx: Tx, requestId: string, opts: { lock?: boolean } = {}) {
+  const query = tx.select().from(surveyRequests).where(eq(surveyRequests.id, requestId));
+  const [request] = await (opts.lock ? query.for("update") : query);
   if (!request) throw new SurveyNotFoundError("request not found");
   return request;
 }
@@ -138,9 +140,9 @@ export async function postMessage(
   deps: ReputationDeps = {},
 ): Promise<ThreadMessage> {
   const side = sideOf(scope);
-  const request = await loadRequest(tx, requestId);
   const body = input.body.trim();
-  if (!body) throw new Error("the message is empty");
+  if (!body) throw new Error("the request needs a message");
+  const request = await loadRequest(tx, requestId, { lock: true });
   const attachment = await checkAttachment(tx, scope, request.clientId, input.attachment ?? null);
   const now = clock(deps);
   const [row] = await tx
@@ -213,7 +215,6 @@ export async function closeRequest(
       handledBy: scope.userId,
       ...(closing
         ? {
-            response: closing,
             lastMessageAt: now,
             lastAuthorSide: side,
             lastPreview: preview(closing),

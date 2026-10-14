@@ -26,6 +26,8 @@ create table reputation.survey_request_messages (
 create index survey_request_messages_thread_idx
   on reputation.survey_request_messages (request_id, created_at);
 
+-- The RLS below intentionally mirrors survey_requests (no location predicate): location-scoped
+-- client_staff are excluded in the application, which never lets them read a thread.
 alter table reputation.survey_request_messages enable row level security;
 alter table reputation.survey_request_messages force row level security;
 create policy survey_request_messages_scope on reputation.survey_request_messages
@@ -34,20 +36,23 @@ create policy survey_request_messages_scope on reputation.survey_request_message
 grant select, insert on reputation.survey_request_messages to atrium_app;
 
 -- backfill:
--- every request that has no messages yet becomes a thread. Idempotent.
+-- every legacy request (last_message_at is null) that has no messages yet becomes a thread.
+-- Idempotent; requests made by the new code always set last_message_at and are never touched.
 insert into reputation.survey_request_messages
   (request_id, client_id, author_id, author_name, side, body, created_at)
 select r.id, r.client_id, r.requested_by, r.requested_by_name, 'client',
        coalesce(nullif(btrim(r.note), ''), '(no message)'), r.created_at
   from reputation.survey_requests r
- where not exists (select 1 from reputation.survey_request_messages m where m.request_id = r.id);
+ where r.last_message_at is null
+   and not exists (select 1 from reputation.survey_request_messages m where m.request_id = r.id);
 
 insert into reputation.survey_request_messages
   (request_id, client_id, author_id, author_name, side, body, created_at)
 select r.id, r.client_id, coalesce(r.handled_by, 'atrium'), 'Atrium team', 'agency',
        btrim(r.response), coalesce(r.handled_at, r.created_at + interval '1 second')
   from reputation.survey_requests r
- where nullif(btrim(r.response), '') is not null
+ where r.last_message_at is null
+   and nullif(btrim(r.response), '') is not null
    and not exists (
      select 1 from reputation.survey_request_messages m
       where m.request_id = r.id and m.side = 'agency'

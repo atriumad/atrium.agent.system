@@ -351,6 +351,37 @@ describe("the conversation", () => {
   });
 });
 
+describe("a message racing a close", () => {
+  test("a message is never stranded in a closed request", async () => {
+    const live = { publish: async (e: AtriumEvent) => void events.push(e) };
+    for (let i = 0; i < 5; i += 1) {
+      const id = await open(`Race ${i}`);
+      const results = await Promise.allSettled([
+        as(ownerA(), (tx) =>
+          postMessage(tx, ownerA(), "Olivia", id, { body: `Late word ${i}` }, live),
+        ),
+        as(am(), (tx) => closeRequest(tx, am(), "Alex", id, "fulfilled", null, live)),
+      ]);
+      expect(results.map((r) => r.status)).toEqual(["fulfilled", "fulfilled"]);
+      const audits = (await admin.unsafe(
+        "select seq::int as seq, action from core.audit_log where (input #>> '{}')::jsonb ->> 'requestId' = $1 and action in ('reputation.help_message_posted', 'reputation.help_closed_fulfilled')",
+        [id],
+      )) as { seq: number; action: string }[];
+      const posted = audits.find((r) => r.action === "reputation.help_message_posted")?.seq ?? 0;
+      const closed = audits.find((r) => r.action === "reputation.help_closed_fulfilled")?.seq ?? 0;
+      const { request } = await as(am(), (tx) => getThread(tx, am(), id));
+      if (closed < posted) {
+        // the message came after the close: it must have reopened the request for the agency
+        expect(request).toMatchObject({ status: "open", awaiting: "agency" });
+      } else {
+        // the close came after the message: closed, nothing awaited
+        expect(request).toMatchObject({ status: "fulfilled", awaiting: null });
+      }
+      expect(request.lastPreview).toBe(`Late word ${i}`);
+    }
+  });
+});
+
 describe("attachments", () => {
   test("an external review is stored and returned as a card", async () => {
     const id = await open();
