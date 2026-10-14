@@ -18,6 +18,7 @@ export { CasesPage, type Surface } from "./cases-app";
 export * from "./data";
 export * from "./feedback";
 export * from "./forms";
+export { HelpThreads } from "./help-thread";
 export * from "./icon";
 export * from "./layout";
 export * from "./navigation";

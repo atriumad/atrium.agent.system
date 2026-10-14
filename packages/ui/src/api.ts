@@ -41,6 +41,38 @@ export type SurveyForm = {
   qrUrl: string | null;
 };
 
+export type HelpAttachmentInput =
+  | { kind: "response"; responseId: string }
+  | { kind: "review"; url: string; rating?: number; text?: string };
+
+export type ThreadAttachment =
+  | {
+      kind: "response";
+      response: {
+        id: string;
+        locationName: string;
+        rating: number;
+        comment: string | null;
+        bestPart: string | null;
+        improve: string | null;
+        sentiment: string | null;
+        topics: string[];
+        concern: string | null;
+        safety: boolean | null;
+        createdAt: string;
+      } | null;
+    }
+  | { kind: "review"; url: string; rating: number | null; text: string | null };
+
+export type ThreadMessage = {
+  id: string;
+  authorName: string;
+  side: "client" | "agency";
+  body: string;
+  attachment: ThreadAttachment | null;
+  createdAt: string;
+};
+
 export type SurveyRequest = {
   id: string;
   clientName: string;
@@ -51,6 +83,20 @@ export type SurveyRequest = {
   createdAt: string;
   handledAt: string | null;
   response: string | null;
+  lastMessageAt: string | null;
+  lastAuthorSide: "client" | "agency" | null;
+  lastPreview: string | null;
+  awaiting: "client" | "agency" | null;
+};
+
+export type ThreadRequest = SurveyRequest;
+export type HelpThreadData = { request: ThreadRequest; messages: ThreadMessage[] };
+export type PickableResponse = {
+  id: string;
+  createdAt: string;
+  rating: number;
+  excerpt: string;
+  locationName: string;
 };
 
 export type PlaceStatus = "pending" | "active" | "suspended" | "rejected";
@@ -172,11 +218,30 @@ export const api = {
     }),
   surveyRequests: () =>
     call<{ requests: SurveyRequest[] }>("/api/surveys/requests").then((r) => r.requests),
-  requestSurvey: (locationId: string, note: string) =>
+  requestSurvey: (locationId: string, note: string, attachment?: HelpAttachmentInput) =>
     call<{ id: string }>("/api/surveys/requests", {
       method: "POST",
-      body: JSON.stringify({ locationId, note: note.trim() || null }),
+      body: JSON.stringify({
+        locationId,
+        note: note.trim(),
+        ...(attachment ? { attachment } : {}),
+      }),
     }),
+  helpThread: (id: string) => call<HelpThreadData>(`/api/surveys/requests/${id}`),
+  postHelpMessage: (id: string, body: string, attachment?: HelpAttachmentInput) =>
+    call<unknown>(`/api/surveys/requests/${id}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ body: body.trim(), ...(attachment ? { attachment } : {}) }),
+    }),
+  closeHelpRequest: (id: string, to: "fulfilled" | "dismissed", message?: string) =>
+    call<unknown>(`/api/surveys/requests/${id}/close`, {
+      method: "POST",
+      body: JSON.stringify({ to, ...(message?.trim() ? { message: message.trim() } : {}) }),
+    }),
+  pickableResponses: (locationId?: string) =>
+    call<{ responses: PickableResponse[] }>(
+      `/api/surveys/responses/pickable${locationId ? `?locationId=${locationId}` : ""}`,
+    ).then((r) => r.responses),
   handleSurveyRequest: (id: string, to: "fulfilled" | "dismissed", response: string) =>
     call<unknown>(`/api/surveys/requests/${id}/handle`, {
       method: "POST",
