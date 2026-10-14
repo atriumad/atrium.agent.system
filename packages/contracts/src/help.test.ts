@@ -28,6 +28,23 @@ describe("help attachments", () => {
     }
   });
 
+  test("normalises the review link: uppercase scheme, padding and whitespace-only text", () => {
+    const parsed = HelpAttachment.parse({
+      kind: "review",
+      url: "  HTTPS://Maps.Google.com/?cid=1  ",
+      text: "   ",
+    });
+    expect(parsed).toEqual({ kind: "review", url: "https://maps.google.com/?cid=1" });
+    expect("text" in parsed && parsed.text).toBeFalsy();
+    expect(HelpAttachment.parse({ kind: "review", url: "HTTPS://x.test" })).toEqual({
+      kind: "review",
+      url: "https://x.test/",
+    });
+    expect(HelpAttachment.safeParse({ kind: "review", url: " javascript:alert(1) " }).success).toBe(
+      false,
+    );
+  });
+
   test("rejects a bad rating, long text, extra keys and a malformed response id", () => {
     const url = "https://example.com/r";
     expect(HelpAttachment.safeParse({ kind: "review", url, rating: 6 }).success).toBe(false);
@@ -54,6 +71,9 @@ describe("help inputs", () => {
       true,
     );
     expect(HelpCloseInput.safeParse({ to: "open" }).success).toBe(false);
+    expect(HelpCloseInput.parse({ to: "fulfilled", message: "" }).message).toBeUndefined();
+    expect(HelpCloseInput.parse({ to: "fulfilled", message: "  " }).message).toBeUndefined();
+    expect(HelpCloseInput.parse({ to: "fulfilled", message: " Done " }).message).toBe("Done");
   });
 
   test("a new request needs a place and a note", () => {

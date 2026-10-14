@@ -18,9 +18,20 @@ export const HelpAttachment = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("response"), responseId: z.string().uuid() }),
   z.strictObject({
     kind: z.literal("review"),
-    url: z.string().max(2048).refine(isHttps, "must be an https link"),
+    // Trimmed, checked, then stored as the parsed href so `HTTPS://x` is a plain https link.
+    url: z
+      .string()
+      .trim()
+      .max(2048)
+      .refine(isHttps, "must be an https link")
+      .transform((u) => new URL(u).href),
     rating: z.number().int().min(1).max(5).optional(),
-    text: z.string().trim().max(1000).optional(),
+    text: z
+      .string()
+      .trim()
+      .max(1000)
+      .transform((t) => t || undefined)
+      .optional(),
   }),
 ]);
 export type HelpAttachment = z.infer<typeof HelpAttachment>;
@@ -35,7 +46,12 @@ export type HelpMessageInput = z.infer<typeof HelpMessageInput>;
 
 export const HelpCloseInput = z.strictObject({
   to: z.enum(["fulfilled", "dismissed"]),
-  message: z.string().trim().max(HELP_BODY_MAX).nullish(),
+  message: z
+    .string()
+    .trim()
+    .max(HELP_BODY_MAX)
+    .transform((m) => m || undefined)
+    .nullish(),
 });
 export type HelpCloseInput = z.infer<typeof HelpCloseInput>;
 

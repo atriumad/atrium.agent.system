@@ -276,7 +276,7 @@ describe("the conversation", () => {
     const long = `${"y".repeat(400)}`;
     await as(am(), (tx) => postMessage(tx, am(), "Alex", id, { body: long }, deps));
     const toOwner = (await notesTo(ids.ownerA)).at(-1);
-    expect(toOwner?.body.length).toBeLessThanOrEqual(220);
+    expect(toOwner?.body.length).toBeLessThanOrEqual(140);
     expect(toOwner?.body).not.toContain("y".repeat(200));
     expect((await notesTo(ids.am)).filter((n) => n.body.includes("y".repeat(20))).length).toBe(0);
     const thread = await as(ownerA(), (tx) => getThread(tx, ownerA(), id));
@@ -342,6 +342,7 @@ describe("the conversation", () => {
 
   test("two agency users closing at once: exactly one wins", async () => {
     const id = await open();
+    const before = (await notesTo(ids.ownerA)).length;
     const results = await Promise.allSettled([
       as(am(), (tx) => closeRequest(tx, am(), "Alex", id, "fulfilled", null, deps)),
       as(agencyAdmin(), (tx) =>
@@ -349,6 +350,14 @@ describe("the conversation", () => {
       ),
     ]);
     expect(results.filter((r) => r.status === "fulfilled").length).toBe(1);
+    const loser = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    expect(loser.reason).toBeInstanceOf(SurveyStateError);
+    const [audit] = (await admin.unsafe(
+      "select count(*)::int as n from core.audit_log where action like 'reputation.help_closed_%' and (input #>> '{}')::jsonb ->> 'requestId' = $1",
+      [id],
+    )) as { n: number }[];
+    expect(audit?.n).toBe(1);
+    expect((await notesTo(ids.ownerA)).length).toBe(before + 1);
   });
 });
 
@@ -496,6 +505,7 @@ describe("lists", () => {
     const pick = await as(ownerA(), (tx) => listPickableResponses(tx, ownerA()));
     expect(pick.length).toBeGreaterThan(0);
     expect(pick.length).toBeLessThanOrEqual(20);
+    expect(pick.length).toBeGreaterThan(0);
     expect(pick.every((p) => p.excerpt.length <= 60)).toBe(true);
     expect(pick.every((p) => p.locationId.length > 0)).toBe(true);
     const scoped: Scope = {

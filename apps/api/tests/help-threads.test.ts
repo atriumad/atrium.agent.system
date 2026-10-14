@@ -274,6 +274,9 @@ test("a response attachment resolves in the thread; another client's response is
     attachment: { kind: "response", responseId: theirs },
   });
   expect(bad.status).toBe(422);
+  expect((await bad.json()).error).toBe("attachment_not_found");
+  const after = await (await call("am", "GET", `/api/surveys/requests/${id}`)).json();
+  expect(after.messages).toHaveLength(1);
 });
 
 test("the old /handle route is gone", async () => {
@@ -354,4 +357,62 @@ test("pickable: client staff are forbidden", async () => {
     .map((c) => c.split(";")[0])
     .join("; ");
   expect((await call("cstaff", "GET", "/api/surveys/responses/pickable")).status).toBe(403);
+});
+
+test("the list carries awaiting and the last preview", async () => {
+  const id = await open("Preview me");
+  const list = (await (await call("am", "GET", "/api/surveys/requests")).json()).requests;
+  expect(list.find((r: any) => r.id === id)).toMatchObject({
+    awaiting: "agency",
+    lastPreview: "Preview me",
+  });
+  await call("am", "POST", `/api/surveys/requests/${id}/messages`, { body: "Reply here" });
+  const again = (await (await call("owner", "GET", "/api/surveys/requests")).json()).requests;
+  expect(again.find((r: any) => r.id === id)).toMatchObject({
+    awaiting: "client",
+    lastPreview: "Reply here",
+  });
+});
+
+describe("negative paths", () => {
+  test("another client's close is 404", async () => {
+    const id = await open();
+    const res = await call("otherOwner", "POST", `/api/surveys/requests/${id}/close`, {
+      to: "fulfilled",
+    });
+    expect(res.status).toBe(404);
+  });
+
+  test("a malformed :id is 404 on read, message and close", async () => {
+    expect((await call("owner", "GET", "/api/surveys/requests/not-an-id")).status).toBe(404);
+    expect(
+      (await call("owner", "POST", "/api/surveys/requests/not-an-id/messages", { body: "x" }))
+        .status,
+    ).toBe(404);
+    expect(
+      (await call("owner", "POST", "/api/surveys/requests/not-an-id/close", { to: "fulfilled" }))
+        .status,
+    ).toBe(404);
+  });
+
+  test("a malformed locationId, requestId or id on pickable is 422", async () => {
+    for (const q of ["locationId=x", "requestId=x", "id=x"]) {
+      expect((await call("owner", "GET", `/api/surveys/responses/pickable?${q}`)).status).toBe(422);
+    }
+  });
+
+  test("unparseable JSON is 422 on messages and close", async () => {
+    const id = await open();
+    for (const path of [
+      `/api/surveys/requests/${id}/messages`,
+      `/api/surveys/requests/${id}/close`,
+    ]) {
+      const res = await app.request(path, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: cookies.owner as string },
+        body: "{not json",
+      });
+      expect(res.status).toBe(422);
+    }
+  });
 });

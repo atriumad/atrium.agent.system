@@ -502,14 +502,13 @@ describe("HelpThreads", () => {
 
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
     try {
-      await new Promise((r2) => setTimeout(r2, 60)); // let an in-flight tick settle
+      await new Promise((r2) => setTimeout(r2, 60)); // no event marks "no more polls", so the negative has to wait a little; kept short
       const frozen = threadLoads;
       await new Promise((r2) => setTimeout(r2, 150));
       expect(threadLoads).toBe(frozen);
     } finally {
       delete (document as { visibilityState?: unknown }).visibilityState;
     }
-    await waitFor(() => expect(threadLoads).toBeGreaterThan(0));
     const resumed = threadLoads;
     await waitFor(() => expect(threadLoads).toBeGreaterThan(resumed));
   });
