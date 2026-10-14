@@ -85,6 +85,19 @@ const places = {
     locations: [{ id: "l1", locationName: "Bellaire", clientName: "Casa Olivo" }],
   },
 };
+const pickable = {
+  "/api/surveys/responses/pickable": {
+    responses: [
+      {
+        id: RESP_ID,
+        createdAt: new Date().toISOString(),
+        rating: 2,
+        excerpt: "Slow service",
+        locationName: "Bellaire",
+      },
+    ],
+  },
+};
 const asMe = (me: typeof ownerMe, ui: React.ReactNode) =>
   setup(<MeProvider me={me}>{ui}</MeProvider>);
 
@@ -191,11 +204,72 @@ describe("HelpPage", () => {
   test("the attached response can be removed before sending", async () => {
     const restore = at(`/help?response=${RESP_ID}`);
     try {
-      fakeFetch({ ...places, "/api/surveys/requests": { requests: [] } });
+      fakeFetch({ ...places, ...pickable, "/api/surveys/requests": { requests: [] } });
       const { user } = asMe(ownerMe, <HelpPage />);
-      expect(await screen.findByText("Survey response")).toBeTruthy();
+      expect(await screen.findByText(/Survey response: Slow service/)).toBeTruthy();
       await user.click(screen.getByLabelText("Remove attachment"));
-      expect(screen.queryByText("Survey response")).toBeNull();
+      expect(screen.queryByText(/Survey response/)).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  const sendWithoutAttachment = async (
+    calls: ReturnType<typeof fakeFetch>,
+    user: ReturnType<typeof setup>["user"],
+  ) => {
+    await user.type(await screen.findByLabelText(/What do you need/), "Hello");
+    await user.click(screen.getByText("Send request"));
+    await waitFor(() => {
+      const post = calls.find((c) => c.init?.method === "POST");
+      expect(JSON.parse(String(post?.init?.body))).toEqual({ locationId: "l1", note: "Hello" });
+    });
+  };
+
+  test("a value that is not an id is ignored without a chip or a banner", async () => {
+    const restore = at("/help?response=garbage");
+    try {
+      const calls = fakeFetch({ ...places, "/api/surveys/requests": { requests: [] } });
+      const { user } = asMe(ownerMe, <HelpPage />);
+      await sendWithoutAttachment(calls, user);
+      expect(screen.queryByLabelText("Remove attachment")).toBeNull();
+      expect(screen.queryByText("We could not attach that response.")).toBeNull();
+      expect(calls.some((c) => c.path.includes("pickable"))).toBe(false);
+    } finally {
+      restore();
+    }
+  });
+
+  test("an id the lookup does not return shows a banner and attaches nothing", async () => {
+    const restore = at(`/help?response=${RESP_ID}`);
+    try {
+      const calls = fakeFetch({
+        ...places,
+        "/api/surveys/requests": { requests: [] },
+        "/api/surveys/responses/pickable": { responses: [] },
+      });
+      const { user } = asMe(ownerMe, <HelpPage />);
+      expect(await screen.findByText("We could not attach that response.")).toBeTruthy();
+      expect(screen.queryByLabelText("Remove attachment")).toBeNull();
+      await sendWithoutAttachment(calls, user);
+    } finally {
+      restore();
+    }
+  });
+
+  test("a failing lookup shows a banner and attaches nothing", async () => {
+    const restore = at(`/help?response=${RESP_ID}`);
+    try {
+      const calls = fakeFetch({ ...places, "/api/surveys/requests": { requests: [] } });
+      const inner = globalThis.fetch;
+      globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) =>
+        String(input).includes("/responses/pickable")
+          ? new Response("{}", { status: 500 })
+          : inner(input, init)) as typeof fetch;
+      const { user } = asMe(ownerMe, <HelpPage />);
+      expect(await screen.findByText("We could not attach that response.")).toBeTruthy();
+      expect(screen.queryByLabelText("Remove attachment")).toBeNull();
+      await sendWithoutAttachment(calls, user);
     } finally {
       restore();
     }

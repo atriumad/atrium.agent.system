@@ -54,7 +54,11 @@ function CopyButton({ value, label = "Copy link" }: { value: string; label?: str
       variant="outline"
       size="sm"
       onClick={async () => {
-        await navigator.clipboard?.writeText(value).catch(() => undefined);
+        try {
+          await navigator.clipboard?.writeText(value);
+        } catch {
+          return; // the browser refused the copy: do not claim it worked
+        }
         setDone(true);
         setTimeout(() => setDone(false), 1800);
       }}
@@ -374,6 +378,9 @@ export function HelpRequestsPage() {
   );
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ATTACH_FAILED = "We could not attach that response.";
+
 function HelpPanel() {
   const places = useLoad(api.surveyLocations);
   const [place, setPlace] = useState<string | null>(null);
@@ -382,6 +389,7 @@ function HelpPanel() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachNote, setAttachNote] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const options = (places.data ?? []).map((p: PlaceOption) => ({
     value: p.id,
@@ -392,18 +400,19 @@ function HelpPanel() {
   // "Ask for help about this" on a response arrives as ?response=<id>.
   useEffect(() => {
     const responseId = new URLSearchParams(window.location.search).get("response");
-    if (!responseId) return;
+    if (!responseId || !UUID.test(responseId)) return;
     let live = true;
-    setAttachment({ responseId, label: "Survey response" });
     api
       .pickableResponses()
       .then((all) => {
+        if (!live) return;
         const hit = all.find((x) => x.id === responseId);
-        if (live && hit?.excerpt) {
-          setAttachment({ responseId, label: `Survey response: ${hit.excerpt}` });
-        }
+        if (hit) setAttachment({ responseId, label: `Survey response: ${hit.excerpt}` });
+        else setAttachNote(ATTACH_FAILED);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (live) setAttachNote(ATTACH_FAILED);
+      });
     return () => {
       live = false;
     };
@@ -465,6 +474,7 @@ function HelpPanel() {
               </button>
             </p>
           ) : null}
+          {attachNote ? <Banner status="warning">{attachNote}</Banner> : null}
           {error ? <Banner status="danger">{error}</Banner> : null}
           {sent ? <Banner status="positive">Request sent. We will get back to you.</Banner> : null}
           <Button loading={busy} onClick={submit}>
