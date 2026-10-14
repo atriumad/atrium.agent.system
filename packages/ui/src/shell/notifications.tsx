@@ -26,6 +26,8 @@ export function notificationHref(kind: string, surface: Surface): string | null 
       return surface === "platform" ? "/places" : null;
     case "reputation.case_alert":
       return surface === "manager" ? "/reputation/cases" : "/reputation/feedback";
+    case "reputation.help_message":
+      return surface === "manager" ? "/reputation/help" : "/help";
     default:
       return null;
   }

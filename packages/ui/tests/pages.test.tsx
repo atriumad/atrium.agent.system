@@ -97,7 +97,7 @@ describe("pages carry no navigation chrome of their own", () => {
       },
     });
     const first = inside(amMe, <HelpRequestsPage />);
-    expect(await screen.findByText("No requests")).toBeTruthy();
+    expect(await screen.findByText("No help requests")).toBeTruthy();
     first.unmount();
     inside(ownerMe, <HelpPage />);
     expect(await screen.findByText("Send request")).toBeTruthy();

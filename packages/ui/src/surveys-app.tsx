@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Star } from "lucide-react";
+import { Check, Copy, ExternalLink, Paperclip, Star, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./actions/button";
@@ -24,6 +24,7 @@ import { ago } from "./format";
 import { Field } from "./forms/field";
 import { TextareaField, TextField } from "./forms/input";
 import { Select } from "./forms/select";
+import { HelpThreads } from "./help-thread";
 import { PageHeader } from "./layout/layout";
 import { ListPanel, ROW_PAD } from "./layout/list-panel";
 import { useMe } from "./shell/me-context";
@@ -102,6 +103,7 @@ function Responses() {
 }
 
 function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
+  const me = useMe();
   return (
     <li className={ROW_PAD}>
       <div>
@@ -129,6 +131,18 @@ function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
           {r.reviewClicked ? <StatusBadge status="positive">Went to Google</StatusBadge> : null}
           {r.caseId ? <StatusBadge status="warning">Recovery case</StatusBadge> : null}
         </div>
+        {me.canRequestSurveys ? (
+          <div className="mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              nativeButton={false}
+              render={<a href={`/help?response=${r.id}`} />}
+            >
+              Ask for help about this
+            </Button>
+          </div>
+        ) : null}
       </div>
     </li>
   );
@@ -312,97 +326,6 @@ function Forms({ canManage, canOperate }: { canManage: boolean; canOperate: bool
   );
 }
 
-/* -------------------------------- requests -------------------------------- */
-
-const REQUEST_STATUS = {
-  open: { status: "warning", word: "Waiting" },
-  fulfilled: { status: "positive", word: "Done" },
-  dismissed: { status: "neutral", word: "Declined" },
-} as const;
-
-function RequestRow({
-  request,
-  now,
-  onHandled,
-}: {
-  request: SurveyRequest;
-  now: Date;
-  onHandled?: (() => void) | undefined;
-}) {
-  const [reply, setReply] = useState("");
-  const [busy, setBusy] = useState(false);
-  const s = REQUEST_STATUS[request.status];
-
-  async function handle(to: "fulfilled" | "dismissed") {
-    setBusy(true);
-    await api.handleSurveyRequest(request.id, to, reply).catch(() => undefined);
-    setBusy(false);
-    onHandled?.();
-  }
-
-  return (
-    <li>
-      <Card padding="sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusBadge status={s.status}>{s.word}</StatusBadge>
-          <span className="min-w-0 flex-1 text-sm">
-            <strong className="font-medium">{request.locationName}</strong>
-            <span className="text-fg-muted">
-              {" "}
-              · {request.clientName} · {request.requestedByName}
-            </span>
-          </span>
-          <span className="text-xs text-fg-muted">{ago(request.createdAt, now)}</span>
-        </div>
-        {request.note ? <p className="mt-3 mb-0 text-sm">{request.note}</p> : null}
-        {request.response ? (
-          <p className="mt-3 mb-0 text-sm text-fg-muted">Agency: {request.response}</p>
-        ) : null}
-        {onHandled && request.status === "open" ? (
-          <div className="mt-4 flex flex-col gap-3">
-            <TextareaField
-              label="Reply to the client"
-              optional
-              rows={2}
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button size="sm" loading={busy} onClick={() => handle("fulfilled")}>
-                Mark done
-              </Button>
-              <Button size="sm" variant="ghost" disabled={busy} onClick={() => handle("dismissed")}>
-                Decline
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </Card>
-    </li>
-  );
-}
-
-function Requests() {
-  const { data, failed, reload } = useLoad(api.surveyRequests);
-  const now = new Date();
-  return (
-    <div className="flex flex-col gap-4">
-      {failed ? <ErrorState title="Could not load requests" onRetry={reload} /> : null}
-      {data === null && !failed ? <Skeleton className="h-24 w-full" /> : null}
-      {data?.length === 0 ? (
-        <EmptyState title="No requests">
-          When a client asks for a survey form, it shows up here.
-        </EmptyState>
-      ) : null}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Survey requests">
-        {data?.map((r) => (
-          <RequestRow key={r.id} request={r} now={now} onHandled={reload} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /* ---------------------------------- pages ---------------------------------- */
 
 export function ResponsesPage() {
@@ -442,35 +365,65 @@ export function HelpRequestsPage() {
         title="Help requests"
         description="What clients asked the Atrium team for."
       />
-      {me.canViewForms ? <Requests /> : <NotAvailable />}
+      {me.canViewForms ? (
+        <HelpThreads canDecline={me.canManageSurveys} canWrite={me.canManageSurveys} />
+      ) : (
+        <NotAvailable />
+      )}
     </div>
   );
 }
 
 function HelpPanel() {
   const places = useLoad(api.surveyLocations);
-  const requests = useLoad(api.surveyRequests);
   const [place, setPlace] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [attachment, setAttachment] = useState<{ responseId: string; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const now = new Date();
+  const [version, setVersion] = useState(0);
   const options = (places.data ?? []).map((p: PlaceOption) => ({
     value: p.id,
     label: p.locationName,
   }));
   const chosen = place ?? (options.length === 1 ? (options[0]?.value ?? null) : null);
 
+  // "Ask for help about this" on a response arrives as ?response=<id>.
+  useEffect(() => {
+    const responseId = new URLSearchParams(window.location.search).get("response");
+    if (!responseId) return;
+    let live = true;
+    setAttachment({ responseId, label: "Survey response" });
+    api
+      .pickableResponses()
+      .then((all) => {
+        const hit = all.find((x) => x.id === responseId);
+        if (live && hit?.excerpt) {
+          setAttachment({ responseId, label: `Survey response: ${hit.excerpt}` });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
+
   async function submit() {
     if (!chosen) return setError("Pick the place the form is for.");
+    if (!note.trim()) return setError("Write a message first.");
     setBusy(true);
     setError(null);
     try {
-      await api.requestSurvey(chosen, note);
+      await api.requestSurvey(
+        chosen,
+        note,
+        attachment ? { kind: "response", responseId: attachment.responseId } : undefined,
+      );
       setNote("");
+      setAttachment(null);
       setSent(true);
-      requests.reload();
+      setVersion((v) => v + 1);
     } catch {
       setError("We could not send the request. Try again.");
     } finally {
@@ -479,7 +432,7 @@ function HelpPanel() {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+    <div className="flex flex-col gap-6">
       <Card padding="md" title="Ask for help">
         <div className="mt-4 flex flex-col gap-4">
           <Field label="Place">
@@ -493,12 +446,25 @@ function HelpPanel() {
           </Field>
           <TextareaField
             label="What do you need?"
-            optional
             rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Change our Google review link, rotate the QR of the patio, anything else…"
           />
+          {attachment ? (
+            <p className="m-0 flex items-center gap-2 self-start rounded-sm border border-line px-3 py-1.5 text-sm">
+              <Paperclip size={14} strokeWidth={1.5} aria-hidden="true" />
+              <span className="min-w-0 truncate">{attachment.label}</span>
+              <button
+                type="button"
+                aria-label="Remove attachment"
+                className="cursor-pointer text-fg-muted hover:text-fg-strong"
+                onClick={() => setAttachment(null)}
+              >
+                <X size={14} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </p>
+          ) : null}
           {error ? <Banner status="danger">{error}</Banner> : null}
           {sent ? <Banner status="positive">Request sent. We will get back to you.</Banner> : null}
           <Button loading={busy} onClick={submit}>
@@ -506,18 +472,7 @@ function HelpPanel() {
           </Button>
         </div>
       </Card>
-      <div className="flex flex-col gap-3">
-        <h2 className="m-0 text-xl font-normal">Your requests</h2>
-        {requests.data === null && !requests.failed ? <Skeleton className="h-20 w-full" /> : null}
-        {requests.data?.length === 0 ? (
-          <EmptyState title="Nothing yet">Your requests and our answers show up here.</EmptyState>
-        ) : null}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Your requests">
-          {requests.data?.map((r) => (
-            <RequestRow key={r.id} request={r} now={now} />
-          ))}
-        </ul>
-      </div>
+      <HelpThreads key={version} canDecline={false} canWrite />
     </div>
   );
 }

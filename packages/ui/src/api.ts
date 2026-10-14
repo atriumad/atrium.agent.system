@@ -242,11 +242,6 @@ export const api = {
     call<{ responses: PickableResponse[] }>(
       `/api/surveys/responses/pickable${locationId ? `?locationId=${locationId}` : ""}`,
     ).then((r) => r.responses),
-  handleSurveyRequest: (id: string, to: "fulfilled" | "dismissed", response: string) =>
-    call<unknown>(`/api/surveys/requests/${id}/handle`, {
-      method: "POST",
-      body: JSON.stringify({ to, response: response.trim() || null }),
-    }),
   access: () => call<{ access: Record<string, string> }>("/api/access").then((r) => r.access),
   places: () => call<{ locations: Place[] }>("/api/locations").then((r) => r.locations),
   requestPlace: (name: string, timeZone: string) =>
