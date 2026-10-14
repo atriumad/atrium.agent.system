@@ -280,7 +280,10 @@ describe("HelpPage", () => {
       fakeFetch({ ...places, ...pickable, "/api/surveys/requests": { requests: [] } });
       const { user } = asMe(ownerMe, <HelpPage />);
       expect(await screen.findByText(/Survey response: Slow service/)).toBeTruthy();
-      await user.click(screen.getByLabelText("Remove attachment"));
+      const remove = screen.getByLabelText("Remove attachment");
+      expect(remove.className).toContain("min-h-6");
+      expect(remove.className).toContain("min-w-6");
+      await user.click(remove);
       expect(screen.queryByText(/Survey response/)).toBeNull();
     } finally {
       restore();

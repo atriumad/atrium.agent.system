@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, Paperclip, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import {
   ApiError,
@@ -41,8 +41,9 @@ const isAttachmentGone = (e: unknown) => e instanceof ApiError && e.code === "at
 
 const viewerSideOf = (me: Me): Side => (me.kind === "client" ? "client" : "agency");
 
-function sideLabel(side: Side, viewer: Side): string {
-  if (side === viewer) return "You";
+/** "You" only for your own messages; a colleague on your side is named, with the side. */
+function sideLabel(side: Side, viewer: Side, mine: boolean): string {
+  if (mine) return "You";
   return side === "agency" ? "Atrium team" : "The client";
 }
 
@@ -128,8 +129,19 @@ function AttachmentCard({ attachment }: { attachment: ThreadAttachment }) {
   );
 }
 
-function Message({ message, viewer, now }: { message: ThreadMessage; viewer: Side; now: Date }) {
+function Message({
+  message,
+  viewer,
+  me,
+  now,
+}: {
+  message: ThreadMessage;
+  viewer: Side;
+  me: Me;
+  now: Date;
+}) {
   const own = message.side === viewer;
+  const mine = own && message.authorName === me.name;
   return (
     <li className={cx("flex", own ? "justify-end" : "justify-start")}>
       <div
@@ -140,7 +152,7 @@ function Message({ message, viewer, now }: { message: ThreadMessage; viewer: Sid
       >
         <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-xs text-fg-muted">
           <span className="font-medium text-fg-strong">{message.authorName}</span>
-          <span>{sideLabel(message.side, viewer)}</span>
+          <span>{sideLabel(message.side, viewer, mine)}</span>
           <span>{ago(message.createdAt, now)}</span>
         </p>
         <p className="m-0 mt-1.5 text-sm whitespace-pre-wrap text-fg-body">{message.body}</p>
@@ -294,10 +306,43 @@ function Composer({
   const [draft, setDraft] = useState("");
   const [attached, setAttached] = useState<Attached | null>(null);
   const [menu, setMenu] = useState(false);
+  const attachButton = useRef<HTMLButtonElement>(null);
+  const attachPanel = useRef<HTMLDivElement>(null);
+  const panelId = useId();
   const [picker, setPicker] = useState<Picker>(null);
   const [busy, setBusy] = useState<"send" | "fulfilled" | "dismissed" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const open = request.status === "open";
+
+  // The Attach disclosure: focus moves into it when it opens; Escape or a click outside closes it
+  // and puts focus back on the button.
+  useEffect(() => {
+    if (!menu) return;
+    attachPanel.current?.querySelector("button")?.focus();
+    const giveFocusBack = () => {
+      const active = document.activeElement;
+      if (!active || active === document.body || attachPanel.current?.contains(active)) {
+        attachButton.current?.focus();
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenu(false);
+      attachButton.current?.focus();
+    };
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (attachPanel.current?.contains(target) || attachButton.current?.contains(target)) return;
+      setMenu(false);
+      giveFocusBack();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("click", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onClick);
+    };
+  }, [menu]);
 
   function choose(p: Exclude<Picker, null>) {
     setMenu(false);
@@ -383,7 +428,7 @@ function Composer({
           <button
             type="button"
             aria-label="Remove attachment"
-            className="cursor-pointer text-fg-muted hover:text-fg-strong"
+            className="inline-flex min-h-6 min-w-6 cursor-pointer items-center justify-center text-fg-muted hover:text-fg-strong"
             onClick={() => setAttached(null)}
           >
             <X size={14} strokeWidth={1.5} aria-hidden="true" />
@@ -400,10 +445,11 @@ function Composer({
         </Button>
         <div className="relative">
           <Button
+            ref={attachButton}
             variant="outline"
             icon={<Paperclip size={16} strokeWidth={1.5} aria-hidden="true" />}
-            aria-haspopup="menu"
             aria-expanded={menu}
+            aria-controls={panelId}
             disabled={busy !== null}
             onClick={() => setMenu((v) => !v)}
           >
@@ -411,9 +457,9 @@ function Composer({
           </Button>
           {menu ? (
             <div
-              role="menu"
-              aria-label="Attach"
-              className="absolute bottom-full left-0 z-10 mb-1 flex min-w-44 flex-col overflow-hidden rounded-sm border border-line bg-surface-card"
+              id={panelId}
+              ref={attachPanel}
+              className="absolute top-full left-0 z-10 mt-1 min-w-48 rounded-md border border-line bg-surface-card p-1"
             >
               {(
                 [
@@ -424,9 +470,8 @@ function Composer({
                 <button
                   key={key}
                   type="button"
-                  role="menuitem"
                   onClick={() => choose(key)}
-                  className="cursor-pointer px-3 py-2 text-left text-sm hover:bg-surface-sunken"
+                  className="block w-full cursor-pointer rounded-sm px-3 py-2 text-left text-sm hover:bg-surface-sunken"
                 >
                   {label}
                 </button>
@@ -467,15 +512,21 @@ function Conversation({
   canWrite,
   pollMs,
   onChanged,
+  focusNow,
+  onFocused,
 }: {
   id: string;
   canDecline: boolean;
   canWrite: boolean;
   pollMs: number;
   onChanged: () => void;
+  focusNow: boolean;
+  onFocused: () => void;
 }) {
   const me = useMe();
   const viewer = viewerSideOf(me);
+  const region = useRef<HTMLElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const [data, setData] = useState<HelpThreadData | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -502,10 +553,22 @@ function Conversation({
   }, [load, onChanged]);
 
   const request = data?.request ?? null;
+
+  // After the person picks a request, bring the conversation into view and move focus to its
+  // heading once it is on screen (on a phone it sits below the list).
+  const ready = request !== null;
+  useEffect(() => {
+    if (!focusNow || !ready) return;
+    region.current?.scrollIntoView?.({ block: "start" });
+    heading.current?.focus();
+    onFocused();
+  }, [focusNow, ready, onFocused]);
+
   const s = request ? STATUS[request.status] : null;
 
   return (
     <section
+      ref={region}
       aria-label="Conversation"
       className="flex flex-col gap-4 rounded-md border border-line bg-surface-card p-5"
     >
@@ -517,7 +580,11 @@ function Conversation({
         <>
           <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <StatusBadge status={s.status}>{s.word}</StatusBadge>
-            <h2 className="m-0 min-w-0 flex-1 text-lg font-medium text-fg-strong">
+            <h2
+              ref={heading}
+              tabIndex={-1}
+              className="m-0 min-w-0 flex-1 text-lg font-medium text-fg-strong"
+            >
               {request.locationName}
               <span className="text-sm font-normal text-fg-muted">
                 {me.kind !== "client" ? ` · ${request.clientName}` : ""} · {request.requestedByName}
@@ -526,7 +593,7 @@ function Conversation({
           </header>
           <ul aria-label="Messages" className="m-0 flex list-none flex-col gap-3 p-0">
             {data?.messages.map((m) => (
-              <Message key={m.id} message={m} viewer={viewer} now={now} />
+              <Message key={m.id} message={m} viewer={viewer} me={me} now={now} />
             ))}
           </ul>
           {canWrite ? <Composer request={request} canDecline={canDecline} onDone={done} /> : null}
@@ -558,7 +625,7 @@ function Row({
       <button
         type="button"
         onClick={onSelect}
-        aria-current={active}
+        aria-current={active ? "true" : undefined}
         className={cx(
           "block w-full cursor-pointer text-left transition-colors hover:bg-surface-sunken",
           ROW_PAD,
@@ -613,6 +680,8 @@ export function HelpThreads({
   const [requests, setRequests] = useState<SurveyRequest[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(initialSelected);
+  const [focusNow, setFocusNow] = useState(false);
+  const stopFocusing = useCallback(() => setFocusNow(false), []);
   const [now, setNow] = useState(() => new Date());
 
   const load = useCallback(() => {
@@ -662,7 +731,10 @@ export function HelpThreads({
                     showClient={me.kind !== "client"}
                     active={selected === r.id}
                     now={now}
-                    onSelect={() => setSelected(r.id)}
+                    onSelect={() => {
+                      setSelected(r.id);
+                      setFocusNow(true);
+                    }}
                   />
                 ))}
           </ListPanel>
@@ -675,6 +747,8 @@ export function HelpThreads({
                 canWrite={canWrite}
                 pollMs={pollMs}
                 onChanged={load}
+                focusNow={focusNow}
+                onFocused={stopFocusing}
               />
             ) : (
               <p className="m-0 hidden rounded-md border border-dashed border-charcoal-400 p-6 text-fg-muted lg:block">

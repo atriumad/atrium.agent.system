@@ -480,7 +480,7 @@ function HelpPanel() {
               <button
                 type="button"
                 aria-label="Remove attachment"
-                className="cursor-pointer text-fg-muted hover:text-fg-strong"
+                className="inline-flex min-h-6 min-w-6 cursor-pointer items-center justify-center text-fg-muted hover:text-fg-strong"
                 onClick={() => setAttachment(null)}
               >
                 <X size={14} strokeWidth={1.5} aria-hidden="true" />

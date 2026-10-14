@@ -304,7 +304,7 @@ describe("HelpThreads", () => {
     await open(user);
     await user.type(await screen.findByLabelText("Message"), "Look at this");
     await user.click(screen.getByRole("button", { name: "Attach" }));
-    await user.click(screen.getByRole("menuitem", { name: "External review" }));
+    await user.click(screen.getByRole("button", { name: "External review" }));
 
     await user.type(screen.getByLabelText(/review link/i), "http://maps.google.com/?cid=1");
     await user.click(screen.getByRole("button", { name: "Add review" }));
@@ -333,7 +333,7 @@ describe("HelpThreads", () => {
     if (draft) await user.type(await screen.findByLabelText("Message"), draft);
     else await screen.findByLabelText("Message");
     await user.click(screen.getByRole("button", { name: "Attach" }));
-    await user.click(screen.getByRole("menuitem", { name: "External review" }));
+    await user.click(screen.getByRole("button", { name: "External review" }));
     await user.type(screen.getByLabelText(/review link/i), "https://maps.google.com/?cid=1");
     await user.click(screen.getByRole("button", { name: "Add review" }));
     await screen.findByRole("button", { name: "Remove attachment" });
@@ -421,7 +421,7 @@ describe("HelpThreads", () => {
     await open(user);
     await user.type(await screen.findByLabelText("Message"), "This one");
     await user.click(screen.getByRole("button", { name: "Attach" }));
-    await user.click(screen.getByRole("menuitem", { name: "Survey response" }));
+    await user.click(screen.getByRole("button", { name: "Survey response" }));
     const choices = await screen.findByRole("list", { name: "Survey responses" });
     expect(within(choices).getByText(/Bellaire/)).toBeTruthy();
     await user.click(within(choices).getByText(/cold food and slow/i));
@@ -458,7 +458,7 @@ describe("HelpThreads", () => {
     await open(user);
     await user.type(await screen.findByLabelText("Message"), "This one");
     await user.click(screen.getByRole("button", { name: "Attach" }));
-    await user.click(screen.getByRole("menuitem", { name: "Survey response" }));
+    await user.click(screen.getByRole("button", { name: "Survey response" }));
     const choices = await screen.findByRole("list", { name: "Survey responses" });
     await user.click(within(choices).getByText(/cold food and slow/i));
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -512,5 +512,112 @@ describe("HelpThreads", () => {
     await waitFor(() => expect(threadLoads).toBeGreaterThan(0));
     const resumed = threadLoads;
     await waitFor(() => expect(threadLoads).toBeGreaterThan(resumed));
+  });
+});
+
+describe("accessibility and labels", () => {
+  const attachButton = () => screen.getByRole("button", { name: "Attach" });
+
+  test("Attach is a disclosure: it moves focus in, and Escape closes it and returns focus", async () => {
+    fakeFetch(routes());
+    const { user } = asOwner(<HelpThreads canDecline={false} canWrite pollMs={60_000} />);
+    await open(user);
+    await screen.findByLabelText("Message");
+    expect(attachButton().getAttribute("aria-expanded")).toBe("false");
+    expect(attachButton().getAttribute("aria-haspopup")).toBeNull();
+    await user.click(attachButton());
+    expect(attachButton().getAttribute("aria-expanded")).toBe("true");
+    const panelId = attachButton().getAttribute("aria-controls") as string;
+    expect(document.getElementById(panelId)).toBeTruthy();
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    const first = screen.getByRole("button", { name: "External review" });
+    expect(screen.getByRole("button", { name: "Survey response" })).toBeTruthy();
+    expect(document.activeElement).toBe(first);
+    await user.keyboard("{Escape}");
+    expect(attachButton().getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: "External review" })).toBeNull();
+    expect(document.activeElement).toBe(attachButton());
+  });
+
+  test("a click outside closes the Attach disclosure and returns focus to the button", async () => {
+    fakeFetch(routes());
+    const { user } = asOwner(<HelpThreads canDecline={false} canWrite pollMs={60_000} />);
+    await open(user);
+    await screen.findByLabelText("Message");
+    await user.click(attachButton());
+    await user.click(document.body);
+    expect(attachButton().getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(attachButton());
+    // Toggling with the button itself also works.
+    await user.click(attachButton());
+    expect(attachButton().getAttribute("aria-expanded")).toBe("true");
+    await user.click(attachButton());
+    expect(attachButton().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("selecting a request scrolls to the conversation and focuses its heading", async () => {
+    const scrolled: unknown[] = [];
+    const proto = Element.prototype as { scrollIntoView?: (o?: unknown) => void };
+    const before = proto.scrollIntoView;
+    proto.scrollIntoView = (o) => void scrolled.push(o);
+    try {
+      fakeFetch(routes());
+      const { user } = asOwner(<HelpThreads canDecline={false} canWrite pollMs={60_000} />);
+      await open(user);
+      const heading = await screen.findByRole("heading", { name: /Bellaire/ });
+      expect(heading.getAttribute("tabindex")).toBe("-1");
+      await waitFor(() => expect(document.activeElement).toBe(heading));
+      expect(scrolled).toEqual([{ block: "start" }]);
+    } finally {
+      if (before) proto.scrollIntoView = before;
+      else delete proto.scrollIntoView;
+    }
+  });
+
+  test("the selected row is aria-current, the others carry no attribute", async () => {
+    fakeFetch(routes());
+    const { user } = asOwner(<HelpThreads canDecline={false} canWrite pollMs={60_000} />);
+    const list = await screen.findByRole("list", { name: "Help requests" });
+    const row = within(list).getByRole("button");
+    expect(row.getAttribute("aria-current")).toBeNull();
+    await user.click(row);
+    expect(row.getAttribute("aria-current")).toBe("true");
+  });
+
+  test("the remove-attachment target is at least 24px", async () => {
+    fakeFetch(routes());
+    const { user } = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await open(user);
+    await screen.findByLabelText("Message");
+    await user.click(attachButton());
+    await user.click(screen.getByRole("button", { name: "External review" }));
+    await user.type(screen.getByLabelText(/review link/i), "https://maps.google.com/?cid=1");
+    await user.click(screen.getByRole("button", { name: "Add review" }));
+    const remove = await screen.findByRole("button", { name: "Remove attachment" });
+    expect(remove.className).toContain("min-h-6");
+    expect(remove.className).toContain("min-w-6");
+  });
+
+  test("only your own messages say You; a colleague on your side is named with the side", async () => {
+    const colleague = { ...msg("m2", "client", "Me too"), authorName: "Pat Partner" };
+    fakeFetch(routes(base(), [msg("m1", "client", "Help"), colleague]));
+    const owner = asOwner(<HelpThreads canDecline={false} canWrite pollMs={60_000} />);
+    await open(owner.user);
+    const convo = await screen.findByRole("region", { name: "Conversation" });
+    await within(convo).findByText("Pat Partner");
+    expect(within(convo).getAllByText("You")).toHaveLength(1);
+    expect(within(convo).getByText("The client")).toBeTruthy();
+    owner.unmount();
+
+    const mate = { ...msg("m3", "agency", "Looking"), authorName: "Sam Support" };
+    fakeFetch(routes(base(), [msg("m1", "client", "Help"), mate]));
+    const am = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await open(am.user);
+    const convo2 = await screen.findByRole("region", { name: "Conversation" });
+    await within(convo2).findByText("Sam Support");
+    expect(within(convo2).queryByText("You")).toBeNull();
+    expect(within(convo2).getByText("Atrium team")).toBeTruthy();
+    expect(within(convo2).getByText("The client")).toBeTruthy();
   });
 });
