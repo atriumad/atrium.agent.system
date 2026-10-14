@@ -268,6 +268,7 @@ describe("HelpThreads", () => {
     await screen.findByRole("region", { name: "Conversation" });
     await screen.findByText("Help", { selector: "p.whitespace-pre-wrap" });
     expect(screen.queryByLabelText("Message")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark as solved" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Decline" })).toBeNull();
   });
 
@@ -325,6 +326,78 @@ describe("HelpThreads", () => {
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Remove attachment" })).toBeNull(),
     );
+  });
+
+  async function stageReview(user: ReturnType<typeof setup>["user"], draft: string) {
+    await open(user);
+    if (draft) await user.type(await screen.findByLabelText("Message"), draft);
+    else await screen.findByLabelText("Message");
+    await user.click(screen.getByRole("button", { name: "Attach" }));
+    await user.click(screen.getByRole("menuitem", { name: "External review" }));
+    await user.type(screen.getByLabelText(/review link/i), "https://maps.google.com/?cid=1");
+    await user.click(screen.getByRole("button", { name: "Add review" }));
+    await screen.findByRole("button", { name: "Remove attachment" });
+  }
+
+  test("closing with a staged attachment posts the message first, then closes without a message", async () => {
+    const calls = fakeFetch({
+      ...routes(),
+      [`/api/surveys/requests/${ID}/messages`]: { id: "m9" },
+      [`/api/surveys/requests/${ID}/close`]: { ok: true },
+    });
+    const { user } = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await stageReview(user, "Fixed it");
+    await user.click(screen.getByRole("button", { name: "Mark as solved" }));
+    await waitFor(() => expect(posted(calls, "/close")).toHaveLength(1));
+    const writes = calls.filter((c) => c.init?.method === "POST");
+    expect(writes.map((c) => c.path.split("/").pop())).toEqual(["messages", "close"]);
+    expect(bodyOf(writes[0])).toEqual({
+      body: "Fixed it",
+      attachment: { kind: "review", url: "https://maps.google.com/?cid=1" },
+    });
+    expect(bodyOf(writes[1])).toEqual({ to: "fulfilled" });
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Remove attachment" })).toBeNull(),
+    );
+    expect((screen.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("");
+  });
+
+  test("closing with a staged attachment and no message sends nothing", async () => {
+    const calls = fakeFetch({
+      ...routes(),
+      [`/api/surveys/requests/${ID}/messages`]: { id: "m9" },
+      [`/api/surveys/requests/${ID}/close`]: { ok: true },
+    });
+    const { user } = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await stageReview(user, "");
+    await user.click(screen.getByRole("button", { name: "Decline" }));
+    expect(await screen.findByText("Add a message to go with the attachment.")).toBeTruthy();
+    expect(calls.filter((c) => c.init?.method === "POST")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Remove attachment" })).toBeTruthy();
+  });
+
+  test("a failed close after the post does not post the message twice on retry", async () => {
+    const calls = fakeFetch({
+      ...routes(),
+      [`/api/surveys/requests/${ID}/messages`]: { id: "m9" },
+      [`/api/surveys/requests/${ID}/close`]: { ok: true },
+    });
+    const ok = globalThis.fetch;
+    let failClose = true;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) =>
+      failClose && String(input).endsWith("/close") && init?.method === "POST"
+        ? new Response("{}", { status: 500 })
+        : ok(input, init)) as typeof fetch;
+    const { user } = asAm(<HelpThreads canDecline canWrite pollMs={60_000} />);
+    await stageReview(user, "Fixed it");
+    await user.click(screen.getByRole("button", { name: "Mark as solved" }));
+    expect(await screen.findByText(/could not close it/i)).toBeTruthy();
+    expect(posted(calls, "/messages")).toHaveLength(1);
+    failClose = false;
+    await user.click(screen.getByRole("button", { name: "Mark as solved" }));
+    await waitFor(() => expect(posted(calls, "/close")).toHaveLength(1));
+    expect(posted(calls, "/messages")).toHaveLength(1);
+    expect(bodyOf(posted(calls, "/close")[0])).toEqual({ to: "fulfilled" });
   });
 
   test("a survey response is picked from the list and posts by id", async () => {

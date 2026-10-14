@@ -320,17 +320,42 @@ function Composer({
   }
 
   async function close(to: "fulfilled" | "dismissed") {
-    setBusy(to);
     setError(null);
-    try {
-      await api.closeHelpRequest(request.id, to, draft);
-    } catch {
-      setError(CLOSE_FAILED);
-      setBusy(null);
+    if (attached && !draft.trim()) {
+      setError("Add a message to go with the attachment.");
       return;
     }
-    setDraft("");
-    setAttached(null);
+    setBusy(to);
+    if (attached) {
+      // The close call carries no attachment, so post the message first. Once it is posted the
+      // draft and the attachment are spent: clear them, so a retry cannot post it twice.
+      try {
+        await api.postHelpMessage(request.id, draft, attached.input);
+      } catch {
+        setError(CLOSE_FAILED);
+        setBusy(null);
+        return;
+      }
+      setDraft("");
+      setAttached(null);
+      try {
+        await api.closeHelpRequest(request.id, to);
+      } catch {
+        setError(CLOSE_FAILED);
+        setBusy(null);
+        await onDone();
+        return;
+      }
+    } else {
+      try {
+        await api.closeHelpRequest(request.id, to, draft);
+      } catch {
+        setError(CLOSE_FAILED);
+        setBusy(null);
+        return;
+      }
+      setDraft("");
+    }
     setBusy(null);
     await onDone();
   }
