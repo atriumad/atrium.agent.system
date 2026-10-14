@@ -70,6 +70,31 @@ Nada de esto cambia a quién se le pide reseña. El botón de Google nunca depen
 
 El tope diario de Sentiment (500 lecturas) también cuenta las respuestas sin comentario. Una respuesta rechazada por el tope queda sin leer; volver a leer respuestas antiguas queda fuera del alcance.
 
+## Pedidos de ayuda como conversaciones
+
+Un pedido de ayuda es un hilo entre el cliente y la agencia, no una nota de un solo envío. El cliente lo abre desde el Manager (Help) con un primer mensaje, que es obligatorio, y la agencia responde en el mismo hilo desde la Platform o el Manager. Cada mensaje lleva su autor, el lado del autor (cliente o agencia) y la hora. Los pedidos antiguos sin nota muestran el texto provisional `(no message)`.
+
+| Rol | Lee | Escribe | Cierra |
+| --- | --- | --- | --- |
+| `client_owner` | Sí | Sí | Solo como Resuelto |
+| `agency_admin` | Sí | Sí | Resuelto o Rechazado |
+| `account_manager` | Sí | Sí | Resuelto o Rechazado |
+| `agency_staff` | Sí | No | No |
+| `client_staff` | Sin acceso | No | No |
+
+Un mensaje publicado en un caso cerrado lo reabre, así que una respuesta después de Resuelto devuelve el hilo a En espera. Un pedido cerrado dos veces responde `409 invalid_state`.
+
+Un mensaje puede llevar un adjunto, de dos tipos:
+
+- **Una respuesta de encuesta**, mostrada como una tarjeta con la calificación, el comentario, las etiquetas del agente, la fecha y el local. La tarjeta nunca muestra datos de contacto. En la Platform, Responses tiene "Ask for help about this", que abre Help con la respuesta ya adjunta.
+- **Una reseña externa**, como un link `https` más texto y estrellas opcionales.
+
+Cada mensaje avisa al otro lado con el tipo `reputation.help_message`. La notificación lleva una vista previa de como máximo 140 caracteres y enlaza al hilo. La lista y el hilo abierto se actualizan cada 15 segundos mientras la pestaña está visible.
+
+La API reemplazó `POST /surveys/requests/:id/handle` por `GET /surveys/requests/:id`, `POST /surveys/requests/:id/messages`, `POST /surveys/requests/:id/close` y `GET /surveys/responses/pickable`.
+
+Fuera del alcance: archivos adjuntos, tiempo real, contadores de no leídos, editar o borrar mensajes, y agentes que participen en los hilos.
+
 ## Herramientas MCP
 
 | Herramienta | Escribe | Nivel inicial |

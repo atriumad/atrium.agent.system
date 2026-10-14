@@ -70,6 +70,31 @@ None of this changes who is asked for a review. The Google button never depends 
 
 Sentiment's daily cap (500 readings) also counts responses with no comment. A response refused at the cap stays unread; re-reading old responses is out of scope.
 
+## Help requests as conversations
+
+A help request is a thread between a client and the agency, not a one-shot note. The client opens it from the Manager (Help) with a first message, which is required, and the agency answers in the same thread from the Platform or the Manager. Each message carries its author, the author's side (client or agency) and a time. Legacy requests with no note show the placeholder `(no message)`.
+
+| Role | Reads | Writes | Closes |
+| --- | --- | --- | --- |
+| `client_owner` | Yes | Yes | Only as Solved |
+| `agency_admin` | Yes | Yes | Solved or Declined |
+| `account_manager` | Yes | Yes | Solved or Declined |
+| `agency_staff` | Yes | No | No |
+| `client_staff` | No access | No | No |
+
+A message posted in a closed case reopens it, so a reply after Solved puts the thread back to Waiting. A request closed twice answers `409 invalid_state`.
+
+A message can carry one attachment, of two kinds:
+
+- **A survey response**, shown as a card with the rating, the comment, the agent's labels, the date and the location. The card never shows contact details. In the Platform, Responses has "Ask for help about this", which opens Help with the response already attached.
+- **An external review**, as an `https` link plus optional text and stars.
+
+Every message notifies the other side with the kind `reputation.help_message`. The notification carries a preview of at most 140 characters and links to the thread. The list and the open thread refresh every 15 seconds while the tab is visible.
+
+The API replaced `POST /surveys/requests/:id/handle` with `GET /surveys/requests/:id`, `POST /surveys/requests/:id/messages`, `POST /surveys/requests/:id/close` and `GET /surveys/responses/pickable`.
+
+Out of scope: file attachments, real time, unread counters, editing or deleting messages, and agents taking part in threads.
+
 ## MCP tools
 
 | Tool | Writes | Initial level |
