@@ -143,13 +143,9 @@ describe("0008 backfill", () => {
   });
 
   test("a request made by the new code is never touched by the backfill", async () => {
-    const [{ id: creator }] = (await admin.unsafe("select id from core.users limit 1")) as {
-      id: string;
-    }[];
-    expect(creator).toBeDefined();
     const scope = {
       kind: "client",
-      userId: creator,
+      userId: `hm-owner-${suffix}`,
       role: "client_owner",
       clientId: clientA,
     } as const;
