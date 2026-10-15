@@ -79,7 +79,7 @@ Hub  GET/POST /u/<token>   ◄── link in the email footer
 
 ### 4. Unsubscribe
 
-- The review request carries a footer link and the headers `List-Unsubscribe` and `List-Unsubscribe-Post`, pointing at the Hub page `/u/<token>`. The token is signed with `SURVEY_SECRET` and names the guest; it expires with the same rule as survey links.
+- The review request carries a footer link and the headers `List-Unsubscribe` and `List-Unsubscribe-Post`, pointing at the Hub page `/u/<token>`. The token is signed with `SURVEY_SECRET` and names the client and the guest. It does not expire (an unsubscribe link must keep working), and rotating the secret revokes every link. The one-click POST goes through the Hub's origin (`/unsubscribe-api/<token>`, rewritten to the API), so one public address serves both the page and the header.
 - The page asks for one confirmation and then calls `recordOptOut(..., "email", "email_unsubscribe")`. A repeated visit is harmless and says so.
 
 ### 5. Set-password email
