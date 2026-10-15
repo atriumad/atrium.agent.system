@@ -141,3 +141,12 @@ describe("recovery.evaluate", () => {
     expect((calls[1]?.input as { reason: string }).reason).toContain("safety true");
   });
 });
+
+describe("ask.send_due time budget", () => {
+  test("new sends stop once the budget is spent", async () => {
+    const { budgetSpent, SEND_DUE_BUDGET_MS } = await import("../src/tasks/ask");
+    const started = new Date("2026-10-06T17:00:00Z");
+    expect(budgetSpent(started, new Date(started.getTime() + SEND_DUE_BUDGET_MS - 1))).toBe(false);
+    expect(budgetSpent(started, new Date(started.getTime() + SEND_DUE_BUDGET_MS))).toBe(true);
+  });
+});
