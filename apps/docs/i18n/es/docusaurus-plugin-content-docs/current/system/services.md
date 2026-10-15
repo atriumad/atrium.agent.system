@@ -21,9 +21,8 @@ description: "Cada servicio con su engine y tier, los tres tiers y los tres paqu
 | Google Awareness Ads | Acquisition | 1 Discover | Ads de búsqueda y Maps en términos de alta intención | Si no estás en el 3-pack, pierdes al guest |
 | Brand Ambassadors | Acquisition | 1 Discover | Visitas de creadores locales con derechos de UGC; contenido de pares sembrado en los feeds | El UGC de pares es la señal de confianza principal de Gen Z |
 | Reviews + Rating Improvement | Reputation | 2 Retain | Generación de reseñas (QR y encuesta post-visita), cada reseña respondida en 24–48 h en voz de marca, negativas atendidas en privado | Un perfil de 4.5★ / 200+ convierte mucho más |
-| CRM + Automations | Retention | 2 Retain | Email y SMS capturados en el POS vía Toast; bienvenida 24 h, cumpleaños, win-back a 60 días, lapsed a 90 días | Reactivar a un guest dormido cuesta $1–5 vs $5–20 uno nuevo |
+| CRM + Automations | Retention | 2 Retain | Emails capturados en el POS vía Toast; bienvenida 24 h, cumpleaños, win-back a 60 días, lapsed a 90 días | Reactivar a un guest dormido cuesta $1–5 vs $5–20 uno nuevo |
 | Email Marketing | Retention | 2 Retain | 2–4 envíos al mes, segmentados; revenue rastreado 14 días por envío | Canal propio: centavos por contacto |
-| SMS Marketing | Retention | 2 Retain | 1–2 envíos al mes más ofertas flash; redenciones y bajas rastreadas | El camino más rápido a una sala llena esta noche |
 | Loyalty & Rewards | Retention | 2 Retain | Tiers por visitas y reconocimiento VIP; beneficio al hito de 5 visitas | La 5ª visita confirma un hábito de por vida |
 | Landing Pages | Growth | 3 Growth | Páginas de oferta, evento y catering con pixels; un link limpio con UTM por campaña | Convierte clics en reservas |
 | Campaign Content | Growth | 3 Growth | Variantes de foto y video centradas en la oferta por campaña, separadas de lo orgánico | Protege el feed limpio |
@@ -32,7 +31,7 @@ description: "Cada servicio con su engine y tier, los tres tiers y los tres paqu
 | Event Marketing | Growth | 3 Growth | Calendario de eventos y vuelo promocional por evento; RSVPs rastreados hasta cubiertos | Llena sillas y el feed |
 | Private Events | Growth | 3 Growth | Landing page, outreach y manejo de leads | Cubiertos de alto ticket |
 | Catering Leads | Growth | 3 Growth | Captura de leads y secuencia de seguimiento; pipeline reportado cada mes | Mayor valor promedio de orden |
-| Slow-Day Campaigns | Growth | 3 Growth | Ofertas por franja horaria vía SMS, paid y GBP | Revenue de mesas vacías |
+| Slow-Day Campaigns | Growth | 3 Growth | Ofertas por franja horaria vía email, paid y GBP | Revenue de mesas vacías |
 | Gift Cards | Growth | 3 Growth | Impulsos de temporada y mecánicas de regreso | Efectivo por adelantado, guests nuevos |
 | Grand Opening | Growth | 3 Growth | Plan de lanzamiento de 90 días: teaser, apertura, sostén | Demanda desde el primer día |
 | Monthly Reports | Growth | 3 Growth → todos | Scores por engine, logros y próximos pasos, cada mes, en lenguaje simple | Se acabó adivinar |
@@ -54,7 +53,7 @@ Monthly Reports y 90-Day Roadmap se proponen en todos los tiers: todo client nec
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Essential** | $1,800 / mes | Social orgánico, estudio de contenido y analytics. Discoverability básico. La rampa de entrada | Completo | Completo | Básico | Bloqueado | Bloqueado | Bloqueado |
 | **Pillar 2** | $4,200 / mes | Agrega Discoverability completo, Reputation y Attribution verificada. El núcleo | Completo | Completo | Completo | Completo | Bloqueado | Básico |
-| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de SMS y email, atribución completa | Completo | Completo | Completo | Completo | Completo | Completo |
+| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de lealtad y email, atribución completa | Completo | Completo | Completo | Completo | Completo | Completo |
 
 Las páginas bloqueadas siguen visibles en la Platform para que el client vea qué desbloquea el siguiente paquete. Las reglas de desbloqueo están en [Paquetes y acceso](../product/packages-and-access).
 

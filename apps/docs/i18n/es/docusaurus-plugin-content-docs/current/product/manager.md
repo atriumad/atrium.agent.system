@@ -33,7 +33,7 @@ El Manager es donde Atrium corre su entrega. La misma vista puede verse **como**
 | Assistant Account Manager | `aam` | Armado y revisión del calendario; distribución y publicación; distribución de stories; engagement y reseñas; GBP y comunidad |
 | Creative Director | `cd` | El doc de estrategia interno (MAP); preproducción; sesión de contenido; planificación de postproducción; QC en Milanote; dirección de la sesión |
 | Assistant Creative Director | `acd` | QC del contenido producido |
-| Developer | `dev` | CRM, email y SMS; QC de automatizaciones; reputación, SEO y discoverability; pixel y tracking; landing pages |
+| Developer | `dev` | CRM y email; QC de automatizaciones; reputación, SEO y discoverability; pixel y tracking; landing pages |
 | Graphic Designer | `gd` | Gráficos y carruseles |
 | Video Editor | `ve` | Edición de reels |
 
@@ -59,7 +59,7 @@ Un ciclo mensual anclado a la fecha de facturación, en tres etapas: **Strategy 
 | 7 | Armado y cierre del calendario | Día 10–12 | AAM, AM |
 | 8 | Edición y diseño: todos los assets entregados | Día 9–14 | CD |
 | 9 | Configuración y lanzamiento de ads | Día 10–12 | AM |
-| 10 | CRM, email y SMS | Día 10–14 | AM, DEV |
+| 10 | CRM y email | Día 10–14 | AM, DEV |
 | 11 | Empieza la distribución | Día 13–21 | AAM |
 | 12 | Engagement, reseñas, GBP y stories | Día 13–27 | AAM |
 | · | Chequeo de ritmo semanal | Cada viernes | AM |
@@ -107,12 +107,12 @@ Las Client Operational Guidelines convierten la promesa en unidades medibles. Ca
 | Parte | Contenido |
 | --- | --- |
 | **Equipo de la cuenta** | Quién está asignado al client en cada rol, con la opción de cambiar a una persona |
-| **Alcance y entregables** | Contenido core (reels, gráficos, sets de stories, días de sesión), contenido de growth (reels narrativos, POV de chef y fundador, colaboraciones con embajadores), social y reputación (community management, respuestas a reseñas, actualizaciones de GBP), email y SMS (campañas, automatizaciones), ads (Meta always-on, Google Search, campañas de performance) |
+| **Alcance y entregables** | Contenido core (reels, gráficos, sets de stories, días de sesión), contenido de growth (reels narrativos, POV de chef y fundador, colaboraciones con embajadores), social y reputación (community management, respuestas a reseñas, actualizaciones de GBP), email (campañas, automatizaciones), ads (Meta always-on, Google Search, campañas de performance) |
 | **Calendario del ciclo** | Los pasos de arriba, con los responsables de cada client |
 | **Volumen de trabajo** | Horas estándar por rol, desde las tareas disparadas, más los topes por etiqueta |
 | **Guardrails permanentes** | Aprobación obligatoria antes de cualquier lanzamiento de paid, afirmación de precio o menú, o mención de un competidor; nunca publicar nombres de competidores salvo aprobación ni afirmaciones de salud sin verificar; tono y voz; protocolo de reseñas negativas (avisar al AM, aprobación escrita, responder en 24–48 h); cambios de calendario solo tras una conversación de trade-off |
 | **Rutina semanal permanente** | Post semanal "What's New" de GBP alineado a la oferta vigente; monitoreo de reseñas dos veces por semana; community management sin nada sin responder más de 24 h; ad always-on de Meta confirmado activo; stories publicadas a diario; cada tarea con responsable y fecha |
-| **Estado del tech stack** | Toast POS, Metricool, Twilio, Google Business Profile, Meta Business Manager, Meta Pixel, GA4, N8N, SemRush: conectado o pendiente |
+| **Estado del tech stack** | Toast POS, Metricool, Resend, Google Business Profile, Meta Business Manager, Meta Pixel, GA4, N8N, SemRush: conectado o pendiente |
 | **Fechas clave** | Eventos y visitas de embajadores; ritmo semanal; el reporte mensual |
 | **Bitácora de cambios** | "Si no está aquí, no es oficial": cada cambio de alcance, con quién y por qué |
 
@@ -128,10 +128,9 @@ Un registro manual, una sección por cada módulo que desbloquea el paquete del 
 | Ads · Meta y Google | Completo | Campaña de Meta (spend, impressions, reach, clicks, leads), Google Search, boosted post |
 | Local y SEO · GBP | Básico | GBP post, GBP photos, keyword rank |
 | Reputación y reseñas | Completo | Review requests, reviews received, review responses |
-| Email · Twilio | Completo | Campaña de email (sent, opens, clicks, revenue) |
-| SMS · Twilio | Completo | SMS blast (sent, clicks, redemptions, opt-outs) |
+| Email · Resend | Completo | Campaña de email (sent, opens, clicks, revenue) |
 | Leads y campañas | Básico | Catering lead, reservation, event RSVP |
 
 ## Estado de datos
 
-Una matriz de clients contra fuentes (Toast, Meta, Metricool, Twilio, GBP, Survey): **connected**, **syncing**, **needs attention** o **not connected**. Es el checklist de onboarding y el primer lugar donde mirar cuando un número se queda viejo.
+Una matriz de clients contra fuentes (Toast, Meta, Metricool, Resend, GBP, Survey): **connected**, **syncing**, **needs attention** o **not connected**. Es el checklist de onboarding y el primer lugar donde mirar cuando un número se queda viejo.

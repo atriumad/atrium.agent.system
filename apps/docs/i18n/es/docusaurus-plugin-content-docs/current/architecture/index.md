@@ -36,7 +36,7 @@ flowchart TB
 
 ## Un solo modelo de datos
 
-Cada número que muestra cualquier superficie resuelve a una métrica construida desde signals diarias. Las integraciones no son un añadido posterior: Toast, Metricool, Twilio, Google, Meta y el hub first-party son las fuentes que el sistema existe para leer. Un registro manual mantiene viva cada métrica cuando falta un conector. Ver [Datos](../data).
+Cada número que muestra cualquier superficie resuelve a una métrica construida desde signals diarias. Las integraciones no son un añadido posterior: Toast, Metricool, Resend, Google, Meta y el hub first-party son las fuentes que el sistema existe para leer. Un registro manual mantiene viva cada métrica cuando falta un conector. Ver [Datos](../data).
 
 ## Agentes con límites verificables
 

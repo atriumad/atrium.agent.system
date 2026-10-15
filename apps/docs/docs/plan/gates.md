@@ -45,7 +45,7 @@ description: "Criteria for moving from one phase to the next."
 
 - [ ] Attribution with identity stitching: a QR scan and the order it led to count as one guest
 - [ ] Every attributed dollar shows its method; estimates are labeled
-- [ ] Email through Twilio with opt-outs reflected in the consent log; SMS enabled for a client only after its registration is approved
+- [ ] Email through Resend with opt-outs, bounces and complaints reflected in the consent log
 - [ ] Growth programs, offers and budget pacing
 - [ ] Package access enforced on every surface and by the MCP gateway
 

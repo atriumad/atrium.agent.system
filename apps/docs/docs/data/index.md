@@ -14,7 +14,7 @@ Each layer is built only from the one below.
 
 | # | Layer | Question | What it is |
 | --- | --- | --- | --- |
-| 1 | **Sources and elements** | Where does it originate? | Platforms and feeds: socials, GBP, the landing hub, POS, email and SMS, ads. Some carry individual elements (a reel, an email, an ad, an offer) that signals attribute to |
+| 1 | **Sources and elements** | Where does it originate? | Platforms and feeds: socials, GBP, the landing hub, POS, email, ads. Some carry individual elements (a reel, an email, an ad, an offer) that signals attribute to |
 | 2 | **Signals** | What is the individual event, daily-stamped? | The atom: every impression, tap, order, review and grade lands as one row in `signals_daily` |
 | 3 | **Metrics** | Signals, calculated over a period | A metric is signals aggregated over a date range (sum, avg, rate, latest), shown as a total, a trend, a share or a comparison. "Impressions over 30 days" is a metric; the impression is the signal |
 | 4 | **Engine scores** | Quantitative and qualitative | Five engines, each 0–100: 60% measured against the benchmark and 40% practice graded by agents |

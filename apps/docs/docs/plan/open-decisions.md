@@ -30,7 +30,7 @@ description: "What has to be closed, including the points where the source mater
 ## Paperwork that starts in week 0
 
 - [ ] Request for basic access to the Google Business Profile API
-- [ ] Twilio account and the 10DLC brand registration for each pilot client
+- [ ] Resend account, with the sending domain verified
 - [ ] Toast export enabled for the pilot clients, and the partner program application
 - [ ] Metricool API access; Meta and Google Ads API access and developer tokens
 - [ ] Email sending domain with SPF, DKIM and DMARC

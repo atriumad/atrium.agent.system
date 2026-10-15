@@ -16,9 +16,9 @@ Core contains what every module needs and nothing more. The other modules use it
 | Tenancy | Clients, locations, time zone, brand (logo, colors), the 10-mile radius definition |
 | Packages | The client's package and the access matrix, published as feature flags per module and per location |
 | Guests | A single identity per client; email and phone normalized; deduplication; the identifiers used by identity stitching |
-| Consents | Per channel (`email`, `sms`) and purpose (`transactional`, `marketing`), with date, source and opt-out |
+| Consents | Per channel (`email`) and purpose (`transactional`, `marketing`), with date, source and opt-out |
 | Event queue | Transactional publishing with pg-boss; consumer registry |
-| Notifications | Sending transactional email and SMS with templates |
+| Notifications | Sending transactional email with templates |
 | Agents | Audit log, approval queue, kill switches |
 
 ## Entities

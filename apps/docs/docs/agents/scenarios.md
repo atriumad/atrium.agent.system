@@ -34,7 +34,7 @@ sequenceDiagram
 2. **Campaigner** proposes a Tuesday offer with its own promo code so it can be measured.
 3. The owner approves it from the Platform or the Mobile app **(person)**.
 4. **Crave** drafts the post and the story; they wait in the approval queue.
-5. **Letters** prepares the SMS only for guests who have consented.
+5. **Letters** prepares the email only for guests who have consented.
 6. **Pacer** sets the always-on spend for the day inside the guardrail.
 7. **Ledger** attributes the visits that used the code, labeled as code attribution.
 

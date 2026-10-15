@@ -13,7 +13,7 @@ description: "Datos propios antes que integraciones"
 | **Reemplazada por 0013 y 0014** | 2026-10-01 | Atrium · producto y tecnología |
 
 :::note
-Reemplazada. El material de origen muestra que el sistema existe para leer Toast, Metricool, Twilio, Google y las plataformas de ads. El modelo ahora es una cadena de signals con conectores ([0013](./0013-signals-data-model), [0014](./0014-n8n-connectors-with-ingestion-api)), con respaldo manual y la exportación nocturna de Toast como primera ruta, lo que conserva la parte de esta decisión que importaba: ningún número depende de la aprobación de un solo proveedor.
+Reemplazada. El material de origen muestra que el sistema existe para leer Toast, Metricool, Resend, Google y las plataformas de ads. El modelo ahora es una cadena de signals con conectores ([0013](./0013-signals-data-model), [0014](./0014-n8n-connectors-with-ingestion-api)), con respaldo manual y la exportación nocturna de Toast como primera ruta, lo que conserva la parte de esta decisión que importaba: ningún número depende de la aprobación de un solo proveedor.
 :::
 
 ## Contexto

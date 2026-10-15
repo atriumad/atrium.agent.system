@@ -14,7 +14,7 @@ Una signal es la cosa individual contada: la impresión, el toque, la orden (lo 
 | --- | --- | --- | --- |
 | `date` | date | 2026-07-10 | El sello diario. Granularidad mínima; los feeds en tiempo real se acumulan cada noche en la fila del día |
 | `location_id` | uuid | — | Toda signal pertenece a un local de un client |
-| `source` | enum | `metricool` | `metricool` \| `gbp` \| `landing` \| `site` \| `toast` \| `twilio` \| `meta_ads` \| `google_ads` \| `survey` \| `review` \| `manual` \| `agent` |
+| `source` | enum | `metricool` | `metricool` \| `gbp` \| `landing` \| `site` \| `toast` \| `meta_ads` \| `google_ads` \| `survey` \| `review` \| `manual` \| `agent` |
 | `platform` | enum? | `instagram` | `instagram` \| `facebook` \| `tiktok` \| `youtube` \| `google` \| `meta`. Nulo cuando la fuente no se divide por plataforma |
 | `element_id` | string? | `reel_0712_pastor` | Presente cuando la signal pertenece a un element individual |
 | `signal_type` | enum | `video_view` | snake_case canónico del enum de abajo. Un nombre por evento, nunca sinónimos |
@@ -32,7 +32,7 @@ Canónico, snake_case, agrupado por etapa del funnel. Los tipos nuevos se agrega
 | **Consideration** | `engagement` (like, comentario, compartido), `save`, `profile_visit`, `session`, `menu_view`, `link_click`, `email_open`, `email_click`, `direct_search` |
 | **Buying intent** | `direction`, `call`, `order_click`, `reserve_click`, `rsvp`, `qr_scan` |
 | **Outcome** | `order`, `reservation`, `redemption`, `lead`, `loyalty_signup`, `repeat_visit`, `winback_visit`, `revenue` |
-| **Salud y operación** | `review`, `review_reply`, `survey_score`, `rating_point`, `rank_point`, `sms_delivered`, `opt_in`, `opt_out`, `spend`, `agent_grade` |
+| **Salud y operación** | `review`, `review_reply`, `survey_score`, `rating_point`, `rank_point`, `opt_in`, `opt_out`, `spend`, `agent_grade` |
 
 ## Fuentes y cadencia
 
@@ -45,7 +45,7 @@ Cada fuente emite métricas generales de la propia fuente; algunas además conti
 | Atrium Landing · hub | Sesiones del hub y cada toque de botón (pedir, reservar, indicaciones, llamar, menú, su sitio), etiquetados con fuente y botón | tiempo real → diaria | Sí: cada botón |
 | Su sitio web | Sesiones, vistas del menú, clics en pedir y reservar vía pixel, rastreados junto al hub | tiempo real → diaria | No: solo general |
 | Toast POS | Órdenes, revenue, guests, ticket medio, visitas repetidas, miembros de lealtad, redenciones. El sistema de registro de los outcomes | cada 4 h | No: los outcomes se atribuyen hacia atrás |
-| Twilio · email + SMS | Envíos, aperturas, clics, entregas, altas y bajas, ventanas de revenue atribuido (14 d email, 7 d SMS) | 4 h + webhooks | Sí: cada envío o automatización |
+| Resend · email | Envíos, entregas, rebotes, quejas, altas y bajas, ventana de revenue atribuido (14 d) | 4 h + webhooks | Sí: cada campaña o automatización |
 | Meta Ads | Gasto, impresiones y alcance pagos, clics, conversiones (órdenes, reservas, leads, RSVPs), CPM y CPC | diaria | Sí: campaña y ad set |
 | Google Ads | Gasto, impresiones de ads de búsqueda y Maps, clics, conversiones, costo por acción | diaria | Sí: campaña |
 | Survey Flow | Notas post-orden, altas por QR; alimenta Reputation y la lista de guests | tiempo real → diaria | Sí: cada encuesta |
@@ -88,8 +88,7 @@ Las signals de un element llevan su `element_id`, así que el desempeño se atri
 | Feed post | Metricool | Reach, Likes, Saves, Comments |
 | Story | Metricool | Views, Taps forward, Replies, Exits |
 | Carousel | Metricool | Reach, Saves, Link clicks |
-| Email | Twilio | Sent, Open rate, Click rate, Revenue (14 d) |
-| SMS | Twilio | Sent, Delivered, Clicks, Redemptions, Opt-outs, Revenue (7 d) |
+| Email | Resend | Sent, Open rate, Click rate, Revenue (14 d) |
 | Meta ad | Meta | Spend, Impressions, Reach, Clicks, CPM, Leads, ROAS |
 | Google ad | Google | Spend, Impressions, Clicks, CPC, Conversions |
 | Offer | Toast + hub | Redemptions, Estimated sales, Channels live, Status |

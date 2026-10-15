@@ -102,12 +102,12 @@ Etiqueta canónica a la izquierda; los sinónimos no se publican nunca.
 | --- | --- | --- | --- | --- |
 | Repeat guest rate | % | outcome | `guests con repeat_visit ÷ guests` | Toast |
 | Loyalty members | count | none | `latest(loyalty_signup, cumulative)` | Toast |
-| Open rate | % | consideration | `email_open ÷ sent` | Twilio |
-| Click rate | % | consideration | `email_click ÷ sent` | Twilio |
-| Redemptions | count | outcome | `sum(redemption)` | Toast + Twilio |
+| Open rate | % | consideration | `email_open ÷ sent` | Resend |
+| Click rate | % | consideration | `email_click ÷ sent` | Resend |
+| Redemptions | count | outcome | `sum(redemption)` | Toast + Resend |
 | Win-back returns | count | outcome | `sum(winback_visit)` | Cruce con Toast |
-| Email + SMS revenue | $ | outcome | `sum(revenue, window 14d/7d)` | Cruce con Toast |
-| Opt-outs | count | none | `sum(opt_out)` | Twilio |
+| Email revenue | $ | outcome | `sum(revenue, window 14d)` | Cruce con Toast |
+| Opt-outs | count | none | `sum(opt_out)` | Resend |
 
 ### Growth
 

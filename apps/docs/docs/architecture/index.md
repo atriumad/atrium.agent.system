@@ -36,7 +36,7 @@ flowchart TB
 
 ## One data model
 
-Every number any surface shows resolves to a metric built from daily signals. Integrations are not an afterthought: Toast, Metricool, Twilio, Google, Meta and the first-party hub are the sources the system exists to read. A manual log keeps every metric alive when a connector is missing. See [Data](../data).
+Every number any surface shows resolves to a metric built from daily signals. Integrations are not an afterthought: Toast, Metricool, Resend, Google, Meta and the first-party hub are the sources the system exists to read. A manual log keeps every metric alive when a connector is missing. See [Data](../data).
 
 ## Agents with verifiable limits
 

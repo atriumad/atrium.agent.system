@@ -33,7 +33,7 @@ The Manager is where Atrium runs its delivery. The same view can be seen **as** 
 | Assistant Account Manager | `aam` | Calendar build and review; distribution and publishing; story distribution; engagement and reviews; GBP and community |
 | Creative Director | `cd` | The internal strategy doc (MAP); pre-production; content shoot; post-production planning; QC in Milanote; shoot direction |
 | Assistant Creative Director | `acd` | QC of produced content |
-| Developer | `dev` | CRM, email and SMS build; automation QC; reputation, SEO and discoverability; pixel and tracking; landing pages |
+| Developer | `dev` | CRM and email build; automation QC; reputation, SEO and discoverability; pixel and tracking; landing pages |
 | Graphic Designer | `gd` | Graphics and carousels |
 | Video Editor | `ve` | Reel editing |
 
@@ -59,7 +59,7 @@ A monthly cycle anchored to the billing date, in three stages: **Strategy → Pr
 | 7 | Calendar build and lock | Day 10–12 | AAM, AM |
 | 8 | Editing and design: all assets due | Day 9–14 | CD |
 | 9 | Ads setup and launch | Day 10–12 | AM |
-| 10 | CRM, email and SMS build | Day 10–14 | AM, DEV |
+| 10 | CRM and email build | Day 10–14 | AM, DEV |
 | 11 | Distribution starts | Day 13–21 | AAM |
 | 12 | Engagement, reviews, GBP and stories | Day 13–27 | AAM |
 | · | Weekly pacing check | Every Friday | AM |
@@ -107,12 +107,12 @@ The Client Operational Guidelines turn the promise into measurable units. Every 
 | Part | Content |
 | --- | --- |
 | **Account team** | Who is assigned to the client in each role, with the option to swap a person |
-| **Scope and deliverables** | Core content (reels, graphics, story sets, shoot days), growth content (narrative reels, chef and founder POV, ambassador collabs), social and reputation (community management, review replies, GBP updates), email and SMS (campaigns, automations), ads (Meta always-on, Google Search, performance campaigns) |
+| **Scope and deliverables** | Core content (reels, graphics, story sets, shoot days), growth content (narrative reels, chef and founder POV, ambassador collabs), social and reputation (community management, review replies, GBP updates), email (campaigns, automations), ads (Meta always-on, Google Search, performance campaigns) |
 | **Cycle calendar** | The steps above, with each client's own owners |
 | **Work volume** | Standard hours by role, from the fired tasks, plus the label ceilings |
 | **Standing guardrails** | Approval required before any paid launch, price or menu claim, or competitor mention; never post competitor names unless approved or unverified health claims; tone and voice; negative-review protocol (flag to AM, written sign-off, reply within 24–48 h); calendar changes only after a trade-off conversation |
 | **Standing weekly** | Weekly GBP "What's New" post aligned with the current offer; review monitoring twice a week; community management with nothing unanswered over 24 h; always-on Meta ad confirmed running; stories published daily; every task has an owner and a due date |
-| **Tech stack status** | Toast POS, Metricool, Twilio, Google Business Profile, Meta Business Manager, Meta Pixel, GA4, N8N, SemRush: connected or pending |
+| **Tech stack status** | Toast POS, Metricool, Resend, Google Business Profile, Meta Business Manager, Meta Pixel, GA4, N8N, SemRush: connected or pending |
 | **Key dates** | Events and ambassador visits; weekly pacing; the monthly report |
 | **Change log** | "If it is not here, it is not official": every change to scope, with who and why |
 
@@ -128,10 +128,9 @@ A manual log, one section per module the client's package unlocks, in which each
 | Ads · Meta and Google | Full | Meta campaign (spend, impressions, reach, clicks, leads), Google Search, boosted post |
 | Local and SEO · GBP | Basic | GBP post, GBP photos, keyword rank |
 | Reputation and reviews | Full | Review requests, reviews received, review responses |
-| Email · Twilio | Full | Email campaign (sent, opens, clicks, revenue) |
-| SMS · Twilio | Full | SMS blast (sent, clicks, redemptions, opt-outs) |
+| Email · Resend | Full | Email campaign (sent, opens, clicks, revenue) |
 | Leads and campaigns | Basic | Catering lead, reservation, event RSVP |
 
 ## Data status
 
-A matrix of clients against sources (Toast, Meta, Metricool, Twilio, GBP, Survey): **connected**, **syncing**, **needs attention** or **not connected**. It is the onboarding checklist and the first place to look when a number goes stale.
+A matrix of clients against sources (Toast, Meta, Metricool, Resend, GBP, Survey): **connected**, **syncing**, **needs attention** or **not connected**. It is the onboarding checklist and the first place to look when a number goes stale.

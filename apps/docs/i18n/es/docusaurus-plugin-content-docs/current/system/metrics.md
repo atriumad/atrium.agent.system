@@ -12,7 +12,7 @@ Todo lo que muestra una pantalla es matemática sobre una sola cosa atómica: un
 
 ```mermaid
 flowchart LR
-  S["Fuentes y elements<br/>redes · GBP · hub · POS · email/SMS · ads"] --> G["Signals<br/>una fila, un día"]
+  S["Fuentes y elements<br/>redes · GBP · hub · POS · email · ads"] --> G["Signals<br/>una fila, un día"]
   G --> M["Metrics<br/>signals sobre un período"]
   M --> E["Scores de engine<br/>0–100"]
   E --> GS["Growth Score<br/>0–300"]
@@ -65,5 +65,5 @@ Estas cifras solo se usan en ventas con datos reales de al menos un client, o pr
 - **El principio de la lista corta.** Los guests eligen de una lista mental de 3–5. Todo el sistema existe para entrar en ella antes de que llegue el hambre.
 - **Mera exposición.** 1–2 vistas: awareness. 3–10: familiaridad. 10+: preferencia, recordada sin ayuda. Un calendario constante le gana a cualquier publicación viral.
 - **Credibilidad de las reseñas.** Rating × volumen × recencia. Un 4.5★ con 2,500 reseñas le gana a un 4.8★ con 40.
-- **Retención vs adquisición.** Guest nuevo vía paid: $5–20. Guest dormido reactivado: $1–5. Guest activo por email o SMS: centavos.
+- **Retención vs adquisición.** Guest nuevo vía paid: $5–20. Guest dormido reactivado: $1–5. Guest activo por email: centavos.
 - **Alcance propio vs alquilado.** 5,000 contactos propios valen más que 50,000 seguidores; las plataformas se alquilan, una base de datos es tuya.

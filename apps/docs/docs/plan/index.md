@@ -36,7 +36,6 @@ gantt
   G6 · complete system                                :milestone, g6, 2027-04-30, 0d
   section External
   GBP API access (does not block)                     :done, ext, 2026-10-05, 2026-11-14
-  Twilio 10DLC registrations (gate SMS only)          :done, ext2, 2026-11-02, 2027-01-15
 ```
 
 | Phase | Dates | What is delivered |
@@ -45,7 +44,7 @@ gantt
 | **F1 · Data backbone** | 2–27 Nov | Metric registry, rollups, scoring package, benchmarks, agent grades, manual daily entry, N8N with Toast, Metricool, Google Business Profile, Meta Ads and Google Ads |
 | **F2 · Platform V1** | 30 Nov–23 Dec | The Platform shell, Dashboard, Discoverability, Attention and Reputation, the hub, the survey flow and the review feed; 2 clients in pilot with real data |
 | **F3 · Agency OS** | 4–29 Jan | The Manager: portfolio, client workspace, COG, tasks fired from it, content pipeline, studio, approvals, daily entry and data status; the Platform's Management section |
-| **F4 · Platform V2** | 1 Feb–5 Mar | Attribution with identity stitching, Retention with Twilio (SMS once registered), Growth programs and offers, package access enforced |
+| **F4 · Platform V2** | 1 Feb–5 Mar | Attribution with identity stitching, Retention through Resend email, Growth programs and offers, package access enforced |
 | **F5 · Agents** | 8–26 Mar | Evals harness, practice grading, Scorekeeper, Echo, Ask, Sentiment, Narrator and Strategist in production |
 | **F6 · Complete** | 29 Mar–30 Apr | Benchmarks, Reporting and Settings, the report builder, the owner app on Mobile, calibration of weights, portfolio migration |
 

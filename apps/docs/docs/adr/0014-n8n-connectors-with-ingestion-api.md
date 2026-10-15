@@ -14,7 +14,7 @@ description: "N8N connectors that call an ingestion API"
 
 ## Context
 
-Each provider (Toast, Metricool, Twilio, Google, Meta) has its own API, cadence and quirks, and they change. The prototypes assume N8N feeding Supabase. Writing every connector as application code is slow; letting workflows write to the database skips validation and tenant isolation.
+Each provider (Toast, Metricool, Resend, Google, Meta) has its own API, cadence and quirks, and they change. The prototypes assume N8N feeding Supabase. Writing every connector as application code is slow; letting workflows write to the database skips validation and tenant isolation.
 
 ## Decision
 

@@ -33,7 +33,7 @@ Half of the moments (3, 5, 6, 7 and the Maps side of 1) are won with profile, re
 | The Passive Discoverer | Discovery | A reel in the social feed | Visual impact; recall after 3–10+ views | Crave/Vibe calendar + paid reach |
 | The Researcher | Consideration | "best [cuisine] near me", Yelp | Review volume and recency, photos, menu | Review program + GBP + fresh photos |
 | The Occasion Planner | First Visit | Editorial lists, "date night" | Atmosphere, sentiment, availability | Vibe content + occasion reviews + booking path |
-| The Returning Guest | Loyal Regular | Memory: already on the shortlist | What's new? A reason to return now | CRM email/SMS + loyalty habit trigger |
+| The Returning Guest | Loyal Regular | Memory: already on the shortlist | What's new? A reason to return now | CRM email + loyalty habit trigger |
 
 ## Eight touchpoints
 
@@ -57,4 +57,4 @@ Kept as a creative and channel guide, with no metric of its own.
 | Gen Z | 18–27 | TikTok, Instagram Reels | Peer UGC, viral content, aesthetics | One viral Reel can equal months of paid reach |
 | Millennial | 28–43 | Instagram, Google | Rating, review volume, food photos | IG + Google + email CRM converts first-timers |
 | Gen X | 44–59 | Google, Facebook | Review count, recency, reputation | Facebook + GBP authority + loyalty programs |
-| Boomer | 60+ | Google, word of mouth, Facebook | Personal recommendations, high review count | Email/SMS + loyalty: the highest-ROI segment |
+| Boomer | 60+ | Google, word of mouth, Facebook | Personal recommendations, high review count | Email + loyalty: the highest-ROI segment |

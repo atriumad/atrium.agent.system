@@ -12,7 +12,7 @@ Everything a screen shows is math over one atomic thing: a daily-stamped **signa
 
 ```mermaid
 flowchart LR
-  S["Sources and elements<br/>socials · GBP · hub · POS · email/SMS · ads"] --> G["Signals<br/>one row, one day"]
+  S["Sources and elements<br/>socials · GBP · hub · POS · email · ads"] --> G["Signals<br/>one row, one day"]
   G --> M["Metrics<br/>signals over a period"]
   M --> E["Engine scores<br/>0–100"]
   E --> GS["Growth Score<br/>0–300"]
@@ -65,5 +65,5 @@ These figures are only used in sales with real data from at least one client, or
 - **The shortlist principle.** Guests choose from a mental shortlist of 3–5. The whole system exists to enter it before hunger strikes.
 - **Mere exposure.** 1–2 views: awareness. 3–10: familiarity. 10+: preference, recalled unprompted. A consistent calendar beats any single viral post.
 - **Review credibility.** Rating × volume × recency. A 4.5★ with 2,500 reviews beats a 4.8★ with 40.
-- **Retention vs acquisition.** New guest via paid: $5–20. Lapsed guest re-engaged: $1–5. Active guest via email or SMS: cents.
+- **Retention vs acquisition.** New guest via paid: $5–20. Lapsed guest re-engaged: $1–5. Active guest via email: cents.
 - **Owned vs rented reach.** 5,000 owned contacts beat 50,000 followers; platforms are rented, a database is owned.

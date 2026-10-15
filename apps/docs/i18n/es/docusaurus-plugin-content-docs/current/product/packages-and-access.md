@@ -14,7 +14,7 @@ Tu paquete controla qué secciones están activas. Las páginas bloqueadas sigue
 | --- | --- | --- |
 | **Essential** | $1,800 / mes | Social orgánico, estudio de contenido y analytics. Discoverability básico. La rampa de entrada |
 | **Pillar 2** | $4,200 / mes | Agrega Discoverability completo, Reputation y Attribution verificada. El núcleo |
-| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de SMS y email, atribución completa |
+| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de lealtad y email, atribución completa |
 
 ## Matriz de acceso
 
@@ -33,7 +33,7 @@ Por módulo: **Completo**, **Básico** o **Bloqueado**. Todos reciben Content, A
 
 | Sección | Se desbloquea con | El teaser lista |
 | --- | --- | --- |
-| Retention | Pillar 3 | Guestbook y segmentos, campañas de email, campañas de SMS, lealtad y automatizaciones |
+| Retention | Pillar 3 | Guestbook y segmentos, campañas de email, lealtad y automatizaciones |
 | Attribution | Pillar 2 | Aware → trusted → visited → ordered, acciones rastreadas, de dónde vienen los guests, channel mix |
 | Growth | Pillar 2 | Paneles de campaña, cola de lanzamientos, línea de tiempo de esfuerzo, paid media |
 | Management | Pillar 2 | Cola de aprobaciones, calendario de publicaciones, biblioteca de contenido |

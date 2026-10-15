@@ -68,7 +68,7 @@ El centro es la meta: **el sistema completo, en vivo para toda la cartera el 30 
 | D4 | Google Business Profile | <span className="pill pill--f1">F1</span> | Acciones del perfil, búsquedas, reseñas y ranking local, diaria. |
 | D5 | Meta Ads | <span className="pill pill--f1">F1</span> | Gasto, impresiones, alcance, clics y conversiones por campaña y ad set. |
 | D6 | Google Ads | <span className="pill pill--f1">F1</span> | Gasto, impresiones, clics y conversiones por campaña. |
-| D7 | Twilio | <span className="pill pill--f4">F4</span> | Envíos de email y SMS, aperturas, clics, entregas, bajas y webhooks. |
+| D7 | Resend | <span className="pill pill--f4">F4</span> | Envíos de email, entregas, rebotes, quejas, bajas y webhooks. |
 | D8 | Rank tracker y encuesta de marca | <span className="pill pill--f2">F2</span> | Posición en Maps de las keywords del client; la encuesta de marca trimestral importada por zona. |
 
 ## Pilar E · Platform {#pilar-e}
@@ -115,7 +115,7 @@ El centro es la meta: **el sistema completo, en vivo para toda la cartera el 30 
 | # | Tarea | Fase | Detalle |
 | --- | --- | --- | --- |
 | H1 | Elegir 1–2 clients piloto | <span className="pill pill--f1">F1</span> | Restaurantes con Toast y un perfil de Google activo. |
-| H2 | Incorporar y conectar fuentes | <span className="pill pill--f2">F2</span> | COG escrito, tech stack conectado o marcado pendiente, registro 10DLC iniciado. |
+| H2 | Incorporar y conectar fuentes | <span className="pill pill--f2">F2</span> | COG escrito, tech stack conectado o marcado pendiente. |
 | H3 | App Mobile | <span className="pill pill--f6">F6</span> | App de Expo sobre la misma API: las cinco pestañas, aprobaciones, solicitudes y opt-in de push. |
 | H4 | Despliegue del hub y los QR | <span className="pill pill--f2">F2</span> | Links del hub en GBP e Instagram; QR de encuesta en mesas y recibos. |
 | H5 | Capacitar al equipo | <span className="pill pill--f3">F3</span> | Sesiones cortas para cada rol sobre el Manager y para el dueño sobre la Platform. |

@@ -14,7 +14,7 @@ A signal is the individual counted thing: the impression, the tap, the order (wh
 | --- | --- | --- | --- |
 | `date` | date | 2026-07-10 | The daily stamp. Minimum granularity; realtime feeds roll up nightly into the day row |
 | `location_id` | uuid | — | Every signal belongs to a location of a client |
-| `source` | enum | `metricool` | `metricool` \| `gbp` \| `landing` \| `site` \| `toast` \| `twilio` \| `meta_ads` \| `google_ads` \| `survey` \| `review` \| `manual` \| `agent` |
+| `source` | enum | `metricool` | `metricool` \| `gbp` \| `landing` \| `site` \| `toast` \| `meta_ads` \| `google_ads` \| `survey` \| `review` \| `manual` \| `agent` |
 | `platform` | enum? | `instagram` | `instagram` \| `facebook` \| `tiktok` \| `youtube` \| `google` \| `meta`. Null when the source has no platform split |
 | `element_id` | string? | `reel_0712_pastor` | Present when the signal belongs to an individual element |
 | `signal_type` | enum | `video_view` | Canonical snake_case from the enum below. One name per event, never synonyms |
@@ -32,7 +32,7 @@ Canonical, snake_case, grouped by funnel stage. Add types here before shipping t
 | **Consideration** | `engagement` (like, comment, share), `save`, `profile_visit`, `session`, `menu_view`, `link_click`, `email_open`, `email_click`, `direct_search` |
 | **Buying intent** | `direction`, `call`, `order_click`, `reserve_click`, `rsvp`, `qr_scan` |
 | **Outcome** | `order`, `reservation`, `redemption`, `lead`, `loyalty_signup`, `repeat_visit`, `winback_visit`, `revenue` |
-| **Health and operations** | `review`, `review_reply`, `survey_score`, `rating_point`, `rank_point`, `sms_delivered`, `opt_in`, `opt_out`, `spend`, `agent_grade` |
+| **Health and operations** | `review`, `review_reply`, `survey_score`, `rating_point`, `rank_point`, `opt_in`, `opt_out`, `spend`, `agent_grade` |
 
 ## Sources and cadence
 
@@ -45,7 +45,7 @@ Every source emits overall metrics for the source itself; some also contain indi
 | Atrium Landing · hub | Hub sessions and every button tap (order, reserve, directions, call, menu, their site), tagged with source and button | realtime → daily | Yes: each button |
 | Their website | Sessions, menu views, order and reserve clicks via pixel, tracked alongside the hub | realtime → daily | No: overall only |
 | Toast POS | Orders, revenue, guests, average ticket, repeat visits, loyalty members, redemptions. The outcome system of record | every 4 h | No: outcomes attribute back |
-| Twilio · email + SMS | Sends, opens, clicks, deliveries, opt-ins and outs, attributed revenue windows (14 d email, 7 d SMS) | 4 h + webhooks | Yes: each blast or automation |
+| Resend · email | Sends, deliveries, bounces, complaints, opt-ins and outs, attributed revenue window (14 d) | 4 h + webhooks | Yes: each campaign or automation |
 | Meta Ads | Spend, paid impressions and reach, clicks, conversions (orders, reservations, leads, RSVPs), CPM and CPC | daily | Yes: campaign and ad set |
 | Google Ads | Spend, search and Maps ad impressions, clicks, conversions, cost per action | daily | Yes: campaign |
 | Survey Flow | Post-order scores, QR opt-ins; feeds Reputation and the guest list | realtime → daily | Yes: each survey |
@@ -88,8 +88,7 @@ An element's signals carry its `element_id`, so performance attributes to that s
 | Feed post | Metricool | Reach, Likes, Saves, Comments |
 | Story | Metricool | Views, Taps forward, Replies, Exits |
 | Carousel | Metricool | Reach, Saves, Link clicks |
-| Email | Twilio | Sent, Open rate, Click rate, Revenue (14 d) |
-| SMS | Twilio | Sent, Delivered, Clicks, Redemptions, Opt-outs, Revenue (7 d) |
+| Email | Resend | Sent, Open rate, Click rate, Revenue (14 d) |
 | Meta ad | Meta | Spend, Impressions, Reach, Clicks, CPM, Leads, ROAS |
 | Google ad | Google | Spend, Impressions, Clicks, CPC, Conversions |
 | Offer | Toast + hub | Redemptions, Estimated sales, Channels live, Status |

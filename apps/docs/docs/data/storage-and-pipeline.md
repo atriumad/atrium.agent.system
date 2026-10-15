@@ -29,7 +29,7 @@ Connectors move data from each provider into `signals_daily`.
 flowchart LR
   T["Toast POS · 4 h"] --> N
   MC["Metricool · 6 h"] --> N
-  TW["Twilio · 4 h + webhook"] --> N
+  RS["Resend · 4 h + webhook"] --> N
   GB["Google GBP · daily"] --> N
   AD["Meta + Google Ads · daily"] --> N
   H["Atrium Landing · realtime"] --> API
@@ -44,7 +44,7 @@ flowchart LR
 | --- | --- | --- |
 | Toast POS | Orders, revenue, guests, subscribers, menu performance | every 4 h |
 | Metricool | All social platforms plus paid social and search | every 6 h |
-| Twilio | Email, SMS and automations | 4 h + webhook |
+| Resend | Email and automations | 4 h + webhook |
 | Google GBP | Profile actions, reviews, local rank | daily |
 | Atrium Landing | Hub sessions and every button tap, tagged by source | realtime |
 | Survey Flow | Post-order scores, QR opt-ins | realtime |

@@ -36,7 +36,6 @@ gantt
   G6 · sistema completo                                :milestone, g6, 2027-04-30, 0d
   section Externo
   Acceso a la API de GBP (no bloquea)                  :done, ext, 2026-10-05, 2026-11-14
-  Registros 10DLC de Twilio (solo condicionan el SMS)  :done, ext2, 2026-11-02, 2027-01-15
 ```
 
 | Fase | Fechas | Qué se entrega |
@@ -45,7 +44,7 @@ gantt
 | **F1 · Columna de datos** | 2–27 nov | Registro de métricas, rollups, paquete de scoring, benchmarks, agent grades, carga manual diaria, N8N con Toast, Metricool, Google Business Profile, Meta Ads y Google Ads |
 | **F2 · Platform V1** | 30 nov–23 dic | El shell de la Platform, Dashboard, Discoverability, Attention y Reputation, el hub, el flujo de encuestas y el feed de reseñas; 2 clients en piloto con datos reales |
 | **F3 · Agency OS** | 4–29 ene | El Manager: cartera, workspace por client, COG, tareas disparadas desde él, pipeline de contenido, estudio, aprobaciones, daily entry y estado de datos; la sección Management de la Platform |
-| **F4 · Platform V2** | 1 feb–5 mar | Attribution con identity stitching, Retention con Twilio (SMS una vez registrado), programas y ofertas de Growth, acceso por paquete aplicado |
+| **F4 · Platform V2** | 1 feb–5 mar | Attribution con identity stitching, Retention por email con Resend, programas y ofertas de Growth, acceso por paquete aplicado |
 | **F5 · Agentes** | 8–26 mar | Harness de evals, calificación de práctica, Scorekeeper, Echo, Ask, Sentiment, Narrator y Strategist en producción |
 | **F6 · Completo** | 29 mar–30 abr | Benchmarks, Reporting y Settings, el report builder, la app del dueño en Mobile, calibración de pesos, migración de la cartera |
 

@@ -14,7 +14,7 @@ El módulo detrás del engine Growth. Planifica y rastrea programas de paid, gua
 | --- | --- |
 | Programas always-on | Los tres buckets donde cae cada dólar de ads permanentes: on-premise (estimado), órdenes online y reservas, cada uno con meta, resultado, presupuesto y ritmo |
 | Campañas a medida | Eventos, catering y acciones únicas con su propia meta y presupuesto |
-| Ofertas | La promoción, sus términos, su estado y cada redención, convertidas en ads, reels, email, SMS y en el local |
+| Ofertas | La promoción, sus términos, su estado y cada redención, convertidas en ads, reels, email y en el local |
 | Atribución | Identity stitching, los métodos de atribución, channel → etapa → outcome y source → journey → outcome |
 | Ritmo | Gasto contra presupuesto con una proyección al cierre del período |
 

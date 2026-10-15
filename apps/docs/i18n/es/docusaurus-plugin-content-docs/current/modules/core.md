@@ -16,9 +16,9 @@ Core contiene lo que todos los módulos necesitan y nada más. Los demás módul
 | Tenancy | Clients, locations, zona horaria, marca (logo, colores), la definición del radio de 10 millas |
 | Paquetes | El paquete del client y la matriz de acceso, publicada como feature flags por módulo y por local |
 | Guests | Identidad única por client; email y teléfono normalizados; deduplicación; los identificadores que usa el identity stitching |
-| Consentimientos | Por canal (`email`, `sms`) y propósito (`transactional`, `marketing`), con fecha, origen y baja |
+| Consentimientos | Por canal (`email`) y propósito (`transactional`, `marketing`), con fecha, origen y baja |
 | Cola de eventos | Publicación transaccional con pg-boss; registro de consumidores |
-| Notificaciones | Envío de mensajes transaccionales de email y SMS con plantillas |
+| Notificaciones | Envío de mensajes transaccionales de email con plantillas |
 | Agentes | Registro de auditoría, cola de aprobaciones, interruptores |
 
 ## Entidades

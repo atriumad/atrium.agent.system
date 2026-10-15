@@ -33,7 +33,7 @@ La mitad de los momentos (3, 5, 6, 7 y el lado de Maps del 1) se gana con perfil
 | The Passive Discoverer | Discovery | Un reel en el feed social | Impacto visual; recuerdo tras 3–10+ vistas | Calendario Crave/Vibe + alcance pago |
 | The Researcher | Consideration | "best [cocina] near me", Yelp | Volumen y recencia de reseñas, fotos, menú | Programa de reseñas + GBP + fotos frescas |
 | The Occasion Planner | First Visit | Listas editoriales, "date night" | Ambiente, sentimiento, disponibilidad | Contenido Vibe + reseñas de ocasión + camino de reserva |
-| The Returning Guest | Loyal Regular | Memoria: ya está en la lista | ¿Qué hay de nuevo? Un motivo para volver ahora | CRM por email/SMS + disparador de hábito de lealtad |
+| The Returning Guest | Loyal Regular | Memoria: ya está en la lista | ¿Qué hay de nuevo? Un motivo para volver ahora | CRM por email + disparador de hábito de lealtad |
 
 ## Ocho puntos de contacto
 
@@ -57,4 +57,4 @@ Se mantiene como guía creativa y de canal, sin métrica propia.
 | Gen Z | 18–27 | TikTok, Instagram Reels | UGC de pares, contenido viral, estética | Un reel viral puede equivaler a meses de alcance pago |
 | Millennial | 28–43 | Instagram, Google | Rating, volumen de reseñas, fotos de comida | IG + Google + CRM por email convierte a los primerizos |
 | Gen X | 44–59 | Google, Facebook | Cantidad de reseñas, recencia, reputación | Facebook + autoridad de GBP + programas de lealtad |
-| Boomer | 60+ | Google, boca a boca, Facebook | Recomendaciones personales, muchas reseñas | Email/SMS + lealtad: el segmento de mayor ROI |
+| Boomer | 60+ | Google, boca a boca, Facebook | Recomendaciones personales, muchas reseñas | Email + lealtad: el segmento de mayor ROI |

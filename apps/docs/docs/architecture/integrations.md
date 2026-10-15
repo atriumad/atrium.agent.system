@@ -15,7 +15,7 @@ The system exists to read these providers. Each connects through an N8N workflow
 | Toast POS | Orders, revenue, guests, average ticket, repeat visits, loyalty members, redemptions. The outcome system of record | Nightly export over SFTP, or the partner API when the program is approved | every 4 h (API) or nightly (export) | Daily entry and CSV import |
 | Metricool | IG, FB, TikTok and YouTube metrics with per-post rows | Metricool API | every 6 h | Monthly signals worksheet |
 | Google Business Profile | Profile actions, searches, reviews, Maps rank | GBP API (basic access requested in week 0) | daily | Manual log of calls, directions and reviews |
-| Twilio | Email and SMS sends, opens, clicks, deliveries, opt-ins and outs, attributed revenue | Twilio API and webhooks | 4 h + webhooks | Campaign report copied by hand |
+| Resend | Email sends, deliveries, bounces, complaints, opt-outs, attributed revenue | Resend API and webhooks | 4 h + webhooks | Campaign report copied by hand |
 | Meta Ads | Spend, impressions, reach, clicks, conversions, CPM, CPC | Marketing API | daily | Daily entry |
 | Google Ads | Spend, impressions, clicks, conversions, cost per action | Google Ads API | daily | Daily entry |
 | Atrium Landing (hub) | Hub sessions and every button tap | First-party, direct to the API | realtime | — |
@@ -38,7 +38,6 @@ The system exists to read these providers. Each connects through an N8N workflow
 | --- | --- | --- |
 | Toast | Standard API access is read-only and does not return diner data on dine-in orders; the full route needs the partner program, which takes months | Start with the nightly export; apply to the partner program in parallel |
 | Reservation platforms (OpenTable, Resy, SevenRooms, Tock) | No public write API | Measure through reserve clicks and UTM links |
-| SMS | Each restaurant is a separate 10DLC brand, with a cost and a 1–4 week wait | Register at onboarding; SMS goes live only when approved |
 | Google Business Profile | API access requires an application | Request basic access in week 0 |
 
 ## Sources consulted
@@ -46,4 +45,3 @@ The system exists to read these providers. Each connects through an N8N workflow
 - [Toast · Standard API access FAQs](https://doc.toasttab.com/doc/devguide/devApiAccessFAQs.html)
 - [Toast · Data exports overview](https://support.toasttab.com/en/article/Automated-Nightly-Data-Export-1492723819691)
 - [Google Business Profile APIs · Prerequisites](https://developers.google.com/my-business/content/prereqs)
-- [A2P 10DLC costs and timelines (Tuco, 2026)](https://tuco.ai/a2p-10dlc)

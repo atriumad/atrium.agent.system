@@ -30,7 +30,7 @@ description: "Lo que hay que cerrar, incluidos los puntos donde el material de o
 ## Trámites que empiezan en la semana 0
 
 - [ ] Solicitud de acceso básico a la API de Google Business Profile
-- [ ] Cuenta de Twilio y el registro de marca 10DLC de cada client piloto
+- [ ] Cuenta de Resend, con el dominio de envío verificado
 - [ ] Exportación de Toast habilitada para los clients piloto y la postulación al programa de partners
 - [ ] Acceso a la API de Metricool; acceso a las APIs de Meta y Google Ads y developer tokens
 - [ ] Dominio de envío de email con SPF, DKIM y DMARC

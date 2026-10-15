@@ -68,7 +68,7 @@ The center is the goal: **the complete system, live for the whole portfolio on 3
 | D4 | Google Business Profile | <span className="pill pill--f1">F1</span> | Profile actions, searches, reviews and local rank, daily. |
 | D5 | Meta Ads | <span className="pill pill--f1">F1</span> | Spend, impressions, reach, clicks and conversions by campaign and ad set. |
 | D6 | Google Ads | <span className="pill pill--f1">F1</span> | Spend, impressions, clicks and conversions by campaign. |
-| D7 | Twilio | <span className="pill pill--f4">F4</span> | Email and SMS sends, opens, clicks, deliveries, opt-outs and webhooks. |
+| D7 | Resend | <span className="pill pill--f4">F4</span> | Email sends, deliveries, bounces, complaints, opt-outs and webhooks. |
 | D8 | Rank tracker and brand survey | <span className="pill pill--f2">F2</span> | Maps rank for the client keywords; the quarterly brand survey imported by zone. |
 
 ## Pillar E · Platform {#pillar-e}
@@ -115,7 +115,7 @@ The center is the goal: **the complete system, live for the whole portfolio on 3
 | # | Task | Phase | Detail |
 | --- | --- | --- | --- |
 | H1 | Choose 1–2 pilot clients | <span className="pill pill--f1">F1</span> | Restaurants with Toast and an active Google profile. |
-| H2 | Onboard and connect sources | <span className="pill pill--f2">F2</span> | COG written, tech stack connected or marked pending, 10DLC registration started. |
+| H2 | Onboard and connect sources | <span className="pill pill--f2">F2</span> | COG written, tech stack connected or marked pending. |
 | H3 | Mobile app | <span className="pill pill--f6">F6</span> | Expo app on the same API: the five tabs, approvals, requests and push opt-in. |
 | H4 | Hub and QR rollout | <span className="pill pill--f2">F2</span> | Hub links in GBP and Instagram; survey QRs on tables and receipts. |
 | H5 | Train the team | <span className="pill pill--f3">F3</span> | Short sessions for each role on the Manager and for the owner on the Platform. |

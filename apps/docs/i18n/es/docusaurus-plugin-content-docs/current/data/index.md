@@ -14,7 +14,7 @@ Cada capa se construye solo con la de abajo.
 
 | # | Capa | Pregunta | Qué es |
 | --- | --- | --- | --- |
-| 1 | **Fuentes y elements** | ¿Dónde se origina? | Plataformas y feeds: redes, GBP, el hub, POS, email y SMS, ads. Algunas traen elements individuales (un reel, un email, un ad, una oferta) a los que se atribuyen las signals |
+| 1 | **Fuentes y elements** | ¿Dónde se origina? | Plataformas y feeds: redes, GBP, el hub, POS, email, ads. Algunas traen elements individuales (un reel, un email, un ad, una oferta) a los que se atribuyen las signals |
 | 2 | **Signals** | ¿Cuál es el evento individual, con sello diario? | El átomo: cada impresión, toque, orden, reseña y nota cae como una fila en `signals_daily` |
 | 3 | **Metrics** | Signals, calculadas sobre un período | Una métrica son signals agregadas sobre un rango de fechas (sum, avg, rate, latest), mostradas como total, tendencia, proporción o comparación. "Impresiones en 30 días" es una métrica; la impresión es la signal |
 | 4 | **Scores de engine** | Cuantitativo y cualitativo | Cinco engines, cada uno 0–100: 60% medido contra el benchmark y 40% práctica calificada por agentes |

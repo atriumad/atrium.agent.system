@@ -14,7 +14,7 @@ Your package controls which sections are live. Locked pages stay visible so a cl
 | --- | --- | --- |
 | **Essential** | $1,800 / mo | Organic social, content studio and analytics. Discoverability on basic. The on-ramp |
 | **Pillar 2** | $4,200 / mo | Adds full Discoverability, Reputation and verified Attribution. The core |
-| **Pillar 3** | $6,800 / mo | Everything: Retention CRM, loyalty, SMS and email engines, full attribution |
+| **Pillar 3** | $6,800 / mo | Everything: Retention CRM, loyalty and email engines, full attribution |
 
 ## Access matrix
 
@@ -33,7 +33,7 @@ Per module: **Full**, **Basic** or **Locked**. Everyone gets Content, Analytics 
 
 | Section | Unlocks with | The teaser lists |
 | --- | --- | --- |
-| Retention | Pillar 3 | Guestbook and segments, email campaigns, SMS campaigns, loyalty and automations |
+| Retention | Pillar 3 | Guestbook and segments, email campaigns, loyalty and automations |
 | Attribution | Pillar 2 | Aware → trusted → visited → ordered, traced actions, where guests come from, channel mix |
 | Growth | Pillar 2 | Campaign panels, launch queue, effort timeline, paid media |
 | Management | Pillar 2 | Approval queue, posting calendar, content library |

@@ -14,7 +14,7 @@ The module behind the Growth engine. It plans and tracks paid programs, holds th
 | --- | --- |
 | Always-on programs | The three buckets where every standing ad dollar lands: on-premise (estimated), online orders and reservations, each with goal, result, budget and pacing |
 | Custom campaigns | Events, catering and one-offs with their own goal and budget |
-| Offers | The deal, its terms, its status and every redemption, turned into ads, reels, email, SMS and in-store |
+| Offers | The deal, its terms, its status and every redemption, turned into ads, reels, email and in-store |
 | Attribution | Identity stitching, the attribution methods, channel → stage → outcome and source → journey → outcome |
 | Pacing | Spend against budget with a projection to the end of the period |
 

@@ -10,7 +10,7 @@ description: "Twilio for email and SMS"
 
 | Status | Date | Deciders |
 | --- | --- | --- |
-| **Accepted** | 2026-10-01 | Atrium · product and technology |
+| **Superseded by [0021](./0021-resend-email-no-sms)** | 2026-10-01 | Atrium · product and technology |
 
 :::note
 Supersedes [0010](./0010-email-only-notifications).

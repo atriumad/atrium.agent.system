@@ -19,7 +19,7 @@ Send them all before touching the repository. The waits are estimates; confirm e
 | Done | Request | Needed by | Blocks | Notes |
 | --- | --- | --- | --- | --- |
 | [ ] | Google Business Profile API: basic access request | G1 | Reviews, profile insights | The plan assumes about six weeks and **does not block** the schedule; manual entry covers it |
-| [ ] | Twilio account, plus the 10DLC brand registration for each pilot client | G4 | SMS only | Email works without it. Registrations gate SMS, not the build |
+| [ ] | Resend account, with the sending domain verified (SPF and DKIM) | G4 | Email sends | Email goes out only once the domain is verified |
 | [ ] | Toast nightly export enabled for the pilot clients | G1 | Outcome data (orders, revenue) | Needs the client's consent and a Toast admin on their side |
 | [ ] | Toast partner program application | After G1 | API route instead of export | Runs in parallel; the export is the first route |
 | [ ] | Metricool API access | G1 | Social data | Confirm the plan tier includes API access |

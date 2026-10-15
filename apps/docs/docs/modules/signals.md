@@ -39,7 +39,7 @@ erDiagram
 export const SignalRowV1 = z.object({
   date: z.string().date(),
   locationId: z.string().uuid(),
-  source: z.enum(['metricool', 'gbp', 'landing', 'site', 'toast', 'twilio',
+  source: z.enum(['metricool', 'gbp', 'landing', 'site', 'toast',
     'meta_ads', 'google_ads', 'survey', 'review', 'manual', 'agent']),
   platform: z.enum(['instagram', 'facebook', 'tiktok', 'youtube', 'google', 'meta']).optional(),
   elementId: z.string().optional(),

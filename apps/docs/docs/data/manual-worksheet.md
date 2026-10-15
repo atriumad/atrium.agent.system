@@ -21,7 +21,7 @@ Copy the number exactly as the platform reports it. Δ is this month minus the p
 | Facebook | Reach (Meta Business Suite → Insights), Engagements (reactions + comments + shares), Page visits, Followers at end of month |
 | Google Business Profile | Profile views from Search, Profile views from Maps, Calls, Directions, Website clicks (all under Performance) |
 | Website | Sessions (GA4 or the site builder), Reservation clicks (Reserve, OpenTable, Resy), Order clicks (Order Online) |
-| Email / SMS | Sends, Opens, Link clicks (CRM campaign report, all flights), Redemptions (POS discount report or offer-code count) |
+| Email | Sends, Opens, Link clicks (CRM campaign report, all flights), Redemptions (POS discount report or offer-code count) |
 | Reviews | New Google reviews, Google rating (overall), New Yelp reviews, Reviews replied to |
 | POS | Orders or covers, Gross sales ($), Average ticket = gross ÷ orders (carry to the header and to section C) |
 
@@ -53,8 +53,8 @@ These are **influenced estimates, not attribution**. The show-rate assumption is
 | --- | --- |
 | Estimated visits from intent | Intent actions × 0.30 |
 | Revenue influenced, intent | Estimated visits × average ticket |
-| Revenue, email and SMS offers | Redemptions × average ticket |
-| Total influenced revenue | Intent revenue + email and SMS revenue |
+| Revenue, email offers | Redemptions × average ticket |
+| Total influenced revenue | Intent revenue + email revenue |
 | vs. retainer | Total influenced revenue ÷ monthly retainer |
 
 Notes and flags for the Account Manager go at the bottom. The sheet is signed by the Assistant Account Manager who completed it and the Account Manager who reviewed it.

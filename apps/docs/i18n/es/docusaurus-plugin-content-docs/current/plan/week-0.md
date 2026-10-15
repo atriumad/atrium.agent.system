@@ -19,7 +19,7 @@ Envíalas todas antes de tocar el repositorio. Las esperas son estimaciones; con
 | Listo | Solicitud | Se necesita para | Bloquea | Notas |
 | --- | --- | --- | --- | --- |
 | [ ] | Google Business Profile API: solicitud de acceso básico | G1 | Reseñas, insights del perfil | El plan supone unas seis semanas y **no bloquea** el calendario; la entrada manual lo cubre |
-| [ ] | Cuenta de Twilio, y el registro de marca 10DLC de cada client piloto | G4 | Solo SMS | El email funciona sin esto. Los registros bloquean el SMS, no la construcción |
+| [ ] | Cuenta de Resend, con el dominio de envío verificado (SPF y DKIM) | G4 | Envíos de email | El email sale solo cuando el dominio está verificado |
 | [ ] | Export nocturno de Toast habilitado para los clients piloto | G1 | Datos de resultado (órdenes, ingresos) | Requiere el consentimiento del client y un admin de Toast de su lado |
 | [ ] | Solicitud al partner program de Toast | Después de G1 | API en lugar del export | Corre en paralelo; el export es la primera ruta |
 | [ ] | Acceso a la API de Metricool | G1 | Datos sociales | Confirma que el plan incluya acceso a la API |

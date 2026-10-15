@@ -34,7 +34,7 @@ sequenceDiagram
 2. **Campaigner** propone una oferta de martes con promo code propio para medirla.
 3. El dueño la aprueba desde la Platform o la app Mobile **(persona)**.
 4. **Crave** redacta el post y la story; quedan en la cola de aprobaciones.
-5. **Letters** prepara el SMS solo para guests con consentimiento.
+5. **Letters** prepara el email solo para guests con consentimiento.
 6. **Pacer** fija el gasto always-on del día dentro del guardrail.
 7. **Ledger** atribuye las visitas que usaron el código, etiquetadas como atribución por código.
 

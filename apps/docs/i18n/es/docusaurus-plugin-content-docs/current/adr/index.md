@@ -26,9 +26,10 @@ Cada decisión técnica importante queda escrita en un ADR corto: contexto, deci
 | [0014](./0014-n8n-connectors-with-ingestion-api) | Conectores N8N que llaman a una API de ingesta | Aceptada |
 | [0015](./0015-scoring-model) | Scores de engine: 60% medido, 40% práctica | Aceptada |
 | [0016](./0016-three-surfaces-and-package-access) | Tres superficies y acceso por paquete | Aceptada |
-| [0017](./0017-twilio-email-and-sms) | Twilio para email y SMS | Aceptada |
+| [0017](./0017-twilio-email-and-sms) | Twilio para email y SMS | Reemplazada por 0021 |
 | [0018](./0018-no-review-gating) | El pedido de reseña nunca se filtra por calificación | Aceptada |
 | [0019](./0019-llm-provider-behind-a-port) | El modelo de lenguaje vive detrás de un puerto | Aceptada |
 | [0020](./0020-agents-in-their-own-service) | Los agentes viven en su propio servicio | Aceptada |
+| [0021](./0021-resend-email-no-sms) | Resend para el correo, sin SMS | Aceptada |
 
 Para escribir uno nuevo, ver [Cómo escribir un ADR](../guides/write-an-adr).

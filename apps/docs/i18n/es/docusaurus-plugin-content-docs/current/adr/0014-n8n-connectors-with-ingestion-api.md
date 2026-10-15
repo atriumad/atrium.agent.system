@@ -14,7 +14,7 @@ description: "Conectores N8N que llaman a una API de ingesta"
 
 ## Contexto
 
-Cada proveedor (Toast, Metricool, Twilio, Google, Meta) tiene su propia API, cadencia y rarezas, y cambian. Los prototipos asumen N8N alimentando Supabase. Escribir cada conector como código de aplicación es lento; dejar que los workflows escriban en la base se salta la validación y el aislamiento por tenant.
+Cada proveedor (Toast, Metricool, Resend, Google, Meta) tiene su propia API, cadencia y rarezas, y cambian. Los prototipos asumen N8N alimentando Supabase. Escribir cada conector como código de aplicación es lento; dejar que los workflows escriban en la base se salta la validación y el aislamiento por tenant.
 
 ## Decisión
 

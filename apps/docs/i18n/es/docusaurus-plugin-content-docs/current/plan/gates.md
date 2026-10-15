@@ -45,7 +45,7 @@ description: "Criterios para pasar de una fase a la siguiente."
 
 - [ ] Attribution con identity stitching: un escaneo de QR y la orden a la que llevó cuentan como un solo guest
 - [ ] Cada dólar atribuido muestra su método; las estimaciones se etiquetan
-- [ ] Email por Twilio con las bajas reflejadas en el registro de consentimientos; SMS habilitado para un client solo tras aprobarse su registro
+- [ ] Email por Resend con las bajas, los rebotes y las quejas reflejados en el registro de consentimientos
 - [ ] Programas de Growth, ofertas y ritmo del presupuesto
 - [ ] Acceso por paquete aplicado en cada superficie y por el gateway MCP
 

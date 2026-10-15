@@ -21,9 +21,8 @@ description: "Every service with its engine and tier, the three tiers and the th
 | Google Awareness Ads | Acquisition | 1 Discover | Search and Maps ads on high-intent terms | Miss the 3-pack, lose the guest |
 | Brand Ambassadors | Acquisition | 1 Discover | Local creator visits with UGC rights; peer content seeded to feeds | Peer UGC is the top Gen Z trust signal |
 | Reviews + Rating Improvement | Reputation | 2 Retain | Review generation (QR and post-visit survey), every review answered in 24–48 h in brand voice, negatives handled privately | A 4.5★ / 200+ profile converts far higher |
-| CRM + Automations | Retention | 2 Retain | Email and SMS captured at the POS via Toast; 24 h welcome, birthday, 60-day win-back, 90-day lapsed | Re-engaging a lapsed guest costs $1–5 vs $5–20 for a new one |
+| CRM + Automations | Retention | 2 Retain | Emails captured at the POS via Toast; 24 h welcome, birthday, 60-day win-back, 90-day lapsed | Re-engaging a lapsed guest costs $1–5 vs $5–20 for a new one |
 | Email Marketing | Retention | 2 Retain | 2–4 sends a month, segmented; revenue tracked 14 days per send | Owned channel: cents per contact |
-| SMS Marketing | Retention | 2 Retain | 1–2 sends a month plus flash offers; redemptions and opt-outs tracked | Fastest path to a full room tonight |
 | Loyalty & Rewards | Retention | 2 Retain | Visit-based tiers and VIP recognition; 5-visit milestone benefit | The 5th visit confirms a lifetime habit |
 | Landing Pages | Growth | 3 Growth | Offer, event and catering pages with pixels; one UTM-clean link per campaign | Turns clicks into bookings |
 | Campaign Content | Growth | 3 Growth | Offer-led photo and video variants per campaign, separate from organic | Protects the clean feed |
@@ -32,7 +31,7 @@ description: "Every service with its engine and tier, the three tiers and the th
 | Event Marketing | Growth | 3 Growth | Event calendar and promo flight per event; RSVPs tracked to covers | Fills seats and the feed |
 | Private Events | Growth | 3 Growth | Landing page, outreach and lead handling | High-ticket covers |
 | Catering Leads | Growth | 3 Growth | Lead capture and follow-up sequence; pipeline reported monthly | Largest average order value |
-| Slow-Day Campaigns | Growth | 3 Growth | Daypart offers through SMS, paid and GBP | Revenue from empty tables |
+| Slow-Day Campaigns | Growth | 3 Growth | Daypart offers through email, paid and GBP | Revenue from empty tables |
 | Gift Cards | Growth | 3 Growth | Holiday pushes and bounce-back mechanics | Cash up front, new guests in |
 | Grand Opening | Growth | 3 Growth | 90-day launch plan: teaser, open, sustain | Demand from day one |
 | Monthly Reports | Growth | 3 Growth → all | Engine scores, wins and next moves, monthly, in plain language | No more guessing |
@@ -54,7 +53,7 @@ Monthly Reports and the 90-Day Roadmap are proposed to ship in every tier: every
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Essential** | $1,800 / mo | Organic social, content studio and analytics. Discoverability on basic. The on-ramp | Full | Full | Basic | Locked | Locked | Locked |
 | **Pillar 2** | $4,200 / mo | Adds full Discoverability, Reputation and verified Attribution. The core | Full | Full | Full | Full | Locked | Basic |
-| **Pillar 3** | $6,800 / mo | Everything: Retention CRM, loyalty, SMS and email engines, full attribution | Full | Full | Full | Full | Full | Full |
+| **Pillar 3** | $6,800 / mo | Everything: Retention CRM, loyalty and email engines, full attribution | Full | Full | Full | Full | Full | Full |
 
 Locked pages stay visible in the Platform so a client can see what the next package unlocks. The unlock rules are specified in [Packages and access](../product/packages-and-access).
 
