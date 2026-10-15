@@ -38,7 +38,12 @@ const app = createAgentsService({
   ...(process.env.ADMIN_BASE_URL ? { adminBaseUrl: process.env.ADMIN_BASE_URL } : {}),
 });
 
-const server = Bun.serve({ port: Number(process.env.AGENTS_PORT ?? 3005), fetch: app.fetch });
+const server = Bun.serve({
+  port: Number(process.env.AGENTS_PORT ?? 3005),
+  fetch: app.fetch,
+  // A model call can take 15 s and ask.send_due loops: the default 10 s would drop the connection.
+  idleTimeout: 255,
+});
 jsonLogger.info("agents.started", { port: server.port });
 
 let stopping = false;
@@ -46,7 +51,8 @@ async function shutdown(signal: string) {
   if (stopping) return;
   stopping = true;
   jsonLogger.info("agents.stopping", { signal });
-  server.stop();
+  // Let in-flight tasks finish before the bus and the database go away.
+  await server.stop();
   await bus.stop();
   await close();
   process.exit(0);
