@@ -15,7 +15,7 @@ The owner app puts the live feed, the five engines, reach, reviews, guests and t
 | **Home** | Greeting, Growth Score with how far ahead of the radius average, the delta, a live indicator, the key figures, **your five engines**, and **what's going on**: a feed of reviews, wins and content |
 | **Reach** | How they find you and where guests come from: impressions (90 days) with trend, by platform, pulling people in (top content), foundations (profile and listing status) and local search ranks for the keywords that matter |
 | **Reviews** | How much they love you: rating with review count and the radius average, per-platform ratings, social buzz, recent reviews and mentions, and what guests rave about |
-| **Guests** | Your list and your regulars: email results for the last 30 days, campaigns with opens and sales, who they are, and your regulars with visits and segment |
+| **Guests** | Your list and your regulars: email results for the last 30 days, campaigns and sales, who they are, and your regulars with visits and segment |
 | **More** | Your strategist (replies the same day), what we're working on, the menu below |
 
 ## More

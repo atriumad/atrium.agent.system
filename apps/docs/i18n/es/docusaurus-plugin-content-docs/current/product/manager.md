@@ -128,7 +128,7 @@ Un registro manual, una sección por cada módulo que desbloquea el paquete del 
 | Ads · Meta y Google | Completo | Campaña de Meta (spend, impressions, reach, clicks, leads), Google Search, boosted post |
 | Local y SEO · GBP | Básico | GBP post, GBP photos, keyword rank |
 | Reputación y reseñas | Completo | Review requests, reviews received, review responses |
-| Email · Resend | Completo | Campaña de email (sent, opens, clicks, revenue) |
+| Email · Resend | Completo | Campaña de email (sent, revenue; opens y clicks más adelante, con marketing y CRM) |
 | Leads y campañas | Básico | Catering lead, reservation, event RSVP |
 
 ## Estado de datos

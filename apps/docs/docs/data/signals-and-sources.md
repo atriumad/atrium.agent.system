@@ -29,7 +29,7 @@ Canonical, snake_case, grouped by funnel stage. Add types here before shipping t
 | Stage | Signal types |
 | --- | --- |
 | **Awareness** | `impression`, `reach_account`, `video_view`, `follower_add`, `discovery_search` |
-| **Consideration** | `engagement` (like, comment, share), `save`, `profile_visit`, `session`, `menu_view`, `link_click`, `email_open`, `email_click`, `direct_search` |
+| **Consideration** | `engagement` (like, comment, share), `save`, `profile_visit`, `session`, `menu_view`, `link_click`, `email_open`, `email_click` (nothing sends these yet; they arrive later, with marketing and CRM), `direct_search` |
 | **Buying intent** | `direction`, `call`, `order_click`, `reserve_click`, `rsvp`, `qr_scan` |
 | **Outcome** | `order`, `reservation`, `redemption`, `lead`, `loyalty_signup`, `repeat_visit`, `winback_visit`, `revenue` |
 | **Health and operations** | `review`, `review_reply`, `survey_score`, `rating_point`, `rank_point`, `opt_in`, `opt_out`, `spend`, `agent_grade` |
@@ -88,7 +88,7 @@ An element's signals carry its `element_id`, so performance attributes to that s
 | Feed post | Metricool | Reach, Likes, Saves, Comments |
 | Story | Metricool | Views, Taps forward, Replies, Exits |
 | Carousel | Metricool | Reach, Saves, Link clicks |
-| Email | Resend | Sent, Open rate, Click rate, Revenue (14 d) |
+| Email | Resend | Sent, Revenue (14 d). Open rate and Click rate come later, with marketing and CRM |
 | Meta ad | Meta | Spend, Impressions, Reach, Clicks, CPM, Leads, ROAS |
 | Google ad | Google | Spend, Impressions, Clicks, CPC, Conversions |
 | Offer | Toast + hub | Redemptions, Estimated sales, Channels live, Status |

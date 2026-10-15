@@ -14,7 +14,7 @@ Tu paquete controla qué secciones están activas. Las páginas bloqueadas sigue
 | --- | --- | --- |
 | **Essential** | $1,800 / mes | Social orgánico, estudio de contenido y analytics. Discoverability básico. La rampa de entrada |
 | **Pillar 2** | $4,200 / mes | Agrega Discoverability completo, Reputation y Attribution verificada. El núcleo |
-| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de lealtad y email, atribución completa |
+| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, motores de lealtad y de email, atribución completa |
 
 ## Matriz de acceso
 

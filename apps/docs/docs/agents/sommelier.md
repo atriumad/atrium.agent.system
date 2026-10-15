@@ -19,7 +19,7 @@ description: "Retention · Engine 04. Remembers every guest and gives them a rea
 - Welcomes a guest 24 h after their first visit.
 - Invites back anyone who has been away for 60 days, and again at 90.
 - Recognizes the 5th visit as the start of a regular.
-- Respects the frequency agreed with the client: email never more than the cap agreed per subscriber.
+- Respects the frequency agreed with the client.
 
 ## Never
 

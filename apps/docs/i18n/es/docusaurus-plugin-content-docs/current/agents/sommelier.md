@@ -19,7 +19,7 @@ description: "Retention · Engine 04. Recuerda a cada guest y le da un motivo pa
 - Da la bienvenida a las 24 h de la primera visita.
 - Invita de vuelta a quien lleva 60 días sin venir, y otra vez a los 90.
 - Reconoce la 5ª visita como el inicio de un regular.
-- Respeta la frecuencia acordada con el client: el email nunca más del tope acordado por suscriptor.
+- Respeta la frecuencia acordada con el client.
 
 ## Nunca
 

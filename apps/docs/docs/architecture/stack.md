@@ -27,7 +27,7 @@ Each choice has its own ADR with the full context.
 | Charts and maps | Purpose-built SVG charts, MapLibre with CARTO tiles | Brand-accurate charts; the awareness map needs zones, not a full GIS | Charting suites | — |
 | Data on screen | TanStack Query | Caching and consistent loading states | Loose fetch | — |
 | Auth | Better Auth with organizations | Users, organizations, roles and invitations in our database | Clerk, Supabase Auth | [0011](../adr/0011-better-auth) |
-| Messaging | Resend for email, React Email for templates | One provider for every send, with a signed webhook for deliveries, bounces and complaints | A campaign platform | 0021 |
+| Messaging | Resend for email, React Email for templates | One provider for every send, with a signed webhook for deliveries, bounces and complaints | A campaign platform | [0021](../adr/0021-resend-email-no-sms) |
 | POS | Toast (nightly export or API) | The outcome system of record for the target restaurants | Unified POS platforms | [0013](../adr/0013-signals-data-model) |
 | Social data | Metricool | One feed for IG, FB, TikTok and YouTube, with per-post rows | Per-network APIs | [0014](../adr/0014-n8n-connectors-with-ingestion-api) |
 | Agents | MCP (TypeScript SDK) + policy engine + Claude | Tools as the only door, rules in code | Direct API or database access | [0009](../adr/0009-agents-mcp-and-policies) |

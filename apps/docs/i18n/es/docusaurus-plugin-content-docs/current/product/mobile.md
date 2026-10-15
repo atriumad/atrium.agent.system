@@ -15,7 +15,7 @@ La app del dueño pone en el bolsillo el feed en vivo, los cinco engines, el alc
 | **Home** | Saludo, Growth Score con cuánto va por delante del promedio del radio, el delta, un indicador en vivo, las cifras clave, **tus cinco engines** y **what's going on**: un feed de reseñas, logros y contenido |
 | **Reach** | Cómo te encuentran y de dónde vienen los guests: impresiones (90 días) con tendencia, por plataforma, lo que atrae gente (mejor contenido), foundations (estado del perfil y de los listings) y posiciones de búsqueda local de las keywords que importan |
 | **Reviews** | Cuánto te quieren: rating con cantidad de reseñas y el promedio del radio, ratings por plataforma, social buzz, reseñas y menciones recientes, y de qué se enamoran los guests |
-| **Guests** | Tu lista y tus regulares: resultados de email de los últimos 30 días, campañas con aperturas y ventas, quiénes son y tus regulares con visitas y segmento |
+| **Guests** | Tu lista y tus regulares: resultados de email de los últimos 30 días, campañas y ventas, quiénes son y tus regulares con visitas y segmento |
 | **More** | Tu strategist (responde el mismo día), en qué estamos trabajando, el menú de abajo |
 
 ## More

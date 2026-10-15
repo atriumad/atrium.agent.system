@@ -128,7 +128,7 @@ A manual log, one section per module the client's package unlocks, in which each
 | Ads · Meta and Google | Full | Meta campaign (spend, impressions, reach, clicks, leads), Google Search, boosted post |
 | Local and SEO · GBP | Basic | GBP post, GBP photos, keyword rank |
 | Reputation and reviews | Full | Review requests, reviews received, review responses |
-| Email · Resend | Full | Email campaign (sent, opens, clicks, revenue) |
+| Email · Resend | Full | Email campaign (sent, revenue; opens and clicks later, with marketing and CRM) |
 | Leads and campaigns | Basic | Catering lead, reservation, event RSVP |
 
 ## Data status

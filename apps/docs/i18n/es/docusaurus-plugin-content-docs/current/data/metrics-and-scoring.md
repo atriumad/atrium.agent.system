@@ -102,8 +102,8 @@ Etiqueta canónica a la izquierda; los sinónimos no se publican nunca.
 | --- | --- | --- | --- | --- |
 | Repeat guest rate | % | outcome | `guests con repeat_visit ÷ guests` | Toast |
 | Loyalty members | count | none | `latest(loyalty_signup, cumulative)` | Toast |
-| Open rate | % | consideration | `email_open ÷ sent` | Resend |
-| Click rate | % | consideration | `email_click ÷ sent` | Resend |
+| Open rate | % | consideration | `email_open ÷ sent` | Aún sin medir; más adelante, con marketing y CRM |
+| Click rate | % | consideration | `email_click ÷ sent` | Aún sin medir; más adelante, con marketing y CRM |
 | Redemptions | count | outcome | `sum(redemption)` | Toast + Resend |
 | Win-back returns | count | outcome | `sum(winback_visit)` | Cruce con Toast |
 | Email revenue | $ | outcome | `sum(revenue, window 14d)` | Cruce con Toast |

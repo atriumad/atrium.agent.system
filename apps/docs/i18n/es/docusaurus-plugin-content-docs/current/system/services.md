@@ -53,7 +53,7 @@ Monthly Reports y 90-Day Roadmap se proponen en todos los tiers: todo client nec
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Essential** | $1,800 / mes | Social orgánico, estudio de contenido y analytics. Discoverability básico. La rampa de entrada | Completo | Completo | Básico | Bloqueado | Bloqueado | Bloqueado |
 | **Pillar 2** | $4,200 / mes | Agrega Discoverability completo, Reputation y Attribution verificada. El núcleo | Completo | Completo | Completo | Completo | Bloqueado | Básico |
-| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, lealtad, motores de lealtad y email, atribución completa | Completo | Completo | Completo | Completo | Completo | Completo |
+| **Pillar 3** | $6,800 / mes | Todo: CRM de Retention, motores de lealtad y de email, atribución completa | Completo | Completo | Completo | Completo | Completo | Completo |
 
 Las páginas bloqueadas siguen visibles en la Platform para que el client vea qué desbloquea el siguiente paquete. Las reglas de desbloqueo están en [Paquetes y acceso](../product/packages-and-access).
 

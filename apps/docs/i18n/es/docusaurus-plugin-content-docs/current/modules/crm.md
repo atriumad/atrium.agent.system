@@ -56,4 +56,4 @@ stateDiagram-v2
 
 ## Métricas
 
-Tasa de guests recurrentes, miembros de lealtad, open rate, click rate, redenciones, retornos por win-back, revenue de email y bajas: las filas de Retention del [inventario de métricas](../data/metrics-and-scoring).
+Tasa de guests recurrentes, miembros de lealtad, open rate y click rate (más adelante, con marketing y CRM), redenciones, retornos por win-back, revenue de email y bajas: las filas de Retention del [inventario de métricas](../data/metrics-and-scoring).

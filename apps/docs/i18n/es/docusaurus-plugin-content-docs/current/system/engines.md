@@ -56,7 +56,7 @@ Cada engine tiene una pregunta, una etapa del recorrido y un score. Un servicio 
 | **Etapas** | First Visit → Loyal Regular |
 | **Métrica norte** | Tasa de guests recurrentes: guests con una visita repetida / guests |
 | **Servicios** | CRM + Automations, Email Marketing, Loyalty & Rewards |
-| **Se mide con** | Tasa de guests recurrentes, miembros de lealtad, open rate, click rate, redenciones, retornos por win-back, revenue de email, bajas |
+| **Se mide con** | Tasa de guests recurrentes, miembros de lealtad, open rate y click rate (más adelante, con marketing y CRM), redenciones, retornos por win-back, revenue de email, bajas |
 | **Rúbrica de práctica** | Higiene de la lista, cobertura de automatizaciones, cadencia de ofertas, profundidad de segmentación |
 | **Agente** | [Sommelier](../agents/sommelier) |
 

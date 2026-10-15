@@ -56,4 +56,4 @@ stateDiagram-v2
 
 ## Metrics
 
-Repeat guest rate, loyalty members, open rate, click rate, redemptions, win-back returns, email revenue and opt-outs: the Retention rows of the [metric inventory](../data/metrics-and-scoring).
+Repeat guest rate, loyalty members, open rate and click rate (later, with marketing and CRM), redemptions, win-back returns, email revenue and opt-outs: the Retention rows of the [metric inventory](../data/metrics-and-scoring).

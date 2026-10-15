@@ -56,7 +56,7 @@ Each engine has a question, a journey stage and a score. A service belongs to on
 | **Stages** | First Visit → Loyal Regular |
 | **North-star metric** | Repeat guest rate: guests with a repeat visit / guests |
 | **Services** | CRM + Automations, Email Marketing, Loyalty & Rewards |
-| **Measured by** | Repeat guest rate, loyalty members, open rate, click rate, redemptions, win-back returns, email revenue, opt-outs |
+| **Measured by** | Repeat guest rate, loyalty members, open rate and click rate (later, with marketing and CRM), redemptions, win-back returns, email revenue, opt-outs |
 | **Practice rubric** | List hygiene, automation coverage, offer cadence, segmentation depth |
 | **Agent** | [Sommelier](../agents/sommelier) |
 

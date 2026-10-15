@@ -31,7 +31,9 @@ describe("SMS is gone from the documentation", () => {
         readFileSync(file, "utf8")
           .split("\n")
           .forEach((line, i) => {
-            if (PATTERN.test(line)) hits.push(`${rel}:${i + 1}: ${line.trim().slice(0, 80)}`);
+            // The ADR file name is fixed by the spec and contains "sms"; links to it are allowed.
+            if (PATTERN.test(line.replaceAll("0021-resend-email-no-sms", "")))
+              hits.push(`${rel}:${i + 1}: ${line.trim().slice(0, 80)}`);
           });
       }
     }
