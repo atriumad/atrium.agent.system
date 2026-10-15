@@ -43,7 +43,7 @@ bun --env-file=.env.local run --filter @atrium/platform dev   # :3003
 bun --env-file=.env.local run --filter @atrium/hub dev        # :3004
 ```
 
-Check them: `curl localhost:3001/api/auth/ok` answers `200` and the three screens answer on their ports. The worker logs `worker.started` with its consumers and jobs. The worker needs `AGENTS_URL` and `AGENTS_SERVICE_TOKEN`; start the agents service first. If `HOST_LLM_API_KEY` and a model for Sentiment (`HOST_MODEL_SENTIMENT` or `HOST_MODEL_DEFAULT`) are empty, Sentiment answers `rejected`; cases still open from the rating.
+Check them: `curl localhost:3001/api/auth/ok` answers `200` and the three screens answer on their ports. The worker logs `worker.started` with its consumers and jobs. The worker needs `AGENTS_URL` and `AGENTS_SERVICE_TOKEN`; start the agents service first. `AGENTS_SERVICE_TOKEN` is any random string of 32 characters or more, and the agents service refuses to start with a shorter one. The agents service also reads `PUBLIC_BASE_URL` (and optionally `ADMIN_BASE_URL`), which the worker no longer reads; outside development and test it will not start without `PUBLIC_BASE_URL`. If `HOST_LLM_API_KEY` and a model for Sentiment (`HOST_MODEL_SENTIMENT` or `HOST_MODEL_DEFAULT`) are empty, Sentiment answers `rejected`; cases still open from the rating.
 
 ## Walk the main flow
 

@@ -31,6 +31,8 @@ Manifests and tools stay in the modules. The worker keeps the event consumers an
 - A new agent adds tasks to the registry and a contract entry; the server does not change.
 - The model call still runs inside the tool's transaction, for at most 15 seconds and with no row lock, as 0019 accepted. A read tool and an apply tool can split it later.
 - The variables `OPENROUTER_API_KEY`, `SENTIMENT_MODEL` and `SENTIMENT_ALLOW_FREE` are replaced by `HOST_LLM_API_KEY`, `HOST_MODEL_*` and `HOST_ALLOW_FREE`.
+- The agents service now needs `PUBLIC_BASE_URL` (and optionally `ADMIN_BASE_URL`), which the worker no longer reads. Outside development and test it refuses to start without `PUBLIC_BASE_URL`.
+- The agents service must run on a private network without a public domain: the bearer token travels in the clear unless `AGENTS_URL` is https.
 
 ## Discarded alternatives
 

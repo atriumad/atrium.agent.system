@@ -31,6 +31,8 @@ Los manifiestos y las herramientas se quedan en los módulos. El worker conserva
 - Un agente nuevo agrega tareas al registro y una entrada al contrato; el servidor no cambia.
 - La llamada al modelo sigue corriendo dentro de la transacción de la herramienta, como máximo 15 segundos y sin bloquear filas, como aceptó el 0019. Una herramienta de lectura y otra de aplicación pueden separarla más adelante.
 - Las variables `OPENROUTER_API_KEY`, `SENTIMENT_MODEL` y `SENTIMENT_ALLOW_FREE` se reemplazan por `HOST_LLM_API_KEY`, `HOST_MODEL_*` y `HOST_ALLOW_FREE`.
+- El servicio de agentes ahora necesita `PUBLIC_BASE_URL` (y opcionalmente `ADMIN_BASE_URL`), que el worker ya no lee. Fuera de desarrollo y pruebas se niega a arrancar sin `PUBLIC_BASE_URL`.
+- El servicio de agentes debe correr en una red privada, sin dominio público: el token bearer viaja en claro salvo que `AGENTS_URL` sea https.
 
 ## Alternativas descartadas
 

@@ -49,7 +49,7 @@ Boundaries:
 
 ### Contract (`packages/contracts`)
 
-`agent-tasks.ts` declares each task's name, input and output as Zod schemas. `agents-client.ts` is a small client over `fetch`: `callTask(name, { clientId, locationId?, input })` returns the typed `{ decision, result?, reason? }`. It sends the service token, maps a 502 to a thrown error and every other answer to a value. It has no dependency beyond Zod.
+`agent-tasks.ts` declares each task's name, input and output as Zod schemas. `agents-client.ts` is a small client over `fetch`: `callTask(name, { clientId, locationId?, input })` returns the typed `{ decision, result?, reason? }`. It sends the service token, throws on any non-2xx answer; a 200 is always a value (a policy refusal is a 200 `rejected`). It has no dependency beyond Zod.
 
 ### Task registry (`apps/agents/src/tasks/`)
 
