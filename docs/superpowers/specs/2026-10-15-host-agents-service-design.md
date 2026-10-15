@@ -70,7 +70,7 @@ Every effect still goes through the gateway: the kill switch, the package gate, 
 - **Configuration:** `HOST_LLM_API_KEY`, `HOST_MODEL_DEFAULT`, and an optional `HOST_MODEL_<SUBAGENT>` per subagent (for example `HOST_MODEL_SENTIMENT`). `OPENROUTER_API_KEY` and `SENTIMENT_MODEL` are removed.
 - **Free-model guard:** `assertModelAllowed` stays and applies to every subagent. A `:free` model is refused unless `NODE_ENV` is `development` or `test`, or `HOST_ALLOW_FREE=true` (it replaces `SENTIMENT_ALLOW_FREE`); an unset `NODE_ENV` counts as production.
 - **Untrusted text:** a shared helper wraps third-party text in a delimited data block and strips any attempt to close it. Every task that sends a guest's words uses it.
-- **Cost:** after each call the runtime writes the tokens to the audit entry's `cost_tokens` and the model id to its `output` (a JSON field). `cost_cents` is left empty until a price table exists.
+- **Cost:** after each call the runtime writes the tokens to the audit entry's `cost_tokens` through a per-call usage meter. The model id is not repeated there: it already sits on the response (`read_model`). `cost_cents` is left empty until a price table exists.
 - **Budget:** the manifest's `max_per_day` stays the per-subagent cap. A call has a timeout (15 s, as now) and a maximum output size.
 
 ### Service (`apps/agents/src/server.ts`, `main.ts`)
@@ -94,7 +94,7 @@ It stops building the gateway and running agents. Its consumers keep their names
 1. The guest submits. The API stores the response and publishes `survey.response.submitted`.
 2. The worker's two consumers call `recovery.evaluate` and `sentiment.read` with the ids.
 3. `recovery.evaluate` opens a case from the rating and alerts people, as today.
-4. `sentiment.read` reads the allowed fields through its tool, calls the model outside any open transaction, then stores the labels. With a serious reading it publishes `survey.response.read`, and the worker calls `recovery.evaluate` again, which may raise the case.
+4. `sentiment.read` asks the tool to read the response. The tool calls the model inside its own transaction, bounded to 15 s with no row lock held, as ADR 0019 accepts, then stores the labels. Splitting it into a read tool and an apply tool is possible later. With a serious reading it publishes `survey.response.read`, and the worker calls `recovery.evaluate` again, which may raise the case.
 5. Without a key, step 4 ends in `rejected` ("model not configured") and is not retried; the case from step 3 stands.
 
 ## Errors and rules kept
