@@ -33,6 +33,8 @@ const ADMIN_URL =
 const APP_URL =
   process.env.DATABASE_URL ?? "postgres://atrium_app:atrium_app@localhost:5432/atrium";
 const API = process.env.PUBLIC_BASE_URL ?? "http://localhost:3001";
+/** Where the ingestion route lives. PUBLIC_BASE_URL is the Hub, which has no /v1/signals. */
+const INGEST_URL = process.env.API_URL ?? "http://localhost:3001";
 
 const REVIEW_URL = "https://search.google.com/local/writereview?placeid=DEMO";
 const GUEST_EMAIL = "guest@demo.test";
@@ -200,25 +202,26 @@ Sign in to the screens with ${PASSWORD}:
      demo-am@demo.test     account manager  -> Manager, http://localhost:3002
      demo-owner@demo.test  owner (read-only) -> Platform, http://localhost:3003
 
-1) Start the API, the worker and the screens (four terminals; API needs AGENCY_SLUG=demo-atrium):
+1) Start the API, the worker and the screens (five terminals; each needs AGENCY_SLUG=demo-atrium and the variables of .env.local):
      bun run --filter @atrium/api dev
      bun run --filter @atrium/worker dev
      bun run --filter @atrium/manager dev
      bun run --filter @atrium/platform dev
+     bun run --filter @atrium/hub dev
 
 2) Simulate a Toast order from that guest (an identified visit; Ask schedules a request):
-     curl -s ${API}/v1/signals -H 'authorization: Bearer ${token}' -H 'content-type: application/json' \\
+     curl -s ${INGEST_URL}/v1/signals -H 'authorization: Bearer ${token}' -H 'content-type: application/json' \\
        -d '{"rows":[{"date":"${today}","locationId":"${locationId}","source":"toast","signalType":"order","value":1,"guestId":"${guestId}"}]}'
 
 3) Within a minute Ask sends the review request. Read the survey link from the outbox:
-     docker exec atrium-postgres-1 psql -U atrium atrium -c \\
+     docker compose exec postgres psql -U atrium atrium -c \\
        "select body from core.notifications where kind = 'reputation.review_request' order by created_at desc limit 1"
 
-4) Open the /s/svy_... link in a browser and submit a rating of 1 to 3.
+4) Open the /s/svy_... link in a browser (the Hub, http://localhost:3004) and submit a rating of 1 to 3.
    Recovery opens a private case and alerts the owner and the account manager:
-     docker exec atrium-postgres-1 psql -U atrium atrium -c \\
+     docker compose exec postgres psql -U atrium atrium -c \\
        "select severity, status, due_at from reputation.recovery_cases order by opened_at desc limit 1"
-     docker exec atrium-postgres-1 psql -U atrium atrium -c \\
+     docker compose exec postgres psql -U atrium atrium -c \\
        "select actor_id, action, decision, reason from core.audit_log order by seq desc limit 10"
 `);
 

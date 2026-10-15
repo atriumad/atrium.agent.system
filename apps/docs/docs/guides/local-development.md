@@ -66,10 +66,6 @@ docker compose exec postgres psql -U atrium atrium -c \
 
 Then sign in to the Manager as `demo-am@demo.test`, open **Reputation → Cases**, pick the case and use **Mark contacted** and **Resolve**.
 
-:::caution Two details of the seed's own printout
-The seed prints the signals command with the `PUBLIC_BASE_URL` host, which is the Hub (`:3004`); the route lives on the API (`:3001`). It also names the container `atrium-postgres-1`; use `docker compose exec postgres` instead, which does not depend on the project name.
-:::
-
 ## Frequent commands
 
 | Command | What it does |
