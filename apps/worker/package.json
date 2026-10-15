@@ -11,7 +11,9 @@
     "@atrium/contracts": "workspace:*",
     "@atrium/core": "workspace:*",
     "@atrium/signals": "workspace:*",
-    "@atrium/agents": "workspace:*",
     "@atrium/reputation": "workspace:*"
+  },
+  "devDependencies": {
+    "@atrium/agents": "workspace:*"
   }
 }

@@ -117,11 +117,13 @@
       "name": "@atrium/worker",
       "version": "0.0.0",
       "dependencies": {
-        "@atrium/agents": "workspace:*",
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
         "@atrium/reputation": "workspace:*",
         "@atrium/signals": "workspace:*",
+      },
+      "devDependencies": {
+        "@atrium/agents": "workspace:*",
       },
     },
     "modules/core": {

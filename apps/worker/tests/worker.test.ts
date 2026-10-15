@@ -22,7 +22,11 @@ const APP_URL =
   process.env.DATABASE_URL ?? "postgres://atrium_app:atrium_app@localhost:5432/atrium";
 
 const suffix = crypto.randomUUID().slice(0, 8);
-const CONFIG = { publicBaseUrl: "https://survey.example.test" };
+const CONFIG = {
+  agents: {
+    call: async () => ({ decision: "executed" }),
+  } as unknown as import("@atrium/contracts").AgentsClient,
+};
 const SCHEMA = `queue_worker_${suffix}`;
 const { db, close } = createDatabase(APP_URL);
 const admin = new SQL(ADMIN_URL);
@@ -91,7 +95,7 @@ afterAll(async () => {
 
 describe("startup", () => {
   test("registers every consumer and job the modules offer, and says so", () => {
-    const { consumers, jobs } = registry(db, bus, CONFIG);
+    const { consumers, jobs } = registry(db, CONFIG);
     const started = logs.find((l) => l.message === "worker.started");
     expect(started?.fields?.consumers).toEqual(consumers.map((c) => c.name));
     expect(started?.fields?.jobs).toEqual(jobs.map((j) => j.name));
@@ -101,7 +105,7 @@ describe("startup", () => {
 
   test("schedules each job once, on its cron", async () => {
     const schedules = await bus.boss.getSchedules();
-    for (const job of registry(db, bus, CONFIG).jobs) {
+    for (const job of registry(db, CONFIG).jobs) {
       const found = schedules.filter((s) => s.name === job.name);
       expect(found).toHaveLength(1);
       expect(found[0]?.cron).toBe(job.cron);

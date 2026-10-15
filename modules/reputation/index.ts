@@ -1,9 +1,6 @@
 /** Public API of Reputation. Other modules import this file, never its tables. */
 
 export { loadHostManifests } from "./agents";
-export { askAgent } from "./agents/ask";
-export { recoveryAgent } from "./agents/recovery";
-export { sentimentAgent } from "./agents/sentiment";
 export type {
   SurveyForm,
   SurveyRequestRow,

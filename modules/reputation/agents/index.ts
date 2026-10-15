@@ -4,7 +4,7 @@ import { type AgentManifest, parseManifest } from "@atrium/policy";
 
 const dir = import.meta.dir;
 
-/** Host's subagents that exist today. Echo needs a language model and comes later. */
+/** Host's subagents that exist today. Echo needs reviews coming in and comes later. */
 export const HOST_MANIFEST_FILES = [
   "host.ask.agent.yaml",
   "host.recovery.agent.yaml",

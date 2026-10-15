@@ -23,6 +23,7 @@ import { SQL } from "bun";
 import { sql } from "drizzle-orm";
 import { migrate } from "../../../scripts/migrate";
 import { startWorker } from "../src/worker";
+import { startAgents } from "./support";
 
 /** Sentiment end to end with a fake model: the real worker, bus, gateway and database. */
 const ADMIN_URL =
@@ -40,6 +41,7 @@ const REVIEW_URL = "https://search.google.com/local/writereview?placeid=SENTW";
 
 let bus: EventBus;
 let worker: { stop: () => Promise<void> };
+let agents: Awaited<ReturnType<typeof startAgents>>;
 let a: string;
 let locA: string;
 let device = 0;
@@ -124,21 +126,25 @@ beforeAll(async () => {
     schema: SCHEMA,
     retry: { limit: 1, delaySeconds: 1, maxDelaySeconds: 1 },
   });
+  agents = await startAgents({
+    db,
+    bus,
+    now: () => NOW,
+    publicBaseUrl: "https://survey.example.test",
+    adminBaseUrl: "https://admin.example.test",
+    reader,
+  });
   worker = await startWorker({
     db,
     bus,
-    config: {
-      publicBaseUrl: "https://survey.example.test",
-      adminBaseUrl: "https://admin.example.test",
-      now: () => NOW,
-      reader,
-    },
+    config: { agents: agents.client },
     log: { info: () => {}, error: () => {} },
   });
 });
 
 afterAll(async () => {
   await worker.stop();
+  agents.stop();
   await withAgency(db, (tx) =>
     tx.execute(sql`delete from core.clients where slug like ${`sentw-%-${suffix}`}`),
   );

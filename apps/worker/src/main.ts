@@ -1,21 +1,22 @@
-import { readerFromEnv } from "@atrium/agents";
+import { createAgentsClient } from "@atrium/contracts";
 import { createDatabase, createEventBus } from "@atrium/core";
 import { jsonLogger, startWorker } from "./worker";
 
+const url = process.env.AGENTS_URL;
+const token = process.env.AGENTS_SERVICE_TOKEN;
+if (!url || !token) {
+  jsonLogger.error("worker.cannot_start", {
+    reason: "AGENTS_URL and AGENTS_SERVICE_TOKEN must be set",
+  });
+  process.exit(1);
+}
+
 const { db, close } = createDatabase();
 const bus = createEventBus(db);
-const reader = readerFromEnv(process.env);
-if (!reader) {
-  jsonLogger.info("sentiment.disabled", { reason: "no OPENROUTER_API_KEY or SENTIMENT_MODEL" });
-}
 const worker = await startWorker({
   db,
   bus,
-  config: {
-    publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://localhost:3001",
-    ...(process.env.ADMIN_BASE_URL ? { adminBaseUrl: process.env.ADMIN_BASE_URL } : {}),
-    ...(reader ? { reader } : {}),
-  },
+  config: { agents: createAgentsClient({ url, token }) },
 });
 
 let stopping = false;

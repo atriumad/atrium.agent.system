@@ -1,71 +1,33 @@
-import { createGateway } from "@atrium/agents";
+import type { AgentsClient } from "@atrium/contracts";
 import {
   type ConsumerDefinition,
   coreJobs,
   type Database,
   type EventBus,
   type JobDefinition,
-  type NotificationTransport,
 } from "@atrium/core";
-import {
-  askAgent,
-  loadHostManifests,
-  type ResponseReader,
-  recoveryAgent,
-  erasureConsumer as reputationErasure,
-  reputationTools,
-  sentimentAgent,
-} from "@atrium/reputation";
+import { erasureConsumer as reputationErasure } from "@atrium/reputation";
 import { ensureFuturePartitions, signalsConsumers, signalsJobs } from "@atrium/signals";
+import { agentConsumers } from "./agents";
 
 export type WorkerConfig = {
-  /** Where survey links point: the public address of the API. */
-  publicBaseUrl: string;
-  /** Where case alerts point the team. Optional. */
-  adminBaseUrl?: string;
-  /** Replaces the development transport. Tests use it; Twilio will. */
-  transport?: NotificationTransport;
-  /** Injectable clock for the agents, for tests. */
-  now?: () => Date;
-  /** The model that reads guests' words. Without it, Sentiment does not run. */
-  reader?: ResponseReader;
+  /** Where Host's subagents run. The worker only asks them for tasks. */
+  agents: AgentsClient;
 };
 
 /**
  * Everything the worker runs. A module adds its consumers and jobs here, and nowhere else:
- * the worker is the one place that knows which modules exist. Agents act through the gateway,
- * which is built here from their manifests and the module's tools.
+ * the worker is the one place that knows which modules exist. Host's agents are not run here:
+ * their consumers ask the agents service for a task.
  */
 export function registry(
   db: Database,
-  bus: Pick<EventBus, "publish">,
   config: WorkerConfig,
 ): { consumers: ConsumerDefinition[]; jobs: JobDefinition[] } {
-  const gateway = createGateway({
-    db,
-    manifests: loadHostManifests(),
-    tools: reputationTools({
-      publicBaseUrl: config.publicBaseUrl,
-      ...(config.adminBaseUrl ? { adminBaseUrl: config.adminBaseUrl } : {}),
-      publish: (event, tx) => bus.publish(event, tx),
-      ...(config.transport ? { transport: config.transport } : {}),
-      ...(config.reader ? { reader: config.reader } : {}),
-    }),
-    ...(config.now ? { now: config.now } : {}),
-  });
-  const ask = askAgent(gateway, db, config.now);
-  const recovery = recoveryAgent(gateway);
-  const sentiment = sentimentAgent(gateway);
-
+  const host = agentConsumers(config.agents);
   return {
-    consumers: [
-      ...signalsConsumers,
-      reputationErasure,
-      ...ask.consumers,
-      ...recovery.consumers,
-      ...(config.reader ? sentiment.consumers : []),
-    ],
-    jobs: [...coreJobs(db), ...signalsJobs(db), ...ask.jobs],
+    consumers: [...signalsConsumers, reputationErasure, ...host.consumers],
+    jobs: [...coreJobs(db), ...signalsJobs(db), ...host.jobs],
   };
 }
 
@@ -95,7 +57,7 @@ export type WorkerDeps = { db: Database; bus: EventBus; config: WorkerConfig; lo
  */
 export async function startWorker({ db, bus, config, log = jsonLogger }: WorkerDeps) {
   await bus.start();
-  const { consumers, jobs } = registry(db, bus, config);
+  const { consumers, jobs } = registry(db, config);
 
   for (const consumer of consumers) {
     await bus.subscribe(consumer.name, consumer.event, consumer.handler, consumer.options);
