@@ -1,6 +1,6 @@
 import type { AtriumEvent } from "@atrium/contracts";
 import { SignalBatch } from "@atrium/contracts";
-import type { Database, Tx } from "@atrium/core";
+import type { Database, NotificationTransport, Tx } from "@atrium/core";
 import {
   authenticateToken,
   IngestionRejected,
@@ -19,6 +19,8 @@ export type AppDeps = {
   db: Database;
   /** Enqueues an event inside the ingestion transaction. `bus.publish` has this shape. */
   publish?: (event: AtriumEvent, tx: Tx) => Promise<void>;
+  /** How mail leaves. Without it the development transport records and sends nothing. */
+  transport?: NotificationTransport;
   now?: () => Date;
   onError?: (error: unknown) => void;
   /** Better Auth and the agency slug. Without it the case routes and sign-in are not mounted. */

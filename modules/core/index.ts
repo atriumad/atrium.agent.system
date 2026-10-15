@@ -126,6 +126,7 @@ export {
   defineConsumer,
   deliver,
 } from "./infra/event-bus";
+export { resendTransport, TransportUnavailableError } from "./infra/resend";
 export type { NewClient, NewLocation } from "./infra/tenancy-repository";
 export {
   createClient,
@@ -133,3 +134,4 @@ export {
   findLocationClients,
   listLocations,
 } from "./infra/tenancy-repository";
+export { transportFromEnv } from "./infra/transport";

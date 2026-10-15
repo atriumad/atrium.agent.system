@@ -1,4 +1,10 @@
-import { createAuth, createDatabase, createEventBus, createSetupLinkCapture } from "@atrium/core";
+import {
+  createAuth,
+  createDatabase,
+  createEventBus,
+  createSetupLinkCapture,
+  transportFromEnv,
+} from "@atrium/core";
 import { createApp } from "./app";
 
 const { db, close } = createDatabase();
@@ -37,8 +43,11 @@ if (!session)
     }),
   );
 
+const transport = transportFromEnv(process.env);
+
 const app = createApp({
   db,
+  transport,
   ...(session ? { session } : {}),
   publish: (event, tx) => bus.publish(event, tx),
   onError: (error) => console.error(JSON.stringify({ level: "error", message: String(error) })),

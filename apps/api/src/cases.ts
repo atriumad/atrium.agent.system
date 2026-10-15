@@ -135,6 +135,7 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       await withScope(deps.db, c.get("scope"), (tx) =>
         advanceCase(tx, c.get("scope"), id, to, note?.trim() || null, {
           ...(deps.publish ? { publish: deps.publish } : {}),
+          ...(deps.transport ? { transport: deps.transport } : {}),
           ...(deps.now ? { now: deps.now } : {}),
         }),
       );

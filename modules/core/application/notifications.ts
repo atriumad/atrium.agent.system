@@ -32,11 +32,14 @@ export async function sendToGuest(
   const contact = await contactFor(tx, input.guestId, input.channel, input.purpose);
   if (!contact.allowed) return { sent: false, reason: contact.reason };
 
-  const status = await transport.deliver({
+  const result = await transport.deliver({
     channel: input.channel,
     to: contact.address,
     subject: input.subject ?? null,
     body: input.body,
+    html: input.html ?? null,
+    headers: input.headers ?? null,
+    idempotencyKey: input.idempotencyKey ?? null,
   });
   const [row] = await tx
     .insert(notifications)
@@ -49,9 +52,10 @@ export async function sendToGuest(
       recipientId: input.guestId,
       toMasked: maskAddress(contact.address),
       subject: input.subject ?? null,
-      body: input.body,
+      body: input.storedBody ?? input.body,
       transport: transport.name,
-      status,
+      status: result.status,
+      providerId: result.providerId,
     })
     .returning({ id: notifications.id });
   if (!row) throw new Error("notification was not recorded");
@@ -75,11 +79,14 @@ export async function sendToUser(
     .where(eq(users.id, input.userId));
   if (!user) return { sent: false, reason: "unknown_guest" };
 
-  const status = await transport.deliver({
+  const result = await transport.deliver({
     channel: "email",
     to: user.email,
     subject: input.subject ?? null,
     body: input.body,
+    html: input.html ?? null,
+    headers: input.headers ?? null,
+    idempotencyKey: input.idempotencyKey ?? null,
   });
   const [row] = await tx
     .insert(notifications)
@@ -92,9 +99,10 @@ export async function sendToUser(
       recipientId: input.userId,
       toMasked: maskAddress(user.email),
       subject: input.subject ?? null,
-      body: input.body,
+      body: input.storedBody ?? input.body,
       transport: transport.name,
-      status,
+      status: result.status,
+      providerId: result.providerId,
     })
     .returning({ id: notifications.id });
   if (!row) throw new Error("notification was not recorded");

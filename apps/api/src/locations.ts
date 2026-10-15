@@ -69,7 +69,7 @@ export function mountLocations(api: Hono<Env>, deps: AppDeps) {
       const scope = c.get("scope");
       const { name, timeZone } = body;
       const id = await withScope(deps.db, scope, (tx) =>
-        requestLocation(tx, scope, { name, timeZone }),
+        requestLocation(tx, scope, { name, timeZone }, deps.transport),
       );
       return c.json({ id }, 201);
     }),
@@ -93,7 +93,14 @@ export function mountLocations(api: Hono<Env>, deps: AppDeps) {
       }
       const scope = c.get("scope");
       const status = await withScope(deps.db, scope, (tx) =>
-        decideLocation(tx, scope, id, action as LocationAction, reason?.trim() || null),
+        decideLocation(
+          tx,
+          scope,
+          id,
+          action as LocationAction,
+          reason?.trim() || null,
+          deps.transport,
+        ),
       );
       return c.json({ status });
     }),

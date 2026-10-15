@@ -1,4 +1,4 @@
-import { createDatabase, createEventBus } from "@atrium/core";
+import { createDatabase, createEventBus, transportFromEnv } from "@atrium/core";
 import { sentimentReader } from "./reader";
 import { assertModelAllowed, hostConfigFromEnv, modelFor } from "./runtime/config";
 import { createUsageMeter } from "./runtime/meter";
@@ -27,6 +27,8 @@ if (!process.env.PUBLIC_BASE_URL && !dev) {
   process.exit(1);
 }
 
+const transport = transportFromEnv(process.env);
+
 const { db, close } = createDatabase();
 const bus = createEventBus(db);
 await bus.start();
@@ -46,6 +48,7 @@ if (!reader) {
 const app = createAgentsService({
   db,
   publish: (event, tx) => bus.publish(event, tx),
+  transport,
   token,
   meter,
   ...(reader ? { reader } : {}),

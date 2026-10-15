@@ -89,6 +89,7 @@ f.onsubmit = async (e) => {
         parsed.data,
         {
           ...(deps.publish ? { publish: deps.publish } : {}),
+          ...(deps.transport ? { transport: deps.transport } : {}),
           ...(deps.now ? { now: deps.now } : {}),
         },
       );
@@ -163,6 +164,7 @@ export function mountQrSurvey(app: Hono<any>, deps: AppDeps) {
         parsed.data,
         {
           ...(deps.publish ? { publish: deps.publish } : {}),
+          ...(deps.transport ? { transport: deps.transport } : {}),
           ...(deps.now ? { now: deps.now } : {}),
         },
       );

@@ -181,6 +181,7 @@ export const notifications = core.table("notifications", {
   body: text("body").notNull(),
   transport: text("transport").notNull().default("dev"),
   status: text("status").notNull().default("recorded"),
+  providerId: text("provider_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   readAt: timestamp("read_at", { withTimezone: true }),
 });

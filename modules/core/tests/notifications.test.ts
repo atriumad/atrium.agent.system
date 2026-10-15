@@ -134,7 +134,7 @@ describe("sendToGuest", () => {
       name: "spy",
       deliver: async (m) => {
         delivered.push({ to: m.to, body: m.body });
-        return "sent";
+        return { status: "sent", providerId: null };
       },
     };
     await inA(async (tx) => {
@@ -144,6 +144,48 @@ describe("sendToGuest", () => {
     });
     expect(delivered).toHaveLength(1);
     expect(delivered[0]?.to).toBe(guestEmail("spy"));
+  });
+
+  test("the provider's status and message id are kept on the outbox row", async () => {
+    const t: NotificationTransport = {
+      name: "fake",
+      deliver: async () => ({ status: "sent", providerId: `msg_9_${suffix}` }),
+    };
+    const id = await inA(async (tx) => {
+      const g = await resolveGuest(tx, a, { email: guestEmail("prov") });
+      await recordConsent(tx, g, "email", "marketing", "qr");
+      const r = await sendToGuest(tx, base(g), t);
+      return r.sent ? r.notificationId : "";
+    });
+    const rows = await admin.unsafe(
+      "select status, provider_id from core.notifications where id = $1",
+      [id],
+    );
+    expect(rows[0]).toMatchObject({ status: "sent", provider_id: `msg_9_${suffix}` });
+  });
+
+  test("storedBody replaces body in the outbox while the transport gets the real body", async () => {
+    let received = "";
+    const t: NotificationTransport = {
+      name: "fake",
+      deliver: async (m) => {
+        received = m.body;
+        return { status: "sent", providerId: null };
+      },
+    };
+    const id = await inA(async (tx) => {
+      const g = await resolveGuest(tx, a, { email: guestEmail("stored") });
+      await recordConsent(tx, g, "email", "marketing", "qr");
+      const r = await sendToGuest(
+        tx,
+        { ...base(g), body: "secret https://x.test/s/TOKEN", storedBody: "link hidden" },
+        t,
+      );
+      return r.sent ? r.notificationId : "";
+    });
+    expect(received).toBe("secret https://x.test/s/TOKEN");
+    const rows = await admin.unsafe("select body from core.notifications where id = $1", [id]);
+    expect(rows[0]?.body).toBe("link hidden");
   });
 
   test("a malformed kind is refused", async () => {

@@ -39,7 +39,7 @@ const transport: NotificationTransport = {
   name: "test",
   deliver: async (m) => {
     sent.push({ to: m.to, subject: m.subject });
-    return "recorded";
+    return { status: "recorded", providerId: null };
   },
 };
 

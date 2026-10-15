@@ -42,6 +42,7 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
   const options = {
     ...(deps.now ? { now: deps.now } : {}),
     ...(deps.publish ? { publish: deps.publish } : {}),
+    ...(deps.transport ? { transport: deps.transport } : {}),
   };
 
   const guard = async <T>(
