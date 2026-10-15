@@ -34,6 +34,8 @@ export type GatewayDeps = {
   manifests: readonly AgentManifest[];
   tools: readonly Tool<never, unknown, Tx>[];
   now?: () => Date;
+  /** What the call in progress has cost so far, read when its audit entry is written. */
+  costOf?: () => { tokens?: number; cents?: number } | undefined;
 };
 
 const ALL = ["executed", "pending_approval"] as const;
@@ -153,8 +155,9 @@ export function createGateway(deps: GatewayDeps): Gateway {
           const audit = (
             decision: "executed" | "pending_approval" | "drafted" | "rejected",
             output?: unknown,
-          ) =>
-            writeAudit(tx, {
+          ) => {
+            const cost = decision === "executed" ? deps.costOf?.() : undefined;
+            return writeAudit(tx, {
               actor,
               clientId: call.clientId,
               locationId,
@@ -163,7 +166,9 @@ export function createGateway(deps: GatewayDeps): Gateway {
               ...(output !== undefined ? { output } : {}),
               decision,
               reason: verdict.reason,
+              ...(cost ? { cost } : {}),
             });
+          };
 
           if (verdict.decision === "reject") {
             await audit("rejected");

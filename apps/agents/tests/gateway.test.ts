@@ -166,6 +166,33 @@ describe("levels", () => {
     expect(row?.output).toEqual({ wrote: "hello" });
   });
 
+  test("an executed call records the cost the runtime reports; a draft does not", async () => {
+    const id = `gw${suffix}.cost`;
+    const priced = createGateway({
+      db,
+      manifests: [manifest(id, 4)],
+      tools,
+      now: () => NOW,
+      costOf: () => ({ tokens: 42 }),
+    });
+    await priced.call(write(id, "priced"));
+    const [row] = await auditOf(id);
+    expect(row).toMatchObject({ decision: "executed", costTokens: 42 });
+
+    const drafting = `gw${suffix}.costdraft`;
+    const draftGateway = createGateway({
+      db,
+      manifests: [manifest(drafting, 2)],
+      tools,
+      now: () => NOW,
+      costOf: () => ({ tokens: 42 }),
+    });
+    await draftGateway.call(write(drafting, "unpriced"));
+    const [draft] = await auditOf(drafting);
+    expect(draft).toMatchObject({ decision: "drafted" });
+    expect(draft?.costTokens).toBeNull();
+  });
+
   test("level 3 queues an approval and does not run the tool", async () => {
     const id = `gw${suffix}.approve`;
     const before = ran.length;
