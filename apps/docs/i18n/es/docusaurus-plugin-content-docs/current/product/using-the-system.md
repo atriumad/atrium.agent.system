@@ -113,4 +113,4 @@ La navegación muestra todo el producto a propósito, para que un client vea qu�
 | Notificaciones, aprobaciones y lugares | Reportes |
 | Lectura de Sentiment, **solo si hay un modelo configurado** | |
 
-Sin modelo, Sentiment queda apagado al arrancar y su llamada a la herramienta se registra como `rejected` en el registro de auditoría. Los casos se abren igual por la calificación, como dice la página de [Reputation](../modules/reputation).
+Sin modelo, la tarea de Sentiment responde `rejected` ("no model is configured") y nada la reintenta. Los casos se abren igual por la calificación, como dice la página de [Reputation](../modules/reputation).

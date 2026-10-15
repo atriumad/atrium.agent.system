@@ -36,13 +36,14 @@ Todavía no hay un solo comando `dev`. Levanta cada app en su propia terminal, c
 ```bash
 export AGENCY_SLUG=demo-atrium
 bun --env-file=.env.local run --filter @atrium/api dev        # :3001
+bun --env-file=.env.local run --filter @atrium/agents dev     # :3005
 bun --env-file=.env.local run --filter @atrium/worker dev
 bun --env-file=.env.local run --filter @atrium/manager dev    # :3002
 bun --env-file=.env.local run --filter @atrium/platform dev   # :3003
 bun --env-file=.env.local run --filter @atrium/hub dev        # :3004
 ```
 
-Compruébalas: `curl localhost:3001/api/auth/ok` responde `200` y las tres pantallas responden en sus puertos. El worker registra `worker.started` con sus consumidores y tareas. Si `OPENROUTER_API_KEY` y `SENTIMENT_MODEL` están vacíos, Sentiment queda apagado; los casos se abren igual por la calificación.
+Compruébalas: `curl localhost:3001/api/auth/ok` responde `200` y las tres pantallas responden en sus puertos. El worker registra `worker.started` con sus consumidores y tareas. El worker necesita `AGENTS_URL` y `AGENTS_SERVICE_TOKEN`; levanta primero el servicio de agentes. Si `HOST_LLM_API_KEY` y un modelo para Sentiment (`HOST_MODEL_SENTIMENT` o `HOST_MODEL_DEFAULT`) están vacíos, Sentiment responde `rejected`; los casos se abren igual por la calificación.
 
 ## Recorrer el flujo principal
 

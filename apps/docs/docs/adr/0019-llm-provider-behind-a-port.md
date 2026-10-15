@@ -27,7 +27,7 @@ Real clients' responses go only to a paid model, or to a model whose data policy
 - Changing provider changes a string, not the module.
 - A free model that rate-limits or fails leaves responses unread; Recovery still works from the rating.
 - A reading call holds one database transaction for at most 15 seconds.
-- Agents keep running in `apps/worker` on Railway with pg-boss ([0006](./0006-events-with-pg-boss)).
+- Agents run in their own service, called by the worker ([0020](./0020-agents-in-their-own-service)); events and retries stay on pg-boss ([0006](./0006-events-with-pg-boss)). The variables in this ADR are now `HOST_LLM_API_KEY`, `HOST_MODEL_*` and `HOST_ALLOW_FREE`.
 - Before enabling a model for real clients, run the golden and hostile cases once against that model (`bun apps/agents/scripts/eval-sentiment.ts` with `OPENROUTER_API_KEY` and `SENTIMENT_MODEL` set) and record the model and its data policy in this ADR. The live SDK call has not been exercised against a real provider yet.
 
 ## Discarded alternatives

@@ -202,8 +202,9 @@ Sign in to the screens with ${PASSWORD}:
      demo-am@demo.test     account manager  -> Manager, http://localhost:3002
      demo-owner@demo.test  owner (read-only) -> Platform, http://localhost:3003
 
-1) Start the API, the worker and the screens (five terminals; each needs AGENCY_SLUG=demo-atrium and the variables of .env.local):
+1) Start the API, the agents service, the worker and the screens (six terminals; each needs the variables of .env.local, and the API and the worker need AGENCY_SLUG=demo-atrium):
      bun run --filter @atrium/api dev
+     bun run --filter @atrium/agents dev
      bun run --filter @atrium/worker dev
      bun run --filter @atrium/manager dev
      bun run --filter @atrium/platform dev

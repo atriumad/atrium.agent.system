@@ -130,3 +130,7 @@ Reviews, comments and survey responses are text written by third parties. The ru
 ## Where AI is used first
 
 Scorekeeper is deterministic: it reads the data and computes the scores. The first language-model subagents are Echo (drafts replies that a person approves), Sentiment (themes) and Narrator (the monthly narrative that the strategist edits). Subagents that observe write the weekly practice grades, which are part of the score and are therefore evaluated against golden cases before they go live.
+
+## The agents service
+
+The "Agent runtime" above is `apps/agents`, a service. The worker, the API and later modules call it over HTTP with a typed client (`packages/contracts`); it is the only process with the Host's model key. A call names a task (`sentiment.read`, `recovery.evaluate`, `ask.schedule`, `ask.send_due`) and carries ids; the service reads the data and applies the effects through the gateway. The model returns typed objects and never chooses tools. See [ADR 0020](../adr/0020-agents-in-their-own-service).

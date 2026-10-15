@@ -68,3 +68,12 @@ expect:
 1. Pull request con manifiesto, playbook, herramientas y evals en verde.
 2. Página del subagente actualizada en [Agentes](../agents), en los dos idiomas.
 3. Se activa por client con su interruptor, en el nivel inicial del manifiesto.
+
+## Registrar una tarea
+
+Un subagente corre como tareas en el [servicio de agentes](../adr/0020-agents-in-their-own-service). Para agregar una:
+
+1. Declara la tarea en `packages/contracts/src/agent-tasks.ts`: su nombre, el subagente, su `scope` (`client`, `location` o `agency`) y los esquemas Zod de su entrada y su resultado. La entrada lleva ids y lo poco que trae el evento, nunca el texto de un guest.
+2. Escríbela en `apps/agents/src/tasks/<subagente>.ts` con `defineTask`, llama al gateway para cada efecto y regístrala en `apps/agents/src/tasks/index.ts`. Una prueba verifica que el contrato y el registro listen las mismas tareas.
+3. En el worker, agrega un consumidor o un job que llame a `agents.call("<tarea>", ...)`. Un rechazo vuelve como valor; no lances error por eso.
+4. Si necesita un modelo, pídele al puerto (`ModelPort`) un objeto tipado, cita el texto de terceros con `untrusted` y lee el id del modelo de `HOST_MODEL_<SUBAGENTE>`.

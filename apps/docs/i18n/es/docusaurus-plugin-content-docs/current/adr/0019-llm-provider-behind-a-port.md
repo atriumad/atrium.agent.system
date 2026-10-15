@@ -27,7 +27,7 @@ Las respuestas de clientes reales van solo a un modelo pago, o a un modelo cuya 
 - Cambiar de proveedor cambia un texto, no el módulo.
 - Un modelo gratuito que limita el uso o falla deja respuestas sin leer; Recovery sigue funcionando con la calificación.
 - Una llamada de lectura mantiene una transacción de base de datos como máximo 15 segundos.
-- Los agentes siguen corriendo en `apps/worker` en Railway con pg-boss ([0006](./0006-events-with-pg-boss)).
+- Los agentes corren en su propio servicio, al que llama el worker ([0020](./0020-agents-in-their-own-service)); los eventos y los reintentos siguen en pg-boss ([0006](./0006-events-with-pg-boss)). Las variables de este ADR ahora son `HOST_LLM_API_KEY`, `HOST_MODEL_*` y `HOST_ALLOW_FREE`.
 - Antes de habilitar un modelo para clientes reales, correr una vez los casos dorados y hostiles contra ese modelo (`bun apps/agents/scripts/eval-sentiment.ts` con `OPENROUTER_API_KEY` y `SENTIMENT_MODEL` definidos) y registrar en este ADR el modelo y su política de datos. La llamada real al SDK todavía no se ejercitó contra un proveedor real.
 
 ## Alternativas descartadas

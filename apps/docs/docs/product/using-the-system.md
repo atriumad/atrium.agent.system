@@ -112,4 +112,4 @@ The navigation shows the whole product on purpose, so a client sees what the nex
 | Notifications, approvals and places | Reports |
 | Sentiment reading, **only when a model is configured** | |
 
-Without a model, Sentiment is switched off at start-up and its tool call is recorded as `rejected` in the audit log. Cases still open from the rating alone, as the [Reputation](../modules/reputation) page says.
+Without a model, Sentiment's task answers `rejected` ("no model is configured") and nothing retries it. Cases still open from the rating alone, as the [Reputation](../modules/reputation) page says.

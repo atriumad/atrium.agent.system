@@ -130,3 +130,7 @@ Reseñas, comentarios y respuestas de encuestas son texto escrito por terceros. 
 ## Dónde se usa IA primero
 
 Scorekeeper es determinista: lee los datos y calcula los scores. Los primeros subagentes con modelo de lenguaje son Echo (redacta respuestas que una persona aprueba), Sentiment (temas) y Narrator (la narrativa mensual que edita el strategist). Los subagentes que observan escriben las practice grades semanales, que son parte del score y por eso se evalúan contra casos dorados antes de salir a producción.
+
+## El servicio de agentes
+
+El "Agent runtime" de arriba es `apps/agents`, un servicio. El worker, la API y más adelante otros módulos lo llaman por HTTP con un cliente tipado (`packages/contracts`); es el único proceso con la clave de modelo del Host. Una llamada nombra una tarea (`sentiment.read`, `recovery.evaluate`, `ask.schedule`, `ask.send_due`) y lleva ids; el servicio lee los datos y aplica los efectos a través del gateway. El modelo devuelve objetos tipados y nunca elige herramientas. Ver el [ADR 0020](../adr/0020-agents-in-their-own-service).

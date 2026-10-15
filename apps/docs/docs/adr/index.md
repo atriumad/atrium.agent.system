@@ -29,5 +29,6 @@ Every important technical decision is written down in a short ADR: context, deci
 | [0017](./0017-twilio-email-and-sms) | Twilio for email and SMS | Accepted |
 | [0018](./0018-no-review-gating) | Review requests are never filtered by rating | Accepted |
 | [0019](./0019-llm-provider-behind-a-port) | The language model sits behind a port | Accepted |
+| [0020](./0020-agents-in-their-own-service) | Agents live in their own service | Accepted |
 
 To write a new one, see [How to write an ADR](../guides/write-an-adr).

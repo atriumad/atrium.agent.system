@@ -37,11 +37,15 @@ description: "Reputation · Engine 03. Cuida la puerta: que quien compara nos el
 | --- | --- | --- | --- | --- | --- |
 | **Echo** | Redacta respuestas a reseñas y comentarios en la voz de la marca; califica la velocidad y calidad de las respuestas. | Cada reseña o comentario nuevo | Respuesta en 24–48 h | Skills review-responder y social-responder | <span className="pill pill--l3">3 · Con aprobación</span> |
 | **Ask** | Ajusta el pedido de reseña al momento feliz tras la visita y lo envía a todos los guests. | Visita identificada | Solicitud de reseña | Survey flow · notificaciones | <span className="pill pill--l4">4 · Ejecuta solo</span> |
-| **Recovery** | Lee encuestas post-visita y abre casos privados para resolver los problemas. | Respuesta de encuesta | Caso para el Account Manager | Módulo reputation | <span className="pill pill--l2">2 · Propone</span> |
-| **Sentiment** | Lee las palabras de cada respuesta de encuesta y etiqueta sentimiento, temas y preocupación; más adelante agrupa temas a diario. | Respuesta de encuesta | Etiquetas que pueden abrir un caso | Módulo Reputation · modelo de lenguaje | <span className="pill pill--l1">1 · Observa</span> |
+| **Recovery** | Lee encuestas post-visita y abre casos privados para resolver los problemas. | Respuesta de encuesta | Caso para el Account Manager | Módulo reputation | <span className="pill pill--l4">4 · Ejecuta solo</span> |
+| **Sentiment** | Lee las palabras de cada respuesta de encuesta y etiqueta sentimiento, temas y preocupación; más adelante agrupa temas a diario. | Respuesta de encuesta | Etiquetas que pueden abrir un caso | Módulo Reputation · modelo de lenguaje | <span className="pill pill--l4">4 · Ejecuta solo</span> |
 
 La única herramienta de Sentiment escribe etiquetas internas, por eso el motor de políticas la ejecuta en nivel 4; no puede abrir un caso, avisar a nadie ni tocar el link de reseña. Recovery decide.
 
 El tope diario de `open_case` de Recovery (200) lo comparten sus dos disparadores, así que una respuesta con comentario y calificación baja puede usar dos llamadas. Cuando se alcanza el tope, la llamada se rechaza como decisión y no se reintenta.
 
 Los niveles de autonomía se explican en [Autonomía](./autonomy). Cada subagente se define en un manifiesto versionado: ver [Cómo crear un subagente](../guides/create-a-subagent).
+
+:::note Lo que corre hoy
+Ask, Recovery y Sentiment corren en el [servicio de agentes](../adr/0020-agents-in-their-own-service) y los llama el worker. **Echo no está construido:** necesita que entren reseñas, y eso todavía no existe. Sentiment corre solo cuando hay `HOST_LLM_API_KEY` y un modelo; sin ellos responde `rejected` y Recovery trabaja con la calificación.
+:::

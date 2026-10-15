@@ -37,11 +37,15 @@ description: "Reputation · Engine 03. Guards the door: whoever compares chooses
 | --- | --- | --- | --- | --- | --- |
 | **Echo** | Drafts replies to reviews and comments in the brand voice; grades reply speed and quality. | Every new review or comment | Reply within 24–48 h | Skills review-responder and social-responder | <span className="pill pill--l3">3 · With approval</span> |
 | **Ask** | Times the review request to the happy moment after the visit and sends it to every guest. | Identified visit | Review request | Survey flow · notifications | <span className="pill pill--l4">4 · Runs alone</span> |
-| **Recovery** | Reads post-visit surveys and opens private cases to resolve problems. | Survey response | Case for the Account Manager | Reputation module | <span className="pill pill--l2">2 · Proposes</span> |
-| **Sentiment** | Reads each survey response's words and labels sentiment, topics and concern; later clusters themes daily. | Survey response | Labels that can raise a case | Reputation module · language model | <span className="pill pill--l1">1 · Observes</span> |
+| **Recovery** | Reads post-visit surveys and opens private cases to resolve problems. | Survey response | Case for the Account Manager | Reputation module | <span className="pill pill--l4">4 · Runs alone</span> |
+| **Sentiment** | Reads each survey response's words and labels sentiment, topics and concern; later clusters themes daily. | Survey response | Labels that can raise a case | Reputation module · language model | <span className="pill pill--l4">4 · Runs alone</span> |
 
 Sentiment's only tool writes internal labels, so the policy engine runs it at level 4; it cannot open a case, notify anyone or touch the review link. Recovery decides.
 
 Recovery's `open_case` daily cap (200) is shared by both of its triggers, so a commented low-rated response can use two calls. When the cap is hit the call is refused as a decision and is not retried.
 
 Autonomy levels are explained in [Autonomy](./autonomy). Each subagent is defined in a versioned manifest: see [How to create a subagent](../guides/create-a-subagent).
+
+:::note What runs today
+Ask, Recovery and Sentiment run in the [agents service](../adr/0020-agents-in-their-own-service) and are called by the worker. **Echo is not built:** it needs reviews coming in, which do not exist yet. Sentiment runs only when `HOST_LLM_API_KEY` and a model are set; without them it answers `rejected` and Recovery works from the rating.
+:::

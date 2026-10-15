@@ -29,5 +29,6 @@ Cada decisión técnica importante queda escrita en un ADR corto: contexto, deci
 | [0017](./0017-twilio-email-and-sms) | Twilio para email y SMS | Aceptada |
 | [0018](./0018-no-review-gating) | El pedido de reseña nunca se filtra por calificación | Aceptada |
 | [0019](./0019-llm-provider-behind-a-port) | El modelo de lenguaje vive detrás de un puerto | Aceptada |
+| [0020](./0020-agents-in-their-own-service) | Los agentes viven en su propio servicio | Aceptada |
 
 Para escribir uno nuevo, ver [Cómo escribir un ADR](../guides/write-an-adr).
