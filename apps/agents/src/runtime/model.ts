@@ -2,6 +2,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import type { z } from "zod";
+import { assertModelAllowed } from "./config";
 import type { UsageMeter } from "./meter";
 
 /**
@@ -14,6 +15,8 @@ export type ModelRequest<T> = {
   system: string;
   prompt: string;
   schema: z.ZodType<T>;
+  /** Cap on the answer's tokens. Defaults to 1024 in the adapter. */
+  maxOutputTokens?: number;
 };
 
 export type ModelPort = {
@@ -29,6 +32,7 @@ type GenerateArgs = {
   prompt: string;
   abortSignal: AbortSignal;
   maxRetries: number;
+  maxOutputTokens: number;
 };
 type Generate = (
   args: GenerateArgs,
@@ -80,16 +84,21 @@ const generateWithSdk: Generate = async (args) => {
     prompt: args.prompt,
     abortSignal: args.abortSignal,
     maxRetries: args.maxRetries,
+    maxOutputTokens: args.maxOutputTokens,
     output: Output.object({ schema: args.schema as Parameters<typeof Output.object>[0]["schema"] }),
   });
   const usage = result.usage as { totalTokens?: number } | undefined;
   return { object: result.output, usage: { totalTokens: usage?.totalTokens ?? 0 } };
 };
 
+const DEFAULT_MAX_OUTPUT_TOKENS = 1024;
+
 export type OpenRouterConfig = {
   apiKey: string;
   meter?: UsageMeter;
   timeoutMs?: number;
+  /** Where the free-model guard reads its variables. Defaults to `process.env`. */
+  env?: Record<string, string | undefined>;
   /** Replaces the SDK call. Tests use it. */
   generate?: Generate;
 };
@@ -99,6 +108,8 @@ export function openRouterModel(config: OpenRouterConfig): ModelPort {
   const generate = config.generate ?? generateWithSdk;
   return {
     async generate(request) {
+      // The guard lives in the port so every subagent gets it, not only the one main.ts checks.
+      assertModelAllowed(request.model, config.env ?? process.env);
       let result: Awaited<ReturnType<Generate>>;
       try {
         result = await generate({
@@ -109,6 +120,7 @@ export function openRouterModel(config: OpenRouterConfig): ModelPort {
           // The queue retries; the SDK must not hold the transaction open on its own retries.
           abortSignal: AbortSignal.timeout(config.timeoutMs ?? 15_000),
           maxRetries: 0,
+          maxOutputTokens: request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
         });
       } catch (error) {
         throw classify(error);

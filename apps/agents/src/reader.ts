@@ -33,6 +33,7 @@ export function sentimentReader(port: ModelPort, model: string): ResponseReader 
         system: SYSTEM_PROMPT,
         prompt: buildUserPrompt(input),
         schema: Reading,
+        maxOutputTokens: 400,
       });
       return object;
     },

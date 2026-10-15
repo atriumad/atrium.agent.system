@@ -146,6 +146,41 @@ describe("the OpenRouter adapter", () => {
     expect(args?.abortSignal).toBeInstanceOf(AbortSignal);
   });
 
+  test("the output cap is forwarded, with a default", async () => {
+    const seen: unknown[] = [];
+    const port = openRouterModel({
+      apiKey: "k",
+      generate: async (a) => {
+        seen.push(a.maxOutputTokens);
+        return { object: { label: "ok" } };
+      },
+    });
+    const base = { subagent: "s", model: "m", system: "s", prompt: "p", schema: Schema };
+    await port.generate({ ...base, maxOutputTokens: 400 });
+    await port.generate(base);
+    expect(seen).toEqual([400, 1024]);
+  });
+
+  test("a free model is refused by the port before any provider call", async () => {
+    let calls = 0;
+    const make = (env: Record<string, string>) =>
+      openRouterModel({
+        apiKey: "k",
+        env,
+        generate: async () => {
+          calls++;
+          return { object: { label: "ok" } };
+        },
+      });
+    const req = { subagent: "s", model: "vendor/m:free", system: "s", prompt: "p", schema: Schema };
+    await expect(make({}).generate(req)).rejects.toThrow("free model");
+    await expect(make({ NODE_ENV: "production" }).generate(req)).rejects.toThrow("free model");
+    expect(calls).toBe(0);
+    await make({ NODE_ENV: "development" }).generate(req);
+    await make({ HOST_ALLOW_FREE: "true" }).generate(req);
+    expect(calls).toBe(2);
+  });
+
   test("a provider that hangs is aborted at the timeout", async () => {
     const port = openRouterModel({
       apiKey: "k",

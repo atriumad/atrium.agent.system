@@ -76,4 +76,4 @@ A subagent runs as tasks in the [agents service](../adr/0020-agents-in-their-own
 1. Declare the task in `packages/contracts/src/agent-tasks.ts`: its name, the subagent, its `scope` (`client`, `location` or `agency`), and the Zod schemas of its input and result. The input holds ids and the little the event carries, never a guest's text.
 2. Write it in `apps/agents/src/tasks/<subagent>.ts` with `defineTask`, call the gateway for every effect, and register it in `apps/agents/src/tasks/index.ts`. A test checks that the contract and the registry list the same tasks.
 3. In the worker, add a consumer or a job that calls `agents.call("<task>", ...)`. A refusal returns a value; do not throw on it.
-4. If it needs a model, ask the port (`ModelPort`) for a typed object, quote third-party text with `untrusted`, and read the model id from `HOST_MODEL_<SUBAGENT>`.
+4. If it needs a model, ask the port (`ModelPort`) for a typed object, quote third-party text with `untrusted`, and read the model id from `HOST_MODEL_<SUBAGENT>`. The port itself enforces the free-model guard (a `:free` model is refused outside development and test), so no subagent has to check it.
