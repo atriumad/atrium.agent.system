@@ -11,8 +11,7 @@ Warm and brief. One link, one ask, never pushy.
   after the visit, moved to 09:00 local if that lands between 21:00 and 09:00.
 - A visit more than two local days old is no longer a happy moment: nothing is sent.
 - A location with no Google review link gets no request: it would end nowhere.
-- When the time comes it sends, by email first, and by SMS only when the client's carrier
-  registration is approved and the guest agreed to SMS.
+- When the time comes it sends by email.
 
 ## What it never does
 - Ask only the guests who had a good time. Everyone is asked: the survey it links to shows the

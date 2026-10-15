@@ -4,6 +4,7 @@ import {
   contactFor,
   describeLocations,
   listLocations,
+  phoneFor,
   type Scope,
   sendToUser,
   type Tx,
@@ -396,12 +397,10 @@ export async function getCaseDetail(tx: Tx, caseId: string): Promise<CaseDetail 
   let contact: CaseDetail["contact"] = null;
   if (c.guestId) {
     const email = await contactFor(tx, c.guestId, "email", "transactional");
-    const phone = await contactFor(tx, c.guestId, "sms", "transactional");
-    if (email.allowed || phone.allowed) {
-      contact = {
-        email: email.allowed ? email.address : null,
-        phone: phone.allowed ? phone.address : null,
-      };
+    // The phone is for a person to call, and only when this response asked to be contacted.
+    const phone = r.wantsContact ? await phoneFor(tx, c.guestId) : null;
+    if (email.allowed || phone) {
+      contact = { email: email.allowed ? email.address : null, phone };
     }
   }
   return {

@@ -43,20 +43,20 @@ describe("normalizePhone", () => {
 
 describe("currentConsent", () => {
   const log: ConsentRecord[] = [
-    { channel: "sms", purpose: "marketing", granted: true },
     { channel: "email", purpose: "marketing", granted: true },
-    { channel: "sms", purpose: "marketing", granted: false },
+    { channel: "email", purpose: "transactional", granted: true },
+    { channel: "email", purpose: "marketing", granted: false },
   ];
   test("the latest record wins, per channel and purpose", () => {
-    expect(currentConsent(log, "sms", "marketing")).toBe("opted_out");
-    expect(currentConsent(log, "email", "marketing")).toBe("granted");
+    expect(currentConsent(log, "email", "marketing")).toBe("opted_out");
+    expect(currentConsent(log, "email", "transactional")).toBe("granted");
   });
   test("a purpose with no record has no consent", () => {
-    expect(currentConsent(log, "email", "transactional")).toBe("none");
+    expect(currentConsent([], "email", "transactional")).toBe("none");
   });
   test("a later grant overrides an earlier opt-out", () => {
-    const relog = [...log, { channel: "sms", purpose: "marketing", granted: true } as const];
-    expect(currentConsent(relog, "sms", "marketing")).toBe("granted");
+    const relog = [...log, { channel: "email", purpose: "marketing", granted: true } as const];
+    expect(currentConsent(relog, "email", "marketing")).toBe("granted");
   });
 });
 

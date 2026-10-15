@@ -2,7 +2,7 @@
  * Contact identifiers and consent rules. Pure: no database, no framework.
  * Docs: modules / Core (Guests, Consents) and architecture / Security (Personal data).
  */
-export const CHANNELS = ["email", "sms"] as const;
+export const CHANNELS = ["email"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 export const PURPOSES = ["transactional", "marketing"] as const;
@@ -18,7 +18,8 @@ export const CONSENT_SOURCES = [
   "manual",
   "import",
   "email_unsubscribe",
-  "sms_stop",
+  "email_bounce",
+  "email_complaint",
 ] as const;
 export type ConsentSource = (typeof CONSENT_SOURCES)[number];
 
@@ -28,7 +29,6 @@ export type IdentifierKind = (typeof IDENTIFIER_KINDS)[number];
 /** The identifier an address channel is delivered to. */
 export const CHANNEL_IDENTIFIER: Record<Channel, IdentifierKind> = {
   email: "email",
-  sms: "phone",
 };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

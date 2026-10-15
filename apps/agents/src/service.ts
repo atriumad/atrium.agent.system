@@ -15,7 +15,7 @@ export type AgentsServiceDeps = {
   meter: UsageMeter;
   /** The model that reads guests' words. Without it, Sentiment answers `rejected`. */
   reader?: ResponseReader;
-  /** Replaces the development transport. Tests use it; Twilio will. */
+  /** Replaces the development transport. Tests use it; the email provider will. */
   transport?: NotificationTransport;
   /** Where survey links point: the public address of the API. */
   publicBaseUrl: string;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { FEATURES, PACKAGES } from "@atrium/contracts";
-import { ACCESS_MATRIX, canSendSms, isLive, resolveAccess, resolveLevel } from "../domain/access";
+import { ACCESS_MATRIX, isLive, resolveAccess, resolveLevel } from "../domain/access";
 
 describe("access matrix", () => {
   test("every package defines every feature", () => {
@@ -59,12 +59,7 @@ describe("resolveLevel", () => {
   });
 });
 
-describe("sms", () => {
-  test("needs retention and an approved registration", () => {
-    expect(canSendSms("full", true)).toBe(true);
-    expect(canSendSms("full", false)).toBe(false);
-    expect(canSendSms("locked", true)).toBe(false);
-  });
+describe("isLive", () => {
   test("a basic module is live", () => {
     expect(isLive("basic")).toBe(true);
     expect(isLive("locked")).toBe(false);

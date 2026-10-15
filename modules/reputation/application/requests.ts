@@ -1,12 +1,4 @@
-import {
-  type Channel,
-  type ContactDecision,
-  contactFor,
-  listLocations,
-  sendToGuest,
-  smsAllowed,
-  type Tx,
-} from "@atrium/core";
+import { type Channel, contactFor, listLocations, sendToGuest, type Tx } from "@atrium/core";
 import { and, asc, eq, lte } from "drizzle-orm";
 import {
   generateInvitationToken,
@@ -88,21 +80,13 @@ export type SendOutcome =
   | { outcome: "skipped"; reason: string }
   | { outcome: "already_handled" };
 
-/** Email first; SMS only when the client's registration allows it and the guest agreed to SMS. */
+/** Email only. A review request is a solicitation, so it needs marketing consent (pending legal review). */
 async function chooseChannel(
   tx: Tx,
-  clientId: string,
   guestId: string,
 ): Promise<{ channel: Channel } | { reason: string }> {
-  let firstDenial: ContactDecision | null = null;
-  for (const channel of ["email", "sms"] as const) {
-    if (channel === "sms" && !(await smsAllowed(tx, clientId))) continue;
-    // A review request is a solicitation, so it needs marketing consent (pending legal review).
-    const decision = await contactFor(tx, guestId, channel, "marketing");
-    if (decision.allowed) return { channel };
-    firstDenial ??= decision;
-  }
-  return { reason: firstDenial && !firstDenial.allowed ? firstDenial.reason : "no_consent" };
+  const decision = await contactFor(tx, guestId, "email", "marketing");
+  return decision.allowed ? { channel: "email" } : { reason: decision.reason };
 }
 
 /**
@@ -140,7 +124,7 @@ export async function sendReviewRequest(
   if (!location) return skip("unknown_location");
   if (location.status !== "active") return skip("location_inactive");
 
-  const choice = await chooseChannel(tx, request.clientId, request.guestId);
+  const choice = await chooseChannel(tx, request.guestId);
   if ("reason" in choice) return skip(choice.reason);
 
   const token = generateInvitationToken();
@@ -158,10 +142,7 @@ export async function sendReviewRequest(
   if (!invitation) throw new Error("invitation was not created");
 
   const link = `${context.publicBaseUrl.replace(/\/$/, "")}/s/${token}`;
-  const body =
-    choice.channel === "sms"
-      ? `Thanks for visiting ${location.name}! How was it? ${link} Reply STOP to opt out.`
-      : `Thanks for visiting ${location.name}.\n\nHow was your visit? It takes under a minute:\n${link}\n\nThe link works once and expires in 7 days.`;
+  const body = `Thanks for visiting ${location.name}.\n\nHow was your visit? It takes under a minute:\n${link}\n\nThe link works once and expires in 7 days.`;
   const sent = await sendToGuest(
     tx,
     {

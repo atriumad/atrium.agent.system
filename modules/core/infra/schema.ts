@@ -78,7 +78,6 @@ export const clientPackages = core.table("client_packages", {
     .primaryKey()
     .references(() => clients.id, { onDelete: "cascade" }),
   package: text("package").notNull(),
-  smsRegistered: boolean("sms_registered").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

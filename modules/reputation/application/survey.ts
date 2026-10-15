@@ -207,7 +207,6 @@ async function guestFor(
     });
     // They asked to be contacted about this visit: a service message, on the channel they gave.
     if (input.contactEmail) await recordConsent(tx, guestId, "email", "transactional", "survey");
-    if (input.contactPhone) await recordConsent(tx, guestId, "sms", "transactional", "survey");
     return guestId;
   } catch (error) {
     if (error instanceof InvalidContactError) {

@@ -77,11 +77,3 @@ export function resolveAccess(
 export function isLive(level: AccessLevel): boolean {
   return level !== "locked";
 }
-
-/**
- * SMS needs the Retention feature and an approved carrier registration (10DLC), whatever the
- * package. Email does not wait for it.
- */
-export function canSendSms(retention: AccessLevel, smsRegistered: boolean): boolean {
-  return isLive(retention) && smsRegistered;
-}

@@ -116,15 +116,6 @@ describe("sendToGuest", () => {
     expect(erased).toEqual({ sent: false, reason: "erased" });
   });
 
-  test("sms needs a phone and a consent for sms, not just for email", async () => {
-    const result = await inA(async (tx) => {
-      const g = await resolveGuest(tx, a, { email: guestEmail("emailonly") });
-      await recordConsent(tx, g, "email", "marketing", "qr");
-      return sendToGuest(tx, { ...base(g), channel: "sms" });
-    });
-    expect(result).toEqual({ sent: false, reason: "no_consent" });
-  });
-
   test("a guest of another client cannot be reached from this scope", async () => {
     const gb = await withTenant(db, b, async (tx) => {
       const g = await resolveGuest(tx, b, { email: guestEmail("other") });

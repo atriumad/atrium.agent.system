@@ -15,8 +15,6 @@ import {
   isEnabled,
   setOverride,
   setPackage,
-  setSmsRegistered,
-  smsAllowed,
   withAgency,
   withTenant,
 } from "../index";
@@ -102,11 +100,10 @@ describe("only the agency changes access", () => {
     expect((await agency((tx) => accessFor(tx, a))).retention).toBe("locked");
   });
 
-  test("a client cannot add an override or register SMS", async () => {
+  test("a client cannot add an override", async () => {
     await expect(
       withTenant(db, a, (tx) => setOverride(tx, a, "retention", "full", ACTOR)),
     ).rejects.toThrow();
-    await expect(withTenant(db, a, (tx) => setSmsRegistered(tx, a, true, ACTOR))).rejects.toThrow();
   });
 
   test("a client cannot delete an override the agency set", async () => {
@@ -175,26 +172,6 @@ describe("overrides", () => {
     const access = await agency((tx) => accessFor(tx, a));
     expect(Object.values(access).every((l) => l === "basic")).toBe(true);
     for (const feature of FEATURES) await agency((tx) => clearOverride(tx, a, feature, ACTOR));
-  });
-});
-
-describe("sms", () => {
-  test("needs Retention and an approved registration", async () => {
-    await agency((tx) => setPackage(tx, a, "pillar_3", ACTOR));
-    expect(await agency((tx) => smsAllowed(tx, a))).toBe(false);
-    await agency((tx) => setSmsRegistered(tx, a, true, ACTOR));
-    expect(await agency((tx) => smsAllowed(tx, a))).toBe(true);
-    await agency((tx) => setPackage(tx, a, "pillar_2", ACTOR));
-    expect(await agency((tx) => smsAllowed(tx, a))).toBe(false);
-  });
-
-  test("registering SMS for a client with no package fails", async () => {
-    const orphan = await agency(
-      async (tx) => (await createClient(tx, { name: "No Pkg", slug: `p-none-${suffix}` })).id,
-    );
-    await expect(agency((tx) => setSmsRegistered(tx, orphan, true, ACTOR))).rejects.toThrow(
-      "no package",
-    );
   });
 });
 

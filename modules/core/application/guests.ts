@@ -243,6 +243,22 @@ export async function canContact(tx: Tx, guestId: string, channel: Channel, purp
 }
 
 /**
+ * The phone a guest left, for a person to call. It is not a channel: there is no consent record
+ * and nothing is ever sent to it. The caller decides whether the guest asked to be contacted.
+ */
+export async function phoneFor(tx: Tx, guestId: string): Promise<string | null> {
+  const guest = await loadGuest(tx, guestId);
+  if (!guest || guest.erasedAt) return null;
+  const [identifier] = await tx
+    .select({ value: guestIdentifiers.value })
+    .from(guestIdentifiers)
+    .where(and(eq(guestIdentifiers.guestId, guestId), eq(guestIdentifiers.kind, "phone")))
+    .orderBy(asc(guestIdentifiers.createdAt))
+    .limit(1);
+  return identifier?.value ?? null;
+}
+
+/**
  * Erasure on request: identifiers and name go, the opaque guest row and the consent log stay
  * (ids only). Idempotent. Publishes `guest.erased` so every module that stores the id scrubs it.
  */

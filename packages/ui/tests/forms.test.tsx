@@ -109,11 +109,11 @@ describe("Checkbox, Radio, Switch", () => {
     const { user } = setup(
       <RadioGroup defaultValue="email" aria-label="Channel">
         <Radio label="Email" value="email" />
-        <Radio label="SMS" value="sms" />
+        <Radio label="Phone" value="phone" />
       </RadioGroup>,
     );
-    await user.click(screen.getByRole("radio", { name: "SMS" }));
-    expect(screen.getByRole("radio", { name: "SMS" }).getAttribute("aria-checked")).toBe("true");
+    await user.click(screen.getByRole("radio", { name: "Phone" }));
+    expect(screen.getByRole("radio", { name: "Phone" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByRole("radio", { name: "Email" }).getAttribute("aria-checked")).toBe("false");
   });
 

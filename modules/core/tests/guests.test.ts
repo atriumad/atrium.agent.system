@@ -10,6 +10,7 @@ import {
   eraseGuest,
   IdentityConflictError,
   InvalidContactError,
+  phoneFor,
   recordConsent,
   recordOptOut,
   resolveGuest,
@@ -135,48 +136,18 @@ describe("consent", () => {
         address: email("yes"),
       });
       expect((await contactFor(tx, g, "email", "transactional")).allowed).toBe(false);
-      expect((await contactFor(tx, g, "sms", "marketing")).allowed).toBe(false);
     });
   });
 
-  test("sms goes to the phone, not the email", async () => {
-    await inA(async (tx) => {
-      const g = await resolveGuest(tx, a, { email: email("both"), phone: "713-555-0105" });
-      await recordConsent(tx, g, "sms", "marketing", "pos");
-      expect(await contactFor(tx, g, "sms", "marketing")).toEqual({
-        allowed: true,
-        address: "+17135550105",
-      });
-    });
-  });
-
-  test("consent without an address for the channel is denied", async () => {
-    await inA(async (tx) => {
-      const g = await resolveGuest(tx, a, { email: email("noaddr") });
-      await recordConsent(tx, g, "sms", "marketing", "manual");
-      expect(await contactFor(tx, g, "sms", "marketing")).toEqual({
-        allowed: false,
-        reason: "no_contact",
-      });
-    });
-  });
-
-  test("an opt-out ends every purpose on the channel and keeps the other channel", async () => {
-    await inA(async (tx) => {
-      const g = await resolveGuest(tx, a, { email: email("stop"), phone: "713-555-0106" });
-      await recordConsent(tx, g, "sms", "marketing", "pos");
-      await recordConsent(tx, g, "sms", "transactional", "pos");
-      await recordConsent(tx, g, "email", "marketing", "qr");
-      await recordOptOut(tx, g, "sms", "sms_stop");
-      expect(await contactFor(tx, g, "sms", "marketing")).toEqual({
-        allowed: false,
-        reason: "opted_out",
-      });
-      expect(await contactFor(tx, g, "sms", "transactional")).toEqual({
-        allowed: false,
-        reason: "opted_out",
-      });
-      expect(await canContact(tx, g, "email", "marketing")).toBe(true);
+  test("phoneFor gives the phone a guest left, and nothing for no phone, an unknown guest or an erased one", async () => {
+    await withTenant(db, a, async (tx) => {
+      const g = await resolveGuest(tx, a, { email: email("phone-for"), phone: "713-555-0142" });
+      expect(await phoneFor(tx, g)).toBe("+17135550142");
+      const bare = await resolveGuest(tx, a, { email: email("no-phone") });
+      expect(await phoneFor(tx, bare)).toBeNull();
+      expect(await phoneFor(tx, crypto.randomUUID())).toBeNull();
+      await eraseGuest(tx, g);
+      expect(await phoneFor(tx, g)).toBeNull();
     });
   });
 

@@ -37,7 +37,7 @@ export const GuestIdentifiedV1 = defineEvent("guest.identified", 1, { guestId: z
 
 export const ConsentChangedV1 = defineEvent("consent.changed", 1, {
   guestId: z.string().uuid(),
-  channel: z.enum(["email", "sms"]),
+  channel: z.enum(["email"]),
   purpose: z.enum(["transactional", "marketing"]),
   granted: z.boolean(),
 });
@@ -78,7 +78,7 @@ export const VisitIdentifiedV1 = defineEvent("visit.identified", 1, {
 /** A survey invitation reached a guest (or was recorded by the development transport). */
 export const SurveySentV1 = defineEvent("survey.sent", 1, {
   invitationId: z.string().uuid(),
-  channel: z.enum(["email", "sms"]),
+  channel: z.enum(["email"]),
 });
 
 /** Someone answered the survey. The rating is a number, not personal data. */

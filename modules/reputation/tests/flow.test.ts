@@ -26,6 +26,7 @@ import {
   CaseTransitionError,
   classifyResponse,
   DeviceLimitError,
+  getCaseDetail,
   InvalidSubmissionError,
   InvitationUnavailableError,
   listCases,
@@ -71,17 +72,12 @@ const eventsOf = (type: string) => events.filter((e) => e.type === type);
 const inA = <T>(fn: Parameters<typeof withTenant<T>>[2]) => withTenant(db, a, fn);
 const email = (n: string) => `${n}-${suffix}@guest.test`;
 
-async function guestWithConsent(
-  name: string,
-  opts: { email?: boolean; sms?: boolean } = { email: true },
-) {
+async function guestWithConsent(name: string, opts: { email?: boolean } = { email: true }) {
   return inA(async (tx) => {
     const id = await resolveGuest(tx, a, {
       email: email(name),
-      ...(opts.sms ? { phone: `713-555-${String(Math.floor(1000 + Math.random() * 8999))}` } : {}),
     });
     if (opts.email) await recordConsent(tx, id, "email", "marketing", "qr");
-    if (opts.sms) await recordConsent(tx, id, "sms", "marketing", "qr");
     return id;
   });
 }
@@ -339,29 +335,6 @@ describe("sending a review request", () => {
     ).toEqual({ outcome: "skipped", reason: "opted_out" });
   });
 
-  test("a guest who only agreed to SMS is not texted while SMS is not enabled for the client", async () => {
-    const guestId = await guestWithConsent("smsonly", { sms: true });
-    await inA((tx) => recordOptOut(tx, guestId, "email", "email_unsubscribe"));
-    const requestId = await inA(async (tx) => {
-      await scheduleReviewRequest(
-        tx,
-        { clientId: a, locationId: locA, guestId, visitDate: "2026-10-06" },
-        deps,
-      );
-      return (
-        (
-          await tx.execute<{ id: string }>(
-            sql`select id from reputation.review_requests where guest_id = ${guestId}`,
-          )
-        )[0] as { id: string }
-      ).id;
-    });
-    const result = await inA((tx) =>
-      sendReviewRequest(tx, requestId, { publicBaseUrl: BASE }, deps),
-    );
-    expect(result.outcome).toBe("skipped");
-  });
-
   test("handling a request twice sends one message", async () => {
     const { requestId } = await sentInvitation("twice");
     const before = (await inA((tx) => listNotifications(tx, a, 200))).length;
@@ -584,6 +557,28 @@ describe("recovery", () => {
       severity: "low",
       shouldOpen: false,
     });
+  });
+
+  test("a case shows the guest's phone only when the response asked to be contacted", async () => {
+    const caseFor = async (name: string, wantsContact: boolean, phone: string) => {
+      const { guestId, token } = await sentInvitation(name);
+      await inA((tx) => resolveGuest(tx, a, { email: email(name), phone: phone }));
+      const { responseId } = await submitSurvey(
+        db,
+        { kind: "invitation", token },
+        submission({ rating: 1, wantsContact }),
+        deps,
+      );
+      const opened = await inA((tx) =>
+        openCase(tx, { responseId, severity: "high", reason: name }, {}, deps),
+      );
+      expect(guestId).toBeString();
+      return inA((tx) => getCaseDetail(tx, opened.caseId));
+    };
+    const asked = await caseFor("phone-yes", true, "713-555-0177");
+    expect(asked?.contact?.phone).toBe("+17135550177");
+    const notAsked = await caseFor("phone-no", false, "713-555-0178");
+    expect(notAsked?.contact?.phone ?? null).toBeNull();
   });
 
   test("a case is opened once, due in 24 hours, and the owner and the assigned manager are told", async () => {

@@ -10,8 +10,6 @@ export {
   isEnabled,
   setOverride,
   setPackage,
-  setSmsRegistered,
-  smsAllowed,
 } from "./application/access";
 export type { ApprovalItem, ApprovalOutcome } from "./application/approvals";
 export {
@@ -38,6 +36,7 @@ export {
   eraseGuest,
   IdentityConflictError,
   InvalidContactError,
+  phoneFor,
   recordConsent,
   recordOptOut,
   resolveGuest,
