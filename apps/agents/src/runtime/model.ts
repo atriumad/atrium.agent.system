@@ -113,10 +113,10 @@ export function openRouterModel(config: OpenRouterConfig): ModelPort {
       } catch (error) {
         throw classify(error);
       }
-      const parsed = request.schema.safeParse(result.object);
-      if (!parsed.success) throw new ModelUnavailableError("invalid_output");
       const tokens = result.usage?.totalTokens ?? 0;
       if (tokens > 0) config.meter?.add(tokens);
+      const parsed = request.schema.safeParse(result.object);
+      if (!parsed.success) throw new ModelUnavailableError("invalid_output");
       return { object: parsed.data, model: request.model, usage: { tokens } };
     },
   };

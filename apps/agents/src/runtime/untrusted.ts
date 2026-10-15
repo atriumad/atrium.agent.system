@@ -5,6 +5,11 @@
  */
 export function untrusted(tag: string, text: string | null): string {
   if (!/^[a-z_]+$/.test(tag)) throw new Error(`not a usable tag name: ${tag}`);
-  const clean = (text ?? "").replaceAll(new RegExp(`</?${tag}>`, "gi"), "");
+  const pattern = new RegExp(`<\\s*/?\\s*${tag}\\s*>`, "gi");
+  // Removing one copy can join the pieces around it into another, so repeat until nothing changes.
+  let clean = text ?? "";
+  for (let next = clean.replace(pattern, ""); next !== clean; next = clean.replace(pattern, "")) {
+    clean = next;
+  }
   return `<${tag}>\n${clean}\n</${tag}>`;
 }

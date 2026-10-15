@@ -41,6 +41,19 @@ describe("untrusted text", () => {
     expect(out.match(/<\/?guest_answer>/gi)?.length).toBe(2);
   });
 
+  test("nesting and spacing cannot rebuild the tag", () => {
+    const loose = /<\s*\/?\s*guest_answer\s*>/gi;
+    for (const text of [
+      "x <</guest_answer>/guest_answer> y",
+      "a < /guest_answer > b",
+      "a </GUEST_ANSWER  > b",
+      "a <<  /guest_answer >/guest_answer > b",
+    ]) {
+      const out = untrusted("guest_answer", text);
+      expect(out.match(loose)?.length).toBe(2);
+    }
+  });
+
   test("null text is an empty block and a bad tag name is refused", () => {
     expect(untrusted("guest_answer", null)).toBe("<guest_answer>\n\n</guest_answer>");
     expect(() => untrusted("a b", "x")).toThrow();
