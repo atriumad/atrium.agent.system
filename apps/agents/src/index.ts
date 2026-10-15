@@ -10,3 +10,6 @@ export {
   openRouterModel,
 } from "./runtime/model";
 export { untrusted } from "./runtime/untrusted";
+export { createAgentsApp, jsonLogger, type Logger } from "./server";
+export { type AgentsServiceDeps, createAgentsService } from "./service";
+export { buildAgentTasks, defineTask, type Task, type TaskContext } from "./tasks";

@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "start": "bun src/main.ts"
+  },
   "dependencies": {
     "@atrium/contracts": "workspace:*",
     "@atrium/core": "workspace:*",
@@ -13,6 +17,7 @@
     "@atrium/reputation": "workspace:*",
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.139",
+    "hono": "^4.13.12",
     "yaml": "^2.8.0",
     "zod": "^4.6.5"
   }
