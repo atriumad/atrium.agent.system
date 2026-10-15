@@ -12,6 +12,21 @@ if (!token) {
   process.exit(1);
 }
 
+if (token.length < 32) {
+  jsonLogger.error("agents.cannot_start", {
+    reason: "AGENTS_SERVICE_TOKEN must be at least 32 characters",
+  });
+  process.exit(1);
+}
+
+const dev = process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test";
+if (!process.env.PUBLIC_BASE_URL && !dev) {
+  jsonLogger.error("agents.cannot_start", {
+    reason: "PUBLIC_BASE_URL is not set; survey links would point at localhost",
+  });
+  process.exit(1);
+}
+
 const { db, close } = createDatabase();
 const bus = createEventBus(db);
 await bus.start();

@@ -69,6 +69,20 @@ describe("the agents service", () => {
     expect(res.status).toBe(200);
   });
 
+  test("a body over 16 KB is a 413, but a missing token is still a 401", async () => {
+    const { app, ran } = appWith(async () => ({
+      decision: "executed",
+      result: { status: "read" },
+    }));
+    const big = JSON.stringify({ ...valid, pad: "x".repeat(20_000) });
+    const tooBig = await post(app, "sentiment.read", big);
+    expect(tooBig.status).toBe(413);
+    expect(await tooBig.json()).toEqual({ error: "payload_too_large" });
+    const unauth = await post(app, "sentiment.read", big, null);
+    expect(unauth.status).toBe(401);
+    expect(ran).toHaveLength(0);
+  });
+
   test("a task runs and answers with its decision", async () => {
     const { app, ran } = appWith(async () => ({
       decision: "executed",

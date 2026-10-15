@@ -16,7 +16,7 @@ export async function startAgents(deps: {
   adminBaseUrl?: string;
   reader?: ResponseReader;
   transport?: NotificationTransport;
-}): Promise<{ client: AgentsClient; stop: () => void }> {
+}): Promise<{ client: AgentsClient; stop: () => Promise<void> }> {
   const token = `test-token-${crypto.randomUUID()}`;
   const app = createAgentsService({
     db: deps.db,
@@ -33,6 +33,8 @@ export async function startAgents(deps: {
   const server = Bun.serve({ port: 0, fetch: app.fetch });
   return {
     client: createAgentsClient({ url: `http://localhost:${server.port}`, token }),
-    stop: () => server.stop(true),
+    stop: async () => {
+      await server.stop(true);
+    },
   };
 }

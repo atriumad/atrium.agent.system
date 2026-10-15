@@ -144,7 +144,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await worker.stop();
-  agents.stop();
+  await agents.stop();
   await withAgency(db, (tx) =>
     tx.execute(sql`delete from core.clients where slug like ${`sentw-%-${suffix}`}`),
   );

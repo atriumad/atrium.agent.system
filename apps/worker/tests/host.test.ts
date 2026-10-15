@@ -224,7 +224,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await worker.stop();
-  agents.stop();
+  await agents.stop();
   await withAgency(db, async (tx) => {
     await tx.execute(
       sql`delete from core.kill_switches where agent_id like 'host.%' and reason like ${`%${suffix}%`}`,
