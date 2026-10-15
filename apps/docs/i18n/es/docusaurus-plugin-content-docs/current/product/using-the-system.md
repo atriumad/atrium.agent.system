@@ -45,7 +45,7 @@ sequenceDiagram
   Rec->>AM: alerta
   Rec->>O: alerta
   AM->>Rec: Mark contacted, luego Resolve
-  Rec-->>Rec: evento recovery.case.resolved (sin notificación)
+  Rec->>O: se le avisa que cerró (no a quien lo cerró)
   Hub->>G: gracias, con "Share it on Google" para todos
 ```
 
@@ -57,11 +57,7 @@ Qué hace cada paso, tal como se observó:
 4. **La pantalla de gracias** siempre ofrece **Share it on Google**, sin importar la calificación. Es una regla, no una opción: [ADR 0018](../adr/0018-no-review-gating).
 5. **Recovery abre un caso** cuando la calificación es 1–3 o el guest pide contacto. Un 2 con contacto abrió un caso `medium` con plazo de 1 día. La severidad solo sube si una lectura lo indica ([Leer las palabras de los guests](../modules/reputation#leer-las-palabras-de-los-guests)).
 6. **Se avisa al equipo**: una notificación por destinatario, al dueño en la Platform y al account manager en el Manager, en la campana de notificaciones y por correo (tipo `reputation.case_alert`). Un caso que luego sube a una severidad mayor avisa de nuevo.
-7. **El account manager trabaja el caso**: lo abre, lee el comentario y el contacto, usa **Mark contacted** y luego **Resolve**, con una nota opcional para el registro. Ninguno de los dos pasos notifica a nadie: resolver solo emite `recovery.case.resolved`.
-
-:::caution Brecha conocida
-La página *Feedback* de la Platform dice que se le avisa al dueño "cuando uno abre y cuando cierra". Hoy se le avisa solo cuando un caso abre o sube de severidad. Hay que cambiar el texto o el comportamiento.
-:::
+7. **El account manager trabaja el caso**: lo abre, lee el comentario y el contacto, usa **Mark contacted** y luego **Resolve**, con una nota opcional para el registro. **Mark contacted** no avisa a nadie. **Resolve** emite `recovery.case.resolved` y notifica a los dueños y al equipo asignado, salvo a quien lo resolvió (tipo `reputation.case_resolved`). Así la gente se entera dos veces de un caso: cuando abre o sube de severidad, y cuando cierra.
 
 8. **Todo queda auditado**: el envío de Ask, la clasificación de Recovery y la apertura del caso dejan cada uno una fila en el registro de auditoría con el agente que actuó.
 

@@ -52,6 +52,8 @@ describe("notificationHref", () => {
     expect(notificationHref("core.location_decided", "platform")).toBe("/places");
     expect(notificationHref("reputation.case_alert", "manager")).toBe("/reputation/cases");
     expect(notificationHref("reputation.case_alert", "platform")).toBe("/reputation/feedback");
+    expect(notificationHref("reputation.case_resolved", "manager")).toBe("/reputation/cases");
+    expect(notificationHref("reputation.case_resolved", "platform")).toBe("/reputation/feedback");
     expect(notificationHref("reputation.help_message", "manager")).toBe("/reputation/help");
     expect(notificationHref("reputation.help_message", "platform")).toBe("/help");
     expect(notificationHref("something.else", "platform")).toBeNull();

@@ -45,7 +45,7 @@ sequenceDiagram
   Rec->>AM: alert
   Rec->>O: alert
   AM->>Rec: Mark contacted, then Resolve
-  Rec-->>Rec: event recovery.case.resolved (no notification)
+  Rec->>O: told it closed (not the one who closed it)
   Hub->>G: thank you, with "Share it on Google" for everyone
 ```
 
@@ -57,11 +57,7 @@ What each step does, as observed:
 4. **The thank-you screen** always offers **Share it on Google**, whatever the rating. This is a rule, not a setting: [ADR 0018](../adr/0018-no-review-gating).
 5. **Recovery opens a case** when the rating is 1–3 or the guest asks for contact. A 2 with contact opened a `medium` case due in 1 day. Severity only goes up if a reading says so ([Reading guests' words](../modules/reputation#reading-guests-words)).
 6. **The team is alerted**: one notification per recipient, the owner on the Platform and the account manager on the Manager, in the notifications bell and by email (kind `reputation.case_alert`). A case that is later raised to a higher severity alerts again.
-7. **The account manager works the case**: opens it, reads the comment and the contact, uses **Mark contacted** and then **Resolve**, with an optional note for the record. Neither step notifies anyone: resolving only emits `recovery.case.resolved`.
-
-:::caution Known gap
-The Platform's *Feedback* page says the owner is told "when one opens and when it closes". Today the owner is told only when a case opens or is raised. Either the copy or the behavior has to change.
-:::
+7. **The account manager works the case**: opens it, reads the comment and the contact, uses **Mark contacted** and then **Resolve**, with an optional note for the record. **Mark contacted** tells no one. **Resolve** emits `recovery.case.resolved` and notifies the owners and the assigned team, except the person who resolved it (kind `reputation.case_resolved`). So people hear about a case twice: when it opens or is raised, and when it closes.
 8. **Everything is audited**: Ask's send, Recovery's classification and the case opening each leave a row in the audit log with the agent that acted.
 
 ## What each role sees

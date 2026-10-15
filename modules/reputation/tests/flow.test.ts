@@ -712,10 +712,17 @@ describe("recovery", () => {
       advanceCase(tx, am, caseId, "contacted", "Called the guest", deps),
     );
     expect(contacted.status).toBe("contacted");
+    const resolvedNotes = async () =>
+      (await admin.unsafe(
+        "select recipient_id from core.notifications where kind = 'reputation.case_resolved'",
+      )) as { recipient_id: string }[];
+    expect(await resolvedNotes()).toEqual([]);
     const before = eventsOf("recovery.case.resolved").length;
     const resolved = await run(am, (tx) =>
       advanceCase(tx, am, caseId, "resolved", "Comped the dessert", { ...deps, publish }),
     );
+    // The owner is told it closed; the person who closed it is not told about their own act.
+    expect((await resolvedNotes()).map((n) => n.recipient_id)).toEqual([ownerId]);
     expect(resolved).toMatchObject({
       status: "resolved",
       resolvedBy: amId,

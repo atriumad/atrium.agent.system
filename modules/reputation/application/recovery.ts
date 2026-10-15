@@ -265,8 +265,51 @@ export async function advanceCase(
       },
       tx,
     );
+    await alertResolved(tx, scope, updated, deps);
   }
   return updated;
+}
+
+/**
+ * Tells the client's owners and the assigned team that a case closed, except the person who closed
+ * it. Moving a case to contacted tells no one; only opening and closing do.
+ */
+async function alertResolved(
+  tx: Tx,
+  scope: Scope,
+  closed: typeof recoveryCases.$inferSelect,
+  deps: ReputationDeps,
+): Promise<number> {
+  const [response] = await tx
+    .select({ rating: surveyResponses.rating })
+    .from(surveyResponses)
+    .where(eq(surveyResponses.id, closed.responseId));
+  const location = (await listLocations(tx, closed.clientId)).find(
+    (l) => l.id === closed.locationId,
+  );
+  const where = location?.name ?? "a location";
+  let alerted = 0;
+  for (const recipient of await alertRecipients(tx, closed.clientId)) {
+    if (recipient.userId === scope.userId) continue;
+    const result = await sendToUser(
+      tx,
+      {
+        clientId: closed.clientId,
+        userId: recipient.userId,
+        kind: "reputation.case_resolved",
+        subject: `A guest's case at ${where} was resolved`,
+        body: [
+          `The private case from a survey at ${where} was closed by the team.`,
+          response ? `Rating: ${response.rating} of 5.` : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      },
+      deps.transport,
+    );
+    if (result.sent) alerted++;
+  }
+  return alerted;
 }
 
 /** What a case row on a list needs, with the answer it came from. Names come from Core. */
