@@ -26,6 +26,10 @@ flowchart TB
 
 [Packages and access](./packages-and-access) controls which Platform and Mobile sections are live for each client.
 
+:::tip What is built today
+The pages for each surface describe the full product. For what runs now, who signs in where and the guest-feedback flow from an order to a resolved case, read [Using the system today](./using-the-system).
+:::
+
 ## Shared rules
 
 - **Counts before dollars.** Attribution leads with guests earned; dollars are the by-product, and each carries its method.

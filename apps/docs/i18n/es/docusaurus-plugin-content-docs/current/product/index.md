@@ -26,6 +26,10 @@ flowchart TB
 
 [Paquetes y acceso](./packages-and-access) controla qué secciones de la Platform y de Mobile están activas para cada client.
 
+:::tip Qué está construido hoy
+Las páginas de cada superficie describen el producto completo. Para lo que corre ahora, quién entra por dónde y el flujo de feedback del guest desde una orden hasta un caso resuelto, lee [Usar el sistema hoy](./using-the-system).
+:::
+
 ## Reglas compartidas
 
 - **Conteos antes que dólares.** La atribución empieza por los guests ganados; los dólares son el subproducto y cada uno lleva su método.
