@@ -17,37 +17,43 @@ export async function applyDeliveryEvent(
   event: DeliveryEvent,
   deps: GuestDeps = {},
 ): Promise<"applied" | "ignored"> {
-  const row = await withAgency(db, async (tx) => {
-    const [found] = await tx
+  const [found] = await withAgency(db, (tx) =>
+    tx
       .select({
-        id: notifications.id,
         clientId: notifications.clientId,
-        status: notifications.status,
         recipientType: notifications.recipientType,
         recipientId: notifications.recipientId,
       })
       .from(notifications)
-      .where(eq(notifications.providerId, event.providerId));
-    if (!found) return null;
-    if (STATUS_RANK[event.type] <= STATUS_RANK[found.status as keyof typeof STATUS_RANK])
-      return null;
-    await tx
-      .update(notifications)
-      .set({ status: event.type })
-      .where(eq(notifications.id, found.id));
-    return found;
-  });
-  if (!row) return "ignored";
-  if (event.type !== "delivered" && row.recipientType === "guest") {
+      .where(eq(notifications.providerId, event.providerId)),
+  );
+  if (!found) return "ignored";
+
+  // The opt-out comes first and does not depend on the rank check: it is idempotent, and if it
+  // fails the status has not moved yet, so the provider's retry runs it again.
+  if (event.type !== "delivered" && found.recipientType === "guest") {
     const source = event.type === "bounced" ? "email_bounce" : "email_complaint";
     try {
-      await withTenant(db, row.clientId, (tx) =>
-        recordOptOut(tx, row.recipientId, "email", source, deps),
+      await withTenant(db, found.clientId, (tx) =>
+        recordOptOut(tx, found.recipientId, "email", source, deps),
       );
     } catch (error) {
       // An erased guest has nothing left to withdraw.
       if (!(error instanceof Error && /unknown guest|was erased/.test(error.message))) throw error;
     }
   }
-  return "applied";
+
+  return withAgency(db, async (tx) => {
+    const [row] = await tx
+      .select({ id: notifications.id, status: notifications.status })
+      .from(notifications)
+      .where(eq(notifications.providerId, event.providerId))
+      .for("update");
+    if (!row) return "ignored";
+    if (STATUS_RANK[event.type] <= STATUS_RANK[row.status as keyof typeof STATUS_RANK]) {
+      return "ignored";
+    }
+    await tx.update(notifications).set({ status: event.type }).where(eq(notifications.id, row.id));
+    return "applied";
+  });
 }

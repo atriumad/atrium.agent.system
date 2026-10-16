@@ -8,6 +8,7 @@ import {
   contactFor,
   createClient,
   createDatabase,
+  eraseGuest,
   recordConsent,
   resolveGuest,
   sendToGuest,
@@ -163,5 +164,78 @@ describe("delivery events", () => {
     await applyDeliveryEvent(db, { type: "bounced", providerId: id });
     expect(await applyDeliveryEvent(db, { type: "delivered", providerId: id })).toBe("ignored");
     expect(await statusOf(id)).toBe("bounced");
+  });
+});
+
+describe("delivery events: robustness", () => {
+  const newGuest = (tag: string) =>
+    withTenant(db, clientId, async (tx) => {
+      const g = await resolveGuest(tx, clientId, { email: `${tag}-${suffix}@guest.test` });
+      await recordConsent(tx, g, "email", "marketing", "qr");
+      return g;
+    });
+  const sendTo = (g: string, id: string) =>
+    withTenant(db, clientId, (tx) =>
+      sendToGuest(
+        tx,
+        {
+          clientId,
+          guestId: g,
+          channel: "email",
+          purpose: "marketing",
+          kind: "reputation.review_request",
+          subject: "s",
+          body: "b",
+        },
+        { name: "fake", deliver: async () => ({ status: "sent", providerId: id }) },
+      ),
+    );
+
+  test("an opt-out that failed is redone when the event is replayed", async () => {
+    const g = await newGuest("retry");
+    const id = `msg_${suffix}_r`;
+    await sendTo(g, id);
+    let calls = 0;
+    const flaky = {
+      publish: async () => {
+        calls += 1;
+        if (calls === 1) throw new Error("bus down");
+      },
+    };
+    await expect(
+      applyDeliveryEvent(db, { type: "bounced", providerId: id }, flaky),
+    ).rejects.toThrow("bus down");
+    await applyDeliveryEvent(db, { type: "bounced", providerId: id }, flaky);
+    expect(await statusOf(id)).toBe("bounced");
+    const after = await withTenant(db, clientId, (tx) => contactFor(tx, g, "email", "marketing"));
+    expect(after).toEqual({ allowed: false, reason: "opted_out" });
+  });
+
+  test("an erased guest is not an error and the status still moves", async () => {
+    const g = await newGuest("erased");
+    const id = `msg_${suffix}_e`;
+    await sendTo(g, id);
+    await withTenant(db, clientId, (tx) => eraseGuest(tx, g));
+    expect(await applyDeliveryEvent(db, { type: "bounced", providerId: id })).toBe("applied");
+    expect(await statusOf(id)).toBe("bounced");
+  });
+
+  test("a message to a staff member moves the status and withdraws nothing", async () => {
+    const id = `msg_${suffix}_u`;
+    await admin.unsafe(
+      "insert into core.notifications (client_id, kind, channel, purpose, recipient_type, recipient_id, to_masked, body, status, provider_id) values ($1, 'reputation.case_alert', 'email', 'transactional', 'user', 'user-x', 'u***@x.test', 'b', 'sent', $2)",
+      [clientId, id],
+    );
+    const before = (await admin.unsafe(
+      "select count(*)::int as n from core.consents where client_id = $1",
+      [clientId],
+    )) as { n: number }[];
+    expect(await applyDeliveryEvent(db, { type: "complained", providerId: id })).toBe("applied");
+    expect(await statusOf(id)).toBe("complained");
+    const after = (await admin.unsafe(
+      "select count(*)::int as n from core.consents where client_id = $1",
+      [clientId],
+    )) as { n: number }[];
+    expect(after[0]?.n).toBe(before[0]?.n);
   });
 });

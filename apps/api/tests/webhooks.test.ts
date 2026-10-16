@@ -166,3 +166,88 @@ describe("POST /webhooks/resend", () => {
     );
   });
 });
+
+describe("POST /webhooks/resend: hardening", () => {
+  test("an oversize body is 413 with or without a signature, and a normal event still works", async () => {
+    const big = JSON.stringify({
+      type: "email.delivered",
+      data: { email_id: "x", pad: "a".repeat(300 * 1024) },
+    });
+    expect((await app.request("/webhooks/resend", { method: "POST", body: big })).status).toBe(413);
+    expect((await post({ ...signed({ pad: "a".repeat(300 * 1024) }) })).status).toBe(413);
+    expect((await post(signed({ type: "email.opened", data: { email_id: "x" } }))).status).toBe(
+      200,
+    );
+  });
+
+  test("a signed body that is not an object is 200 and changes nothing", async () => {
+    for (const payload of [null, [], "x", 5]) {
+      expect((await post(signed(payload))).status).toBe(200);
+    }
+  });
+
+  test("only a permanent bounce blocks: undetermined, missing and unknown bounce types change nothing", async () => {
+    const g = await withTenant(db, clientId, async (tx) => {
+      const x = await resolveGuest(tx, clientId, { email: `hook2-${suffix}@guest.test` });
+      await recordConsent(tx, x, "email", "marketing", "qr");
+      await sendToGuest(
+        tx,
+        {
+          clientId,
+          guestId: x,
+          channel: "email",
+          purpose: "marketing",
+          kind: "reputation.review_request",
+          subject: "s",
+          body: "b",
+        },
+        { name: "fake", deliver: async () => ({ status: "sent", providerId: `msg_${suffix}_2` }) },
+      );
+      return x;
+    });
+    const id = `msg_${suffix}_2`;
+    for (const bounce of [{ type: "Undetermined" }, { type: "Weird" }, undefined]) {
+      const res = await post(
+        signed({ type: "email.bounced", data: { email_id: id, ...(bounce ? { bounce } : {}) } }),
+      );
+      expect(res.status).toBe(200);
+      expect(await statusOf(id)).toBe("sent");
+    }
+    const rows = (await admin.unsafe(
+      "select granted from core.consents where guest_id = $1 order by seq desc limit 1",
+      [g],
+    )) as { granted: boolean }[];
+    expect(rows[0]?.granted).toBe(true);
+  });
+
+  test("a signed complaint marks the message and withdraws consent with its own source", async () => {
+    const g = await withTenant(db, clientId, async (tx) => {
+      const x = await resolveGuest(tx, clientId, { email: `hook3-${suffix}@guest.test` });
+      await recordConsent(tx, x, "email", "marketing", "qr");
+      await sendToGuest(
+        tx,
+        {
+          clientId,
+          guestId: x,
+          channel: "email",
+          purpose: "marketing",
+          kind: "reputation.review_request",
+          subject: "s",
+          body: "b",
+        },
+        { name: "fake", deliver: async () => ({ status: "sent", providerId: `msg_${suffix}_3` }) },
+      );
+      return x;
+    });
+    expect(
+      (await post(signed({ type: "email.complained", data: { email_id: `msg_${suffix}_3` } })))
+        .status,
+    ).toBe(200);
+    expect(await statusOf(`msg_${suffix}_3`)).toBe("complained");
+    const rows = (await admin.unsafe(
+      "select granted, source from core.consents where guest_id = $1 order by seq desc limit 1",
+      [g],
+    )) as { granted: boolean; source: string }[];
+    expect(rows[0]).toEqual({ granted: false, source: "email_complaint" });
+  });
+});
