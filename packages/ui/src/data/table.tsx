@@ -18,7 +18,7 @@ export const TBody = (props: ComponentProps<"tbody">) => <tbody {...props} />;
 export const Tr = ({ className, ...rest }: ComponentProps<"tr">) => (
   <tr
     className={cx(
-      "relative hover:bg-surface-sunken aria-selected:bg-lime-100 dark:aria-selected:bg-charcoal-700",
+      "group relative hover:bg-surface-sunken aria-selected:bg-lime-100 dark:aria-selected:bg-charcoal-700",
       className,
     )}
     {...rest}

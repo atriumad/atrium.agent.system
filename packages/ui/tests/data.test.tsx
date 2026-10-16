@@ -413,4 +413,62 @@ describe("DataTable as a page of data", () => {
     expect(wrap?.className).toContain("rounded-card");
     expect(wrap?.className).not.toContain("border-t-[3px]");
   });
+
+  test("select all keeps what was chosen on other pages, and unchecking only removes this page", async () => {
+    const onSelectedChange = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={10}
+        selectable
+        selected={["p1"]}
+        onSelectedChange={onSelectedChange}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    const page2 = many.slice(10, 20).map((r) => r.id);
+    expect(onSelectedChange.mock.calls[0]?.[0]).toEqual(["p1", ...page2]);
+  });
+
+  test("unchecking select all on a fully selected page leaves other pages alone", async () => {
+    const onSelectedChange = mock();
+    const page2 = many.slice(10, 20).map((r) => r.id);
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={10}
+        page={2}
+        selectable
+        selected={["p1", ...page2]}
+        onSelectedChange={onSelectedChange}
+      />,
+    );
+    await user.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    expect(onSelectedChange.mock.calls[0]?.[0]).toEqual(["p1"]);
+  });
+
+  test("the pinned cell follows the row's hover and selected state", () => {
+    setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        selectable
+      />,
+    );
+    const cell = screen.getByRole("cell", { name: "Place 1" });
+    expect(cell.className).toContain("max-md:group-hover:bg-surface-sunken");
+    expect(cell.className).toContain("max-md:group-aria-selected:bg-lime-100");
+    expect(cell.closest("tr")?.className).toContain("group");
+    const th = screen.getByRole("columnheader", { name: "Name" });
+    expect(th.className).not.toContain("group-");
+  });
 });

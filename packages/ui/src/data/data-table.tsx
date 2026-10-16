@@ -121,7 +121,13 @@ export function DataTable<Row>({
                 label={<span className="sr-only">Select all rows</span>}
                 checked={all}
                 indeterminate={some && !all}
-                onCheckedChange={(v) => setChosen(v ? keys : [])}
+                onCheckedChange={(v) =>
+                  setChosen(
+                    v
+                      ? [...chosen, ...keys.filter((k) => !chosen.includes(k))]
+                      : chosen.filter((k) => !keys.includes(k)),
+                  )
+                }
               />
             </Th>
           ) : null}
@@ -200,7 +206,8 @@ export function DataTable<Row>({
                         key={c.key}
                         numeric={c.numeric}
                         className={cx(
-                          i === 0 && "max-md:sticky max-md:left-0 max-md:bg-surface-card",
+                          i === 0 &&
+                            "max-md:sticky max-md:left-0 max-md:bg-surface-card max-md:group-hover:bg-surface-sunken max-md:group-aria-selected:bg-lime-100 dark:max-md:group-aria-selected:bg-charcoal-700",
                         )}
                       >
                         {href ? (
