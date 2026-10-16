@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { type ElementType, type ReactNode, useMemo, useState } from "react";
+import { type ElementType, type MouseEvent, type ReactNode, useMemo, useState } from "react";
 import { Button } from "../actions/button";
 import { Checkbox } from "../forms/toggles";
 import { cx } from "../lib/cx";
@@ -45,6 +45,8 @@ export type DataTableProps<Row> = {
   onPageChange?: (page: number) => void;
   className?: string;
 };
+
+const INTERACTIVE = 'a, button, input, textarea, select, label, [role="checkbox"], [role="button"]';
 
 export type Sort = { key: string; dir: "asc" | "desc" };
 
@@ -98,16 +100,24 @@ export function DataTable<Row>({
     });
   }, [rows, sort, columns]);
 
-  const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const size = Math.max(1, Math.floor(pageSize) || 1);
+  const pages = Math.max(1, Math.ceil(sorted.length / size));
   const current = Math.min(Math.max(1, pageProp ?? innerPage), pages);
   const goTo = (next: number) => {
     if (pageProp === undefined) setInnerPage(next);
     onPageChange?.(next);
   };
-  const visible = sorted.slice((current - 1) * pageSize, current * pageSize);
+  const visible = sorted.slice((current - 1) * size, current * size);
   const keys = visible.map(rowKey);
   const all = keys.length > 0 && keys.every((k) => chosen.includes(k));
   const some = keys.some((k) => chosen.includes(k));
+
+  /** The first cell is sticky on narrow screens, which shrinks the link's overlay to that cell. */
+  const openRow = (row: Row) => (e: MouseEvent<HTMLTableRowElement>) => {
+    const target = e.target as Element;
+    if (target.closest(INTERACTIVE) || window.getSelection()?.toString()) return;
+    e.currentTarget.querySelector<HTMLElement>("[data-row-link]")?.click();
+  };
 
   if (!loading && rows.length === 0 && empty) return <>{empty}</>;
 
@@ -187,7 +197,13 @@ export function DataTable<Row>({
               const k = rowKey(row);
               const on = chosen.includes(k);
               return (
-                <Tr key={k} aria-selected={selectable ? on : undefined}>
+                <Tr
+                  key={k}
+                  aria-selected={selectable ? on : undefined}
+                  {...(rowHref?.(row)
+                    ? { onClick: openRow(row), className: "cursor-pointer" }
+                    : {})}
+                >
                   {selectable ? (
                     <Td className="relative z-10">
                       <Checkbox
@@ -213,6 +229,7 @@ export function DataTable<Row>({
                         {href ? (
                           <LinkAs
                             href={href}
+                            data-row-link=""
                             onClick={() => onRowOpen?.(row)}
                             className="font-medium text-fg-strong no-underline before:absolute before:inset-0 before:content-[''] hover:underline focus-visible:underline"
                           >

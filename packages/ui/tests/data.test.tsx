@@ -15,6 +15,7 @@ import {
   Skeleton,
   Sparkline,
   StatTile,
+  TableWrap,
   Timeline,
 } from "../src";
 import { screen, setup, within } from "./helpers";
@@ -307,6 +308,107 @@ describe("DataTable as a page of data", () => {
     expect(screen.getAllByRole("link").length).toBe(1);
     await user.click(screen.getByRole("link", { name: "Place 1" }));
     expect(onRowOpen).toHaveBeenCalledWith(many[0]);
+  });
+
+  test("clicking another cell of the row opens it once", async () => {
+    const onRowOpen = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/places/${r.id}`}
+        onRowOpen={onRowOpen}
+      />,
+    );
+    // The link is a plain anchor here; stop jsdom-style navigation from mattering.
+    await user.click(screen.getByText("1", { selector: "td" }));
+    expect(onRowOpen).toHaveBeenCalledTimes(1);
+    expect(onRowOpen).toHaveBeenCalledWith(many[0]);
+  });
+
+  test("clicking the link itself opens the row once, not twice", async () => {
+    const onRowOpen = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/places/${r.id}`}
+        onRowOpen={onRowOpen}
+      />,
+    );
+    await user.click(screen.getByRole("link", { name: "Place 1" }));
+    expect(onRowOpen).toHaveBeenCalledTimes(1);
+  });
+
+  test("clicking a checkbox in a linked row does not open it", async () => {
+    const onRowOpen = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/places/${r.id}`}
+        onRowOpen={onRowOpen}
+        selectable
+      />,
+    );
+    await user.click(screen.getAllByRole("checkbox", { name: "Select row" })[0] as HTMLElement);
+    expect(onRowOpen).not.toHaveBeenCalled();
+  });
+
+  test("a row with no destination is not clickable", async () => {
+    const onRowOpen = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={() => null}
+        onRowOpen={onRowOpen}
+      />,
+    );
+    const row = screen.getAllByRole("row")[1] as HTMLElement;
+    expect(row.className).not.toContain("cursor-pointer");
+    await user.click(screen.getByText("1", { selector: "td" }));
+    expect(onRowOpen).not.toHaveBeenCalled();
+  });
+
+  test("a row with a destination shows the pointer", () => {
+    setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/places/${r.id}`}
+      />,
+    );
+    expect((screen.getAllByRole("row")[1] as HTMLElement).className).toContain("cursor-pointer");
+  });
+
+  test("a page size of zero still shows rows and a finite page count", () => {
+    setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 3)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={0}
+      />,
+    );
+    expect(screen.getAllByRole("row").length).toBe(2);
+    expect(screen.getByText("Page 1 of 3")).toBeTruthy();
+  });
+
+  test("a framed table does not double its bottom line", () => {
+    setup(<TableWrap data-testid="wrap">x</TableWrap>);
+    expect(screen.getByTestId("wrap").className).toContain("[&_tr:last-child>td]:border-b-0");
   });
 
   test("pages the rows and says where you are", async () => {

@@ -5,7 +5,10 @@ import { cx } from "../lib/cx";
 export function TableWrap({ className, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={cx("overflow-x-auto rounded-card border border-line bg-surface-card", className)}
+      className={cx(
+        "overflow-x-auto rounded-card border border-line bg-surface-card [&_tr:last-child>td]:border-b-0",
+        className,
+      )}
       {...rest}
     />
   );
