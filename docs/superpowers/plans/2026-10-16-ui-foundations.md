@@ -1486,9 +1486,11 @@ In `packages/ui/tests/notifications.test.tsx`, inside `describe("NotificationsMe
     const client = make();
     const { user } = setup(<NotificationsMenu surface="platform" client={client} />);
     await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
-    // On the platform the location request has no page, so it is not a link; the case is.
+    // The action comes from the kind and the target, not from the surface: the case and the
+    // location request carry a target; the old location decision has none.
     expect(await screen.findByText("Open case →")).toBeTruthy();
-    expect(screen.getByText("View place →")).toBeTruthy();
+    expect(screen.getByText("Review place →")).toBeTruthy();
+    expect(screen.getByText("View list →")).toBeTruthy();
   });
 
   test("rows are grouped under day headings", async () => {
@@ -1504,7 +1506,8 @@ In `packages/ui/tests/notifications.test.tsx`, inside `describe("NotificationsMe
     const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
     await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
     expect(await screen.findByText("Rating 1.")).toBeTruthy();
-    expect(screen.getAllByText("Unread").length).toBe(2);
+    // The words for unread rows are the sr-only spans; the "Unread" tab label is not one of them.
+    expect(screen.getAllByText("Unread", { selector: "span.sr-only" }).length).toBe(2);
   });
 
   test("the Unread tab hides what was read", async () => {
@@ -1529,7 +1532,9 @@ In `packages/ui/tests/notifications.test.tsx`, inside `describe("NotificationsMe
   test("Escape closes the panel and the unread count is announced politely", async () => {
     const client = make();
     const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
-    expect((await screen.findByRole("status")).textContent).toBe("2 unread notifications");
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe("2 unread notifications"),
+    );
     await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
     expect(await screen.findByText("See all")).toBeTruthy();
     await user.keyboard("{Escape}");
