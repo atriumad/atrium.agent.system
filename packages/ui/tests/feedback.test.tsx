@@ -187,6 +187,26 @@ describe("Menu, Popover, Tooltip", () => {
     expect(await screen.findByText("Status")).toBeTruthy();
   });
 
+  test("popover padding comes only from its className", async () => {
+    const { user } = setup(
+      <Popover trigger={<Button>Bell</Button>} className="w-[22rem] p-0">
+        Edge to edge
+      </Popover>,
+    );
+    await user.click(screen.getByRole("button", { name: "Bell" }));
+    const popup = (await screen.findByText("Edge to edge")).closest("[class*='shadow-pop']");
+    expect(popup?.className).toContain("p-0");
+    expect(popup?.className).not.toContain("p-1.5");
+  });
+
+  test("the default popover is padded p-4 and not p-1.5", async () => {
+    const { user } = setup(<Popover trigger={<Button>Info</Button>}>Padded</Popover>);
+    await user.click(screen.getByRole("button", { name: "Info" }));
+    const popup = (await screen.findByText("Padded")).closest("[class*='shadow-pop']");
+    expect(popup?.className).toContain("p-4");
+    expect(popup?.className).not.toContain("p-1.5");
+  });
+
   test("tooltip names the control on focus", async () => {
     const { user } = setup(
       <Tooltip label="Copy link">

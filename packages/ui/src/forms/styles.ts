@@ -6,9 +6,12 @@ export const controlBase =
   "data-invalid:border-clay-500 data-disabled:cursor-not-allowed data-disabled:opacity-40 " +
   "dark:bg-transparent dark:text-cream-200 dark:hover:border-cream-300 dark:focus-visible:border-cream-300";
 
-export const popupBase =
-  "rounded-md border border-line bg-surface-card p-1.5 text-sm text-fg-body shadow-pop outline-none " +
+/** The popup surface without padding, for a panel that sets its own. */
+export const popupSurface =
+  "rounded-md border border-line bg-surface-card text-sm text-fg-body shadow-pop outline-none " +
   "transition-[opacity,transform] duration-(--dur-fast) ease-out data-starting-style:opacity-0 data-ending-style:opacity-0";
+
+export const popupBase = `${popupSurface} p-1.5`;
 
 export const itemBase =
   "flex cursor-pointer items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm outline-none select-none " +
