@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { AppNotification } from "../src/api";
 import { NotificationsMenu, NotificationsPage, notificationHref } from "../src/shell/notifications";
 import { screen, setup, waitFor } from "./helpers";
@@ -249,6 +249,8 @@ describe("NotificationsMenu", () => {
 });
 
 describe("NotificationsPage", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
   test("lists everything, read and unread, and can mark all as read", async () => {
     const client = make();
     const { user } = setup(<NotificationsPage surface="manager" client={client} />);
@@ -256,5 +258,52 @@ describe("NotificationsPage", () => {
     expect(screen.getByText(/A new location is waiting for approval/)).toBeTruthy();
     await user.click(screen.getByText("Mark all as read"));
     await waitFor(() => expect(client.markNotificationsRead).toHaveBeenCalledWith({ all: true }));
+  });
+
+  test("is a table whose first column links to what it is about", async () => {
+    const client = make();
+    setup(<NotificationsPage surface="manager" client={client} />);
+    const link = await screen.findByRole("link", { name: /A guest needs a reply at Bellaire/ });
+    expect(link.getAttribute("href")).toBe("/reputation/cases?case=case-9");
+  });
+
+  test("opening a row marks it read", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsPage surface="manager" client={client} />);
+    await user.click(
+      await screen.findByRole("link", { name: /A guest needs a reply at Bellaire/ }),
+    );
+    await waitFor(() => expect(client.markNotificationsRead).toHaveBeenCalledWith({ ids: ["n2"] }));
+  });
+
+  test("filters by what it is about, and the address remembers it", async () => {
+    window.history.replaceState(null, "", "/?type=case");
+    const client = make();
+    setup(<NotificationsPage surface="manager" client={client} />);
+    expect(await screen.findByText(/A guest needs a reply at Bellaire/)).toBeTruthy();
+    expect(screen.queryByText("Heights is now active")).toBeNull();
+    expect(screen.getByText("Type: Case")).toBeTruthy();
+  });
+
+  test("a filter that finds nothing says so and offers a way out", async () => {
+    window.history.replaceState(null, "", "/?type=help");
+    const client = make();
+    const { user } = setup(<NotificationsPage surface="manager" client={client} />);
+    expect(await screen.findByText("Nothing matches these filters")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(await screen.findByText("Heights is now active")).toBeTruthy();
+  });
+
+  test("a stale filter value from an old link is the same empty state, not a crash", async () => {
+    window.history.replaceState(null, "", "/?read=banana");
+    const client = make();
+    setup(<NotificationsPage surface="manager" client={client} />);
+    expect(await screen.findByText("Nothing matches these filters")).toBeTruthy();
+  });
+
+  test("with no notifications at all it says nothing has happened yet", async () => {
+    const client = make({ notifications: async () => ({ notifications: [], unread: 0 }) });
+    setup(<NotificationsPage surface="manager" client={client} />);
+    expect(await screen.findByText("Nothing yet")).toBeTruthy();
   });
 });

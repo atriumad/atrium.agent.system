@@ -5,12 +5,16 @@ import { type ElementType, useCallback, useEffect, useState } from "react";
 import { Button } from "../actions/button";
 import { type AppNotification, api } from "../api";
 import type { Surface } from "../cases-app";
+import { type Column, DataTable } from "../data/data-table";
+import { FilterBar } from "../data/filter-bar";
 import { Skeleton } from "../data/misc";
+import { applyTableState, type RowSpec, type TableSpec } from "../data/table-state";
+import { useTableState } from "../data/use-table-state";
 import { Popover } from "../feedback/overlays";
 import { EmptyState, ErrorState } from "../feedback/states";
 import { ago } from "../format";
 import { PageHeader } from "../layout/layout";
-import { ListPanel, ROW_PAD } from "../layout/list-panel";
+import { ROW_PAD } from "../layout/list-panel";
 import { Tabs } from "../navigation/tabs";
 import {
   firstLine,
@@ -289,7 +293,27 @@ export function NotificationsMenu({
   );
 }
 
-/** Everything that was sent to the person, newest first. */
+const PAGE_SPEC: TableSpec = {
+  filterKeys: ["type", "read"],
+  defaultSort: { key: "when", dir: "desc" },
+};
+
+const ROW_SPEC: RowSpec<AppNotification> = {
+  searchText: (n) => `${n.subject ?? ""} ${n.body}`,
+  filterValue: {
+    type: (n) => notificationType(n.kind),
+    read: (n) => (n.readAt ? "read" : "unread"),
+  },
+};
+
+const TYPE_LABEL: Record<NotificationType, string> = {
+  case: "Case",
+  place: "Place",
+  help: "Help request",
+  other: "Other",
+};
+
+/** Everything that was sent to the person, as a table they can search and filter. */
 export function NotificationsPage({
   surface,
   linkAs,
@@ -300,6 +324,41 @@ export function NotificationsPage({
   client?: NotificationsClient;
 }) {
   const { data, failed, load, markRead } = useNotifications(client);
+  const table = useTableState(PAGE_SPEC);
+  const all = data?.notifications ?? [];
+  const shown = applyTableState(all, table.state, ROW_SPEC);
+
+  const columns: Column<AppNotification>[] = [
+    {
+      key: "what",
+      header: "Notification",
+      sortValue: (n) => n.subject ?? n.kind,
+      cell: (n) => (
+        <span className={n.readAt ? "text-fg-body" : "font-medium text-fg-strong"}>
+          {n.subject ?? n.kind}
+          {n.readAt ? null : <span className="sr-only"> (unread)</span>}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortValue: (n) => TYPE_LABEL[notificationType(n.kind)],
+      cell: (n) => TYPE_LABEL[notificationType(n.kind)],
+    },
+    {
+      key: "action",
+      header: "Action",
+      cell: (n) => notificationAction(n.kind, n.target) ?? "",
+    },
+    {
+      key: "when",
+      header: "When",
+      sortValue: (n) => new Date(n.createdAt).getTime(),
+      cell: (n) => ago(n.createdAt, new Date()),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -316,24 +375,66 @@ export function NotificationsPage({
       />
       {failed ? <ErrorState title="Could not load notifications" onRetry={load} /> : null}
       {data === null && !failed ? <Skeleton className="h-24 w-full" /> : null}
-      {data && data.notifications.length === 0 ? (
+      {data && all.length === 0 ? (
         <EmptyState title="Nothing yet">
           Case alerts and decisions about your places show up here.
         </EmptyState>
       ) : null}
-      {data && data.notifications.length > 0 ? (
-        <ListPanel aria-label="Notifications">
-          {data.notifications.map((n) => (
-            <Row
-              key={n.id}
-              n={n}
-              surface={surface}
-              {...(linkAs ? { linkAs } : {})}
-              showBody
-              onOpen={(x) => !x.readAt && markRead({ ids: [x.id] })}
-            />
-          ))}
-        </ListPanel>
+      {data && all.length > 0 ? (
+        <>
+          <FilterBar
+            search={{
+              value: table.state.q,
+              onChange: table.setSearch,
+              placeholder: "Search notifications",
+            }}
+            filters={[
+              {
+                key: "type",
+                label: "Type",
+                options: (Object.keys(TYPE_LABEL) as NotificationType[]).map((value) => ({
+                  value,
+                  label: TYPE_LABEL[value],
+                })),
+                value: table.state.filters.type ?? null,
+                onChange: (v) => table.setFilter("type", v),
+              },
+              {
+                key: "read",
+                label: "Read state",
+                options: [
+                  { value: "unread", label: "Unread" },
+                  { value: "read", label: "Read" },
+                ],
+                value: table.state.filters.read ?? null,
+                onChange: (v) => table.setFilter("read", v),
+              },
+            ]}
+            shown={shown.length}
+            total={all.length}
+            onClear={table.clearFilters}
+          />
+          <DataTable
+            label="Notifications"
+            rows={shown}
+            columns={columns}
+            rowKey={(n) => n.id}
+            rowHref={(n) => notificationHref(n.kind, surface, n.target)}
+            onRowOpen={(n) => !n.readAt && markRead({ ids: [n.id] })}
+            {...(linkAs ? { linkAs } : {})}
+            sort={table.state.sort}
+            onSortChange={table.setSort}
+            page={table.state.page}
+            onPageChange={table.setPage}
+            empty={
+              <EmptyState title="Nothing matches these filters">
+                <Button variant="outline" size="sm" onClick={table.clearFilters}>
+                  Clear filters
+                </Button>
+              </EmptyState>
+            }
+          />
+        </>
       ) : null}
     </div>
   );
