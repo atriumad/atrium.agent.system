@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import {
   Accordion,
   Avatar,
@@ -252,5 +252,165 @@ describe("Accordion, DescriptionList, Timeline", () => {
       />,
     );
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
+});
+
+describe("DataTable as a page of data", () => {
+  type Place = { id: string; name: string; n: number };
+  const many: Place[] = Array.from({ length: 30 }, (_, i) => ({
+    id: `p${i + 1}`,
+    name: `Place ${i + 1}`,
+    n: i + 1,
+  }));
+  const cols = [
+    { key: "name", header: "Name", cell: (r: Place) => r.name, sortValue: (r: Place) => r.name },
+    {
+      key: "n",
+      header: "Number",
+      cell: (r: Place) => String(r.n),
+      numeric: true,
+      sortValue: (r: Place) => r.n,
+    },
+  ];
+  const firstRow = () => screen.getAllByRole("row")[1]?.textContent ?? "";
+
+  test("the first cell of a row is a link to where the row goes", () => {
+    setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 3)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/places/${r.id}`}
+      />,
+    );
+    const link = screen.getByRole("link", { name: "Place 1" });
+    expect(link.getAttribute("href")).toBe("/places/p1");
+    link.focus();
+    expect(document.activeElement).toBe(link);
+    // Only the first data cell links; the number is plain text.
+    expect(screen.getAllByRole("link").length).toBe(3);
+  });
+
+  test("a row with no destination is plain text, and opening a row is reported", async () => {
+    const onRowOpen = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many.slice(0, 2)}
+        columns={cols}
+        rowKey={(r) => r.id}
+        rowHref={(r) => (r.id === "p1" ? "/places/p1" : null)}
+        onRowOpen={onRowOpen}
+      />,
+    );
+    expect(screen.getAllByRole("link").length).toBe(1);
+    await user.click(screen.getByRole("link", { name: "Place 1" }));
+    expect(onRowOpen).toHaveBeenCalledWith(many[0]);
+  });
+
+  test("pages the rows and says where you are", async () => {
+    const { user } = setup(
+      <DataTable label="Places" rows={many} columns={cols} rowKey={(r) => r.id} pageSize={10} />,
+    );
+    expect(screen.getAllByRole("row").length).toBe(11);
+    expect(screen.getByText("Page 1 of 3")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Previous page" }).hasAttribute("disabled")).toBe(
+      true,
+    );
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(screen.getByText("Page 2 of 3")).toBeTruthy();
+    expect(firstRow()).toContain("Place 11");
+  });
+
+  test("no pager when everything fits on one page", () => {
+    setup(<DataTable label="Places" rows={many.slice(0, 5)} columns={cols} rowKey={(r) => r.id} />);
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).toBeNull();
+  });
+
+  test("a page past the end shows the last page, not an empty table", () => {
+    setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={10}
+        page={99}
+      />,
+    );
+    expect(screen.getByText("Page 3 of 3")).toBeTruthy();
+    expect(firstRow()).toContain("Place 21");
+  });
+
+  test("a controlled page reports the next one", async () => {
+    const onPageChange = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={10}
+        page={2}
+        onPageChange={onPageChange}
+      />,
+    );
+    expect(firstRow()).toContain("Place 11");
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(onPageChange).toHaveBeenCalledWith(3);
+  });
+
+  test("a controlled sort is shown and reported", async () => {
+    const onSortChange = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        sort={{ key: "n", dir: "desc" }}
+        onSortChange={onSortChange}
+      />,
+    );
+    expect(firstRow()).toContain("Place 30");
+    expect(screen.getByRole("columnheader", { name: "Number" }).getAttribute("aria-sort")).toBe(
+      "descending",
+    );
+    await user.click(screen.getByRole("button", { name: "Number" }));
+    expect(onSortChange).toHaveBeenCalledWith({ key: "n", dir: "asc" });
+  });
+
+  test("select all acts on the visible page only", async () => {
+    const onSelectedChange = mock();
+    const { user } = setup(
+      <DataTable
+        label="Places"
+        rows={many}
+        columns={cols}
+        rowKey={(r) => r.id}
+        pageSize={10}
+        selectable
+        onSelectedChange={onSelectedChange}
+      />,
+    );
+    await user.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    expect(onSelectedChange.mock.calls[0]?.[0]).toEqual(many.slice(0, 10).map((r) => r.id));
+  });
+
+  test("on a narrow screen the first column stays put while the table scrolls", () => {
+    setup(<DataTable label="Places" rows={many.slice(0, 2)} columns={cols} rowKey={(r) => r.id} />);
+    expect(screen.getByRole("columnheader", { name: "Name" }).className).toContain("max-md:sticky");
+    expect(screen.getByRole("cell", { name: "Place 1" }).className).toContain("max-md:sticky");
+    expect(screen.getByRole("columnheader", { name: "Number" }).className).not.toContain(
+      "max-md:sticky",
+    );
+  });
+
+  test("the table is a card: hairline frame, no ink rule on top", () => {
+    setup(<DataTable label="Places" rows={many.slice(0, 2)} columns={cols} rowKey={(r) => r.id} />);
+    const wrap = screen.getByRole("table").parentElement;
+    expect(wrap?.className).toContain("rounded-card");
+    expect(wrap?.className).not.toContain("border-t-[3px]");
   });
 });

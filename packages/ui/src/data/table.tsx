@@ -1,11 +1,11 @@
 import type { ComponentProps } from "react";
 import { cx } from "../lib/cx";
 
-/** A table sits under the 3px rule, with caps headers over a 1px ink line and hairline rows. */
+/** A table is framed like a card: a hairline, the card radius, and headers over a hairline. */
 export function TableWrap({ className, ...rest }: ComponentProps<"div">) {
   return (
     <div
-      className={cx("overflow-x-auto border-t-[3px] border-rule bg-surface-card", className)}
+      className={cx("overflow-x-auto rounded-card border border-line bg-surface-card", className)}
       {...rest}
     />
   );
@@ -18,7 +18,7 @@ export const TBody = (props: ComponentProps<"tbody">) => <tbody {...props} />;
 export const Tr = ({ className, ...rest }: ComponentProps<"tr">) => (
   <tr
     className={cx(
-      "hover:bg-surface-sunken aria-selected:bg-lime-100 dark:aria-selected:bg-charcoal-700",
+      "relative hover:bg-surface-sunken aria-selected:bg-lime-100 dark:aria-selected:bg-charcoal-700",
       className,
     )}
     {...rest}
@@ -27,7 +27,7 @@ export const Tr = ({ className, ...rest }: ComponentProps<"tr">) => (
 export const Th = ({ className, ...rest }: ComponentProps<"th">) => (
   <th
     className={cx(
-      "label-caps border-b border-line-strong px-4 py-3 text-left whitespace-nowrap text-fg-muted aria-sort:text-fg-strong",
+      "label-caps border-b border-line px-4 py-3 text-left whitespace-nowrap text-fg-muted aria-sort:text-fg-strong",
       className,
     )}
     {...rest}
