@@ -102,7 +102,7 @@ A popover of about 380px, in the product style.
 
 Until the case route exists, links stay `?case=<id>`; delivery 2 swaps them by changing only `notificationHref`.
 
-Accessibility: the panel is a dialog with focus trapped and Escape to close; the unread count is announced in a live region; colour is never the only mark of unread.
+Accessibility: the panel is the Base UI popover (Escape closes it and focus returns to the bell); the unread count is announced in a polite live region; colour is never the only mark of unread.
 
 ### 4. Testing, docs, rollout
 
@@ -111,7 +111,7 @@ Tests, with the package's existing `bun test` and Testing Library pattern:
 - Theme: `tokens-product.css` is imported after `tokens.css`; the key tokens have the expected values; the dark theme is not overridden.
 - Components: `useTableState` (URL round trip), `FilterBar`, `DataTable` (navigable row, pagination, both empty states, keyboard), and the bell (grouping by day, tabs, action per kind, mark read).
 
-Docs: a "Product theme" page in the Design section, in English and Spanish, with the token table, the three rules, and what stays brand. The bell page is updated for its new look.
+Docs: a "Product theme" page in the guides section (this repository has no Design section; that lives in `atrium-docs`), in English and Spanish, with the token table, the three rules, and what stays brand. The bell page is updated for its new look.
 
 Visual check: no regression tool exists, so both apps are reviewed in the browser, screen by screen, with screenshots before the delivery is called done.
 

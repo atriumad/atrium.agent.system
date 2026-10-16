@@ -9,6 +9,7 @@ description: "Cómo trabajar en el repositorio de Atrium."
 | Guía | Para qué |
 | --- | --- |
 | [Desarrollo local](./local-development) | Levantar el repositorio y las apps |
+| [Tema del producto](./product-theme) | Cómo se diferencia la interfaz del producto de la marca, y las reglas para pantallas de datos |
 | [Variables de entorno](./environment-variables) | Qué hace cada variable, su valor por defecto y quién la lee |
 | [Convenciones](./conventions) | Código, nombres, commits y pull requests |
 | [Crear un módulo](./create-a-module) | Agregar un módulo nuevo con su forma estándar |

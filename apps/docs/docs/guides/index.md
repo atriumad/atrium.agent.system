@@ -10,6 +10,7 @@ description: "How to work in the Atrium repository."
 | --- | --- |
 | [Local development](./local-development) | Bring up the repository and the apps |
 | [Environment variables](./environment-variables) | What each variable does, its default and who reads it |
+| [Product theme](./product-theme) | How the product interface differs from the brand, and the rules for data screens |
 | [Conventions](./conventions) | Code, names, commits and pull requests |
 | [Create a module](./create-a-module) | Add a new module with its standard shape |
 | [Create a subagent](./create-a-subagent) | Manifest, tools, playbook and evals |
