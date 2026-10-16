@@ -164,6 +164,88 @@ describe("NotificationsMenu", () => {
     setup(<NotificationsMenu surface="platform" client={client} />);
     expect(await screen.findByLabelText("Notifications")).toBeTruthy();
   });
+
+  test("each row says what to do, and an old one says to view the list", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="platform" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    // The action comes from the kind and the target, not from the surface: the case and the
+    // location request carry a target; the old location decision has none.
+    expect(await screen.findByText("Open case →")).toBeTruthy();
+    expect(screen.getByText("Review place →")).toBeTruthy();
+    expect(screen.getByText("View list →")).toBeTruthy();
+  });
+
+  test("rows are grouped under day headings", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    await screen.findByText(/A guest needs a reply at Bellaire/);
+    expect(screen.getAllByRole("heading", { level: 3 }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  test("the context line is the first line of the body, and unread rows are marked in words", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    expect(await screen.findByText("Rating 1.")).toBeTruthy();
+    // The words for unread rows are the sr-only spans; the "Unread" tab label is not one of them.
+    expect(screen.getAllByText("Unread", { selector: "span.sr-only" }).length).toBe(2);
+  });
+
+  test("the Unread tab hides what was read", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    expect(await screen.findByText("Heights is now active")).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: /Unread/ }));
+    expect(screen.queryByText("Heights is now active")).toBeNull();
+    expect(screen.getByText(/A guest needs a reply at Bellaire/)).toBeTruthy();
+  });
+
+  test("marking everything read on the Unread tab leaves an explanation, not a blank panel", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    await user.click(await screen.findByRole("tab", { name: /Unread/ }));
+    await user.click(screen.getByText("Mark all as read"));
+    expect(await screen.findByText("No unread notifications.")).toBeTruthy();
+  });
+
+  test("Escape closes the panel and the unread count is announced politely", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe("2 unread notifications"),
+    );
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    expect(await screen.findByText("See all")).toBeTruthy();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByText("See all")).toBeNull());
+  });
+
+  test("a notification with no subject, an empty body and a future time still renders one row", async () => {
+    const client = make({
+      notifications: async () => ({
+        notifications: [
+          {
+            id: "odd",
+            kind: "reputation.help_message",
+            subject: null,
+            body: "",
+            createdAt: new Date(Date.now() + 3_600_000).toISOString(),
+            readAt: null,
+            target: null,
+          },
+        ],
+        unread: 1,
+      }),
+    });
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 1 unread/));
+    expect(await screen.findByText("reputation.help_message")).toBeTruthy();
+    expect(screen.getByText("View list →")).toBeTruthy();
+  });
 });
 
 describe("NotificationsPage", () => {
