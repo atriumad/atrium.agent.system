@@ -29,6 +29,12 @@ The module behind the Reputation engine. It stores reviews and replies, runs the
 
 Each invitation is a signed single-use link that expires in 7 days.
 
+## The review request email
+
+The review request is an HTML email (React Email, package `packages/email`) with a plain-text twin and a button to the survey. The footer has an unsubscribe link, and the message carries the `List-Unsubscribe` and `List-Unsubscribe-Post` headers, so mail clients offer one-click unsubscribe (a POST through the Hub origin, `/unsubscribe-api/<token>`). The outbox keeps the plain text only.
+
+The unsubscribe page is `/u/<token>` on the Hub; the token never expires. Unsubscribing withdraws the guest's email consent (source `email_unsubscribe`); doing it twice is harmless. A guest who unsubscribed, bounced or complained gets no more requests. Delivery statuses and the webhook are described in [Core](./core#notifications).
+
 ## Questions (template v1)
 
 1. How was your visit? — 1 to 5
@@ -36,6 +42,8 @@ Each invitation is a signed single-use link that expires in 7 days.
 3. What can we improve? — quick options
 4. Free comment, optional
 5. Would you like the manager to contact you? — optional, and only then it asks for a phone or email
+
+The guest's phone is only a contact detail for the team to call; a case shows it only when the response asked for contact.
 
 The template is versioned: changing questions does not break earlier responses. An anonymous response never opens a case that needs contact details unless the guest leaves them.
 

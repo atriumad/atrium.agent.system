@@ -52,7 +52,7 @@ sequenceDiagram
 Qué hace cada paso, tal como se observó:
 
 1. **Llega una orden** por la API de ingesta, con el guest identificado. Ask programa una solicitud de reseña para ese guest, con el *Send delay* del lugar (0 minutos por defecto). El worker la envía en el siguiente minuto.
-2. **El guest recibe un correo** con el nombre del lugar y un enlace `…/s/svy_…`. El enlace funciona **una sola vez** y vence en 7 días; abrirlo de nuevo responde `410`.
+2. **El guest recibe un correo**, enviado con Resend, con el nombre del lugar, un botón hacia un enlace `…/s/svy_…` y un enlace para darse de baja en el pie. El enlace funciona **una sola vez** y vence en 7 días; abrirlo de nuevo responde `410`.
 3. **La encuesta** muestra una escala de emojis de 1 a 5. Desde 4 pregunta *What was best?*; con 3 o menos pregunta *What should we improve?* (Food, Service, Atmosphere, Value, Speed, Cleanliness, Nothing). El comentario libre es opcional. Un interruptor, *I would like someone to contact me*, muestra nombre, correo y teléfono: el formulario no se envía hasta que haya un correo o un teléfono.
 4. **La pantalla de gracias** siempre ofrece **Share it on Google**, sin importar la calificación. Es una regla, no una opción: [ADR 0018](../adr/0018-no-review-gating).
 5. **Recovery abre un caso** cuando la calificación es 1–3 o el guest pide contacto. Un 2 con contacto abrió un caso `medium` con plazo de 1 día. La severidad solo sube si una lectura lo indica ([Leer las palabras de los guests](../modules/reputation#leer-las-palabras-de-los-guests)).
@@ -97,7 +97,7 @@ La encuesta, la pantalla de gracias y el formulario *Request access* para un neg
 
 1. El dueño llena **Request access** en el Hub (negocio, dueño, correo, primer lugar, zona horaria, una nota). El formulario siempre responde `202`, así nadie puede saber qué correos existen, y tiene límite de frecuencia.
 2. La solicitud aparece en el Manager en **Approvals → Accounts**. La agencia aprueba o rechaza.
-3. Al aprobar, el sistema crea el client y su organización, convierte al dueño en `client_owner`, asigna el client al aprobador cuando es un account manager y emite un **enlace para definir contraseña**. El dueño la define en la Platform y entra.
+3. Al aprobar, el sistema crea el client y su organización, convierte al dueño en `client_owner`, asigna el client al aprobador cuando es un account manager y emite un **enlace para definir contraseña**. El dueño también recibe ese enlace por correo (ese correo no se registra en la bandeja de salida) y el aprobador lo sigue viendo. El dueño la define en la Platform y entra.
 4. Un lugar nuevo se pide desde **My places** y se aprueba en **Approvals → Places** antes de que Ask pueda usarlo.
 
 ## Lo que todavía no está construido

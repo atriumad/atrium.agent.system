@@ -29,6 +29,12 @@ El módulo detrás del engine Reputation. Guarda reseñas y respuestas, corre el
 
 Cada invitación es un link firmado de un solo uso que vence en 7 días.
 
+## El correo de solicitud de reseña
+
+La solicitud de reseña es un correo HTML (React Email, paquete `packages/email`) con una versión gemela en texto plano y un botón hacia la encuesta. El pie tiene un enlace para darse de baja, y el mensaje lleva los encabezados `List-Unsubscribe` y `List-Unsubscribe-Post`, así que los clientes de correo ofrecen la baja con un clic (un POST por el origen del Hub, `/unsubscribe-api/<token>`). La bandeja de salida guarda solo el texto plano.
+
+La página de baja es `/u/<token>` en el Hub; el token nunca vence. Darse de baja retira el consentimiento de email del guest (origen `email_unsubscribe`); hacerlo dos veces no causa problema. Un guest que se dio de baja, rebotó o se quejó no recibe más solicitudes. Los estados de entrega y el webhook se describen en [Core](./core#notificaciones).
+
 ## Preguntas (plantilla v1)
 
 1. ¿Cómo fue tu visita? — de 1 a 5
@@ -36,6 +42,8 @@ Cada invitación es un link firmado de un solo uso que vence en 7 días.
 3. ¿Qué podemos mejorar? — opciones rápidas
 4. Comentario libre, opcional
 5. ¿Quieres que el gerente te contacte? — opcional, y solo entonces pide un teléfono o email
+
+El teléfono del guest es solo un dato de contacto para que el equipo llame; un caso lo muestra solo cuando la respuesta pidió contacto.
 
 La plantilla es versionada: cambiar preguntas no rompe respuestas anteriores. Una respuesta anónima nunca abre un caso que requiera datos de contacto a menos que el guest los deje.
 

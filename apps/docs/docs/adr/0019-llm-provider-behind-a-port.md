@@ -35,3 +35,5 @@ Real clients' responses go only to a paid model, or to a model whose data policy
 - Calling the provider from inside Recovery: it would make cases depend on an outside service.
 - Vercel Functions or Queues for agents: they would replace the transactional queue of ADR 0006.
 - Keyword lists per client (the legacy way): brittle and maintained by hand.
+
+## Model in use

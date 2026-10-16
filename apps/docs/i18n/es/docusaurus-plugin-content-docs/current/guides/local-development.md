@@ -16,7 +16,7 @@ description: "Levantar el repositorio en tu máquina."
 
 ```bash
 bun install
-cp .env.example .env.local          # completa los valores de desarrollo
+cp .env.example .env.local          # completa los valores de desarrollo (incluye NODE_ENV=development)
 docker compose up -d postgres n8n   # Postgres y N8N locales
 bun --env-file=.env.local scripts/migrate.ts            # igual que: bun run db:migrate
 bun --env-file=.env.local apps/worker/scripts/seed.ts   # igual que: bun run seed
@@ -44,6 +44,8 @@ bun --env-file=.env.local run --filter @atrium/hub dev        # :3004
 ```
 
 Compruébalas: `curl localhost:3001/api/auth/ok` responde `200` y las tres pantallas responden en sus puertos. El worker registra `worker.started` con sus consumidores y tareas. El worker necesita `AGENTS_URL` y `AGENTS_SERVICE_TOKEN`; levanta primero el servicio de agentes. `AGENTS_SERVICE_TOKEN` es cualquier cadena aleatoria de 32 caracteres o más, y el servicio de agentes se niega a arrancar con una más corta. El servicio de agentes también lee `PUBLIC_BASE_URL` (y opcionalmente `ADMIN_BASE_URL`), que el worker ya no lee; fuera de desarrollo y pruebas no arranca sin `PUBLIC_BASE_URL`. Si `HOST_LLM_API_KEY` y un modelo para Sentiment (`HOST_MODEL_SENTIMENT` o `HOST_MODEL_DEFAULT`) están vacíos, Sentiment responde `rejected`; los casos se abren igual por la calificación.
+
+Variables de email. `RESEND_API_KEY` y `EMAIL_FROM` construyen el transporte de Resend; `RESEND_WEBHOOK_SECRET` (cualquier valor `whsec_` sirve en local) verifica el webhook de Resend en la API; `SURVEY_SECRET` (una cadena aleatoria larga, con `BETTER_AUTH_SECRET` como respaldo) firma los enlaces de baja, y la API y el servicio de agentes deben compartirlo. Sin la clave de Resend y con `NODE_ENV=development`, el correo se registra en la bandeja de salida y no se envía. Fuera de desarrollo y pruebas, la API y el servicio de agentes se niegan a arrancar sin las variables de Resend. El webhook no puede llegar a una máquina local, así que para probarlo envía un fixture firmado a `POST /webhooks/resend` de la API local.
 
 ## Recorrer el flujo principal
 

@@ -35,3 +35,5 @@ Las respuestas de clientes reales van solo a un modelo pago, o a un modelo cuya 
 - Llamar al proveedor desde dentro de Recovery: haría que los casos dependan de un servicio externo.
 - Vercel Functions o Queues para los agentes: reemplazarían la cola transaccional del ADR 0006.
 - Listas de palabras clave por cliente (la forma anterior): frágiles y mantenidas a mano.
+
+## Modelo en uso

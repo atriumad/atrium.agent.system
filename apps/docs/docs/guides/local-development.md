@@ -16,7 +16,7 @@ description: "Bring up the repository on your machine."
 
 ```bash
 bun install
-cp .env.example .env.local          # fill in development values
+cp .env.example .env.local          # fill in development values (include NODE_ENV=development)
 docker compose up -d postgres n8n   # local Postgres and N8N
 bun --env-file=.env.local scripts/migrate.ts            # same as: bun run db:migrate
 bun --env-file=.env.local apps/worker/scripts/seed.ts   # same as: bun run seed
@@ -44,6 +44,8 @@ bun --env-file=.env.local run --filter @atrium/hub dev        # :3004
 ```
 
 Check them: `curl localhost:3001/api/auth/ok` answers `200` and the three screens answer on their ports. The worker logs `worker.started` with its consumers and jobs. The worker needs `AGENTS_URL` and `AGENTS_SERVICE_TOKEN`; start the agents service first. `AGENTS_SERVICE_TOKEN` is any random string of 32 characters or more, and the agents service refuses to start with a shorter one. The agents service also reads `PUBLIC_BASE_URL` (and optionally `ADMIN_BASE_URL`), which the worker no longer reads; outside development and test it will not start without `PUBLIC_BASE_URL`. If `HOST_LLM_API_KEY` and a model for Sentiment (`HOST_MODEL_SENTIMENT` or `HOST_MODEL_DEFAULT`) are empty, Sentiment answers `rejected`; cases still open from the rating.
+
+Email variables. `RESEND_API_KEY` and `EMAIL_FROM` build the Resend transport; `RESEND_WEBHOOK_SECRET` (any `whsec_` value works locally) verifies Resend's webhook in the API; `SURVEY_SECRET` (a long random string, falling back to `BETTER_AUTH_SECRET`) signs the unsubscribe links, and the API and the agents service must share it. Without the Resend key and with `NODE_ENV=development`, mail is recorded in the outbox and not sent. Outside development and test, the API and the agents service refuse to start without the Resend variables. The webhook cannot reach a local machine, so to try it post a signed fixture to `POST /webhooks/resend` on the local API.
 
 ## Walk the main flow
 

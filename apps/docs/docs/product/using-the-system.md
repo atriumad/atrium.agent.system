@@ -52,7 +52,7 @@ sequenceDiagram
 What each step does, as observed:
 
 1. **An order arrives** through the ingestion API, with the guest identified. Ask schedules a review request for that guest, delayed by the place's *Send delay* (0 minutes by default). The worker sends it in the next minute.
-2. **The guest gets an email** with the place name and a link `…/s/svy_…`. The link works **once** and expires in 7 days; opening it again answers `410`.
+2. **The guest gets an email**, sent through Resend, with the place name, a button to a link `…/s/svy_…` and an unsubscribe link in the footer. The link works **once** and expires in 7 days; opening it again answers `410`.
 3. **The survey** shows a 1–5 emoji scale. From 4 up it asks *What was best?*; at 3 or below it asks *What should we improve?* (Food, Service, Atmosphere, Value, Speed, Cleanliness, Nothing). A free comment is optional. A switch, *I would like someone to contact me*, reveals name, email and phone: the form will not send until there is an email or a phone.
 4. **The thank-you screen** always offers **Share it on Google**, whatever the rating. This is a rule, not a setting: [ADR 0018](../adr/0018-no-review-gating).
 5. **Recovery opens a case** when the rating is 1–3 or the guest asks for contact. A 2 with contact opened a `medium` case due in 1 day. Severity only goes up if a reading says so ([Reading guests' words](../modules/reputation#reading-guests-words)).
@@ -96,7 +96,7 @@ The survey, the thank-you screen and the *Request access* form for a new busines
 
 1. The owner fills **Request access** on the Hub (business, owner, email, first place, time zone, a note). The form always answers `202`, so nobody can learn which emails exist, and it is rate limited.
 2. The request appears in the Manager under **Approvals → Accounts**. The agency approves or rejects it.
-3. On approval the system creates the client and its organization, makes the owner a `client_owner`, assigns the client to the approver when that is an account manager, and issues a **set-password link**. The owner sets a password on the Platform and signs in.
+3. On approval the system creates the client and its organization, makes the owner a `client_owner`, assigns the client to the approver when that is an account manager, and issues a **set-password link**. The owner also receives that link by email (this email is not recorded in the outbox) and the approver still sees it. The owner sets a password on the Platform and signs in.
 4. A new place is requested from **My places** and approved under **Approvals → Places** before Ask can use it.
 
 ## What is not built yet
