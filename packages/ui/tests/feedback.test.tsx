@@ -21,7 +21,9 @@ import { screen, setup, waitFor } from "./helpers";
 describe("Badge and StatusBadge", () => {
   test("badge is a squared micro-label", () => {
     setup(<Badge variant="clay">Clay</Badge>);
-    expect(screen.getByText("Clay").className).toContain("rounded-xs");
+    const badge = screen.getByText("Clay").className;
+    expect(badge).toContain("rounded-xs");
+    expect(badge).toContain("px-[7px]");
   });
 
   test("a status always has a word and a mark", () => {
@@ -34,6 +36,9 @@ describe("Badge and StatusBadge", () => {
     setup(<StatusBadge status="danger">Overdue</StatusBadge>);
     const pill = screen.getByText("Overdue");
     expect(pill.className).toContain("rounded-full");
+    expect(pill.className).toContain("px-2.5");
+    expect(pill.className).not.toContain("rounded-xs");
+    expect(pill.className).not.toContain("px-[7px]");
     expect(pill.className).not.toContain("inset_3px");
     expect(pill.querySelector("svg")).toBeTruthy();
   });
@@ -47,6 +52,9 @@ describe("Badge and StatusBadge", () => {
     const pill = screen.getByText("Active");
     expect(pill.querySelector("svg")).toBeNull();
     expect(pill.className).toContain("rounded-full");
+    expect(pill.className).toContain("px-2.5");
+    expect(pill.className).not.toContain("rounded-xs");
+    expect(pill.className).not.toContain("px-[7px]");
   });
 
   test("the dot form still carries the word", () => {

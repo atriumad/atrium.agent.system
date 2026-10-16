@@ -3,20 +3,21 @@ import { AlertTriangle, CheckCircle2, Info, Minus, XCircle } from "lucide-react"
 import type { ComponentProps } from "react";
 import { cx } from "../lib/cx";
 
-export const badgeStyles = cva(
-  "inline-flex items-center gap-1.5 rounded-xs px-[7px] py-[3px] text-2xs leading-tight font-medium tracking-wide whitespace-nowrap uppercase",
-  {
-    variants: {
-      variant: {
-        ink: "bg-charcoal-800 text-cream-200",
-        lime: "bg-lime-500 text-charcoal-900",
-        clay: "bg-clay-600 text-cream-100",
-        quiet: "bg-cream-300 text-charcoal-500 dark:bg-charcoal-700 dark:text-cream-300",
-      },
+/** The shared label base: no radius and no horizontal padding, so each shape adds its own and nothing conflicts. */
+const BADGE_BASE =
+  "inline-flex items-center gap-1.5 py-[3px] text-2xs leading-tight font-medium tracking-wide whitespace-nowrap uppercase";
+
+export const badgeStyles = cva(`${BADGE_BASE} rounded-xs px-[7px]`, {
+  variants: {
+    variant: {
+      ink: "bg-charcoal-800 text-cream-200",
+      lime: "bg-lime-500 text-charcoal-900",
+      clay: "bg-clay-600 text-cream-100",
+      quiet: "bg-cream-300 text-charcoal-500 dark:bg-charcoal-700 dark:text-cream-300",
     },
-    defaultVariants: { variant: "ink" },
   },
-);
+  defaultVariants: { variant: "ink" },
+});
 
 export type BadgeProps = ComponentProps<"span"> & VariantProps<typeof badgeStyles>;
 
@@ -51,15 +52,7 @@ export type StatusBadgeProps = ComponentProps<"span"> & { status: Status; dot?: 
 export function StatusBadge({ status, dot, className, children, ...rest }: StatusBadgeProps) {
   const Glyph = STATUS_ICON[status];
   return (
-    <span
-      className={cx(
-        badgeStyles({ variant: null }),
-        "rounded-full px-2.5",
-        STATUS[status],
-        className,
-      )}
-      {...rest}
-    >
+    <span className={cx(BADGE_BASE, "rounded-full px-2.5", STATUS[status], className)} {...rest}>
       {dot ? (
         <span className="size-[7px] shrink-0 rounded-full bg-current" aria-hidden="true" />
       ) : (
