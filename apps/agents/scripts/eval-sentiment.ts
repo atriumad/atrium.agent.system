@@ -18,7 +18,13 @@ if (!config.apiKey || !model) {
   throw new Error("set HOST_LLM_API_KEY and HOST_MODEL_SENTIMENT (or HOST_MODEL_DEFAULT)");
 }
 assertModelAllowed(model, process.env);
-const reader = sentimentReader(openRouterModel({ apiKey: config.apiKey }), model);
+const reader = sentimentReader(
+  openRouterModel({
+    apiKey: config.apiKey,
+    ...(config.timeoutMs ? { timeoutMs: config.timeoutMs } : {}),
+  }),
+  model,
+);
 
 const file = join(import.meta.dir, "../../../modules/reputation/evals/sentiment/cases.yaml");
 const cases = parse(readFileSync(file, "utf8")) as {
@@ -27,9 +33,22 @@ const cases = parse(readFileSync(file, "utf8")) as {
   expect: Record<string, unknown>;
 }[];
 
+/** In production the queue retries a failed reading; here a free model's 502s would end the run. */
+async function readWithRetries(input: Parameters<typeof reader.read>[0], attempts = 4) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await reader.read(input);
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      console.log(`retry ${attempt}/${attempts - 1}: ${(error as Error).message}`);
+      await Bun.sleep(5000 * attempt);
+    }
+  }
+}
+
 let failed = 0;
 for (const c of cases) {
-  const got = Reading.parse(await reader.read(c.input));
+  const got = Reading.parse(await readWithRetries(c.input));
   const e = c.expect as {
     safety?: boolean;
     sentiment?: string;

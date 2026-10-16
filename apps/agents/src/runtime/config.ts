@@ -5,13 +5,17 @@ type Env = Record<string, string | undefined>;
 export type HostConfig = {
   apiKey: string | undefined;
   defaultModel: string | undefined;
+  /** Per-call time limit in ms. Unset keeps the port's default (15 s); free reasoning models need more. */
+  timeoutMs: number | undefined;
   env: Env;
 };
 
 export function hostConfigFromEnv(env: Env): HostConfig {
+  const timeout = Number(env.HOST_MODEL_TIMEOUT_MS);
   return {
     apiKey: env.HOST_LLM_API_KEY || undefined,
     defaultModel: env.HOST_MODEL_DEFAULT || undefined,
+    timeoutMs: Number.isInteger(timeout) && timeout > 0 ? timeout : undefined,
     env,
   };
 }

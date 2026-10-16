@@ -45,7 +45,13 @@ await bus.start();
 
 const config = hostConfigFromEnv(process.env);
 const meter = createUsageMeter();
-const port = config.apiKey ? openRouterModel({ apiKey: config.apiKey, meter }) : undefined;
+const port = config.apiKey
+  ? openRouterModel({
+      apiKey: config.apiKey,
+      meter,
+      ...(config.timeoutMs ? { timeoutMs: config.timeoutMs } : {}),
+    })
+  : undefined;
 const sentimentModel = modelFor(config, "host.sentiment");
 if (port && sentimentModel) assertModelAllowed(sentimentModel, process.env);
 const reader = port && sentimentModel ? sentimentReader(port, sentimentModel) : undefined;

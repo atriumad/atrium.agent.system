@@ -20,6 +20,15 @@ describe("host configuration", () => {
     expect(modelFor(hostConfigFromEnv({}), "host.sentiment")).toBeUndefined();
   });
 
+  test("the model timeout is unset by default and read from HOST_MODEL_TIMEOUT_MS", () => {
+    expect(hostConfigFromEnv({}).timeoutMs).toBeUndefined();
+    expect(hostConfigFromEnv({ HOST_MODEL_TIMEOUT_MS: "60000" }).timeoutMs).toBe(60000);
+    // Anything that is not a positive whole number is ignored, so the port keeps its default.
+    for (const bad of ["", "abc", "0", "-5", "1.5"]) {
+      expect(hostConfigFromEnv({ HOST_MODEL_TIMEOUT_MS: bad }).timeoutMs).toBeUndefined();
+    }
+  });
+
   test("a free model is refused unless NODE_ENV is development or test, or it is allowed on purpose", () => {
     expect(() => assertModelAllowed("vendor/m:free", {})).toThrow();
     expect(() => assertModelAllowed("vendor/m:free", { NODE_ENV: "production" })).toThrow();
@@ -219,6 +228,12 @@ describe("the OpenRouter adapter", () => {
         "invalid_output",
         undefined,
       ],
+      // A reasoning model that spends its whole cap thinking returns no text at all.
+      [
+        { name: "AI_NoOutputGeneratedError", message: "No output generated." },
+        "invalid_output",
+        undefined,
+      ],
       [{ message: "the soup was cold" }, "provider_error", undefined],
     ];
     for (const [thrown, kind, status] of cases) {
@@ -285,5 +300,25 @@ describe("sentimentReader", () => {
     const out = await reader.read({ rating: 1, bestPart: null, improve: null, comment: "poison" });
     expect(out).toEqual({ sentiment: "negative", topics: [], concern: "high", safety: true });
     expect(seen[0]).toMatchObject({ subagent: "host.sentiment", model: "vendor/small" });
+  });
+
+  test("leaves room for a reasoning model to think and still write the answer", async () => {
+    const seen: { maxOutputTokens?: number }[] = [];
+    const reader = sentimentReader(
+      {
+        generate: async (request) => {
+          seen.push(request);
+          return {
+            object: { sentiment: "neutral", topics: [], concern: "none", safety: false } as never,
+            model: request.model,
+            usage: { tokens: 3 },
+          };
+        },
+      },
+      "vendor/reasoning",
+    );
+    await reader.read({ rating: 4, bestPart: null, improve: null, comment: null });
+    // A free reasoning model spent about 620 tokens thinking before its 35-token answer.
+    expect(seen[0]?.maxOutputTokens).toBeGreaterThanOrEqual(2000);
   });
 });

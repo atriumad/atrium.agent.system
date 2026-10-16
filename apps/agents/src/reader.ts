@@ -33,7 +33,9 @@ export function sentimentReader(port: ModelPort, model: string): ResponseReader 
         system: SYSTEM_PROMPT,
         prompt: buildUserPrompt(input),
         schema: Reading,
-        maxOutputTokens: 400,
+        // The answer is about 40 tokens, but the cap also counts a reasoning model's thinking
+        // (about 620 tokens on a real case). At 400 such a model returned no text at all.
+        maxOutputTokens: 2000,
       });
       return object;
     },

@@ -66,6 +66,8 @@ function classify(error: unknown): ModelUnavailableError {
   if (
     name === "AI_NoObjectGeneratedError" ||
     name === "NoObjectGeneratedError" ||
+    name === "AI_NoOutputGeneratedError" ||
+    name === "NoOutputGeneratedError" ||
     name === "AI_TypeValidationError"
   ) {
     return new ModelUnavailableError("invalid_output");
