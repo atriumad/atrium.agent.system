@@ -15,6 +15,7 @@ import { mountCases, type SessionDeps } from "./cases";
 import { mountOnboardingPublic } from "./onboarding";
 import { mountQrSurvey, mountSurvey } from "./survey";
 import { mountUnsubscribe } from "./unsubscribe";
+import { mountWebhooks } from "./webhooks";
 
 export type AppDeps = {
   db: Database;
@@ -28,6 +29,8 @@ export type AppDeps = {
   session?: SessionDeps;
   /** The secret that signs unsubscribe links. Without it the unsubscribe routes are not mounted. */
   unsubscribeSecret?: string;
+  /** The secret that signs Resend's webhooks. Without it the webhook route is not mounted. */
+  resendWebhookSecret?: string;
 };
 
 /** Cap on what an error response repeats back: a bad batch can have thousands of problems. */
@@ -166,6 +169,7 @@ export function createApp(deps: AppDeps) {
   mountUnsubscribe(app, deps);
   mountQrSurvey(app, deps);
   mountOnboardingPublic(app, deps);
+  mountWebhooks(app, deps);
   if (deps.session) mountCases(app, deps, deps.session);
 
   app.doc("/openapi.json", {

@@ -46,10 +46,27 @@ if (!session)
 const transport = transportFromEnv(process.env);
 const unsubscribeSecret = process.env.SURVEY_SECRET ?? secret;
 
+const resendWebhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+// Without it nobody can tell Resend's events from forged ones, so production refuses to start.
+if (
+  !resendWebhookSecret &&
+  process.env.NODE_ENV !== "development" &&
+  process.env.NODE_ENV !== "test"
+) {
+  console.error(
+    JSON.stringify({
+      level: "error",
+      message: "RESEND_WEBHOOK_SECRET is required outside development and test",
+    }),
+  );
+  process.exit(1);
+}
+
 const app = createApp({
   db,
   transport,
   ...(unsubscribeSecret ? { unsubscribeSecret } : {}),
+  ...(resendWebhookSecret ? { resendWebhookSecret } : {}),
   ...(session ? { session } : {}),
   publish: (event, tx) => bus.publish(event, tx),
   onError: (error) => console.error(JSON.stringify({ level: "error", message: String(error) })),

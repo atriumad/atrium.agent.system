@@ -29,6 +29,8 @@ export {
 } from "./application/assignments";
 export type { AuditFilter } from "./application/audit";
 export { countAuditSince, listAudit, writeAudit } from "./application/audit";
+export type { DeliveryEvent } from "./application/delivery";
+export { applyDeliveryEvent } from "./application/delivery";
 export type { GuestDeps, GuestInput, Publish } from "./application/guests";
 export {
   canContact,
@@ -100,6 +102,7 @@ export { isValidTimeZone, localDay } from "./domain/location";
 export * from "./domain/location-status";
 export * from "./domain/notifications";
 export * from "./domain/roles";
+export { verifySvixSignature } from "./domain/svix";
 export { signUnsubscribeToken, verifyUnsubscribeToken } from "./domain/unsubscribe";
 export type { Auth, AuthConfig } from "./infra/auth";
 export { createAuth } from "./infra/auth";
