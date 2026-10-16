@@ -21,11 +21,18 @@ export type SelectProps = {
 };
 
 /** A listbox that matches Input. Put it inside a Field so its label names it. */
-export function Select({ options, placeholder = "Select…", className, ...rest }: SelectProps) {
+export function Select({
+  options,
+  placeholder = "Select…",
+  className,
+  "aria-label": ariaLabel,
+  ...rest
+}: SelectProps) {
   const items = options.map((o) => ({ value: o.value, label: o.label }));
   return (
     <BaseSelect.Root items={items} {...(rest as object)}>
       <BaseSelect.Trigger
+        aria-label={ariaLabel}
         className={cx(
           controlBase,
           "flex cursor-pointer items-center justify-between gap-2 text-left",

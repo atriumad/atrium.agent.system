@@ -2,6 +2,7 @@ export * from "./card";
 export * from "./charts";
 export * from "./data-table";
 export * from "./delta";
+export * from "./filter-bar";
 export * from "./misc";
 export * from "./stat-tile";
 export * from "./table";
