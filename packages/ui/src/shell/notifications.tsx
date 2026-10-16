@@ -140,7 +140,7 @@ function Row({
   const href = notificationHref(n.kind, surface, n.target);
   const type = notificationType(n.kind);
   const Icon = TYPE_ICON[type];
-  const action = notificationAction(n.kind, n.target);
+  const action = href ? notificationAction(n.kind, n.target) : null;
   const inner = (
     <span className="flex items-start gap-3">
       <span
@@ -153,7 +153,7 @@ function Row({
         <span
           className={`flex items-start gap-2 text-sm ${unread ? "font-medium text-fg-strong" : "text-fg-body"}`}
         >
-          <span className="min-w-0 flex-1">{n.subject ?? n.kind}</span>
+          <span className="min-w-0 flex-1">{n.subject || n.kind}</span>
           {unread ? (
             <>
               <span
@@ -211,7 +211,7 @@ export function NotificationsMenu({
   return (
     <>
       <span role="status" className="sr-only">
-        {unread > 0 ? `${unread} unread notifications` : ""}
+        {unread > 0 ? `${unread} unread ${unread === 1 ? "notification" : "notifications"}` : ""}
       </span>
       <Popover
         className="w-[22rem] max-w-[92vw] p-0"
@@ -332,10 +332,10 @@ export function NotificationsPage({
     {
       key: "what",
       header: "Notification",
-      sortValue: (n) => n.subject ?? n.kind,
+      sortValue: (n) => n.subject || n.kind,
       cell: (n) => (
         <span className={n.readAt ? "text-fg-body" : "font-medium text-fg-strong"}>
-          {n.subject ?? n.kind}
+          {n.subject || n.kind}
           {n.readAt ? null : <span className="sr-only"> (unread)</span>}
         </span>
       ),
@@ -349,7 +349,8 @@ export function NotificationsPage({
     {
       key: "action",
       header: "Action",
-      cell: (n) => notificationAction(n.kind, n.target) ?? "",
+      cell: (n) =>
+        (notificationHref(n.kind, surface, n.target) && notificationAction(n.kind, n.target)) || "",
     },
     {
       key: "when",

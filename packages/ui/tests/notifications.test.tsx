@@ -169,11 +169,53 @@ describe("NotificationsMenu", () => {
     const client = make();
     const { user } = setup(<NotificationsMenu surface="platform" client={client} />);
     await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
-    // The action comes from the kind and the target, not from the surface: the case and the
-    // location request carry a target; the old location decision has none.
+    // The action comes from the kind and the target. On the Platform the location request has
+    // no page, so it promises nothing; the old location decision has no target.
     expect(await screen.findByText("Open case →")).toBeTruthy();
-    expect(screen.getByText("Review place →")).toBeTruthy();
+    expect(screen.queryByText("Review place →")).toBeNull();
     expect(screen.getByText("View list →")).toBeTruthy();
+  });
+
+  test("on the Manager the location request says to review the place", async () => {
+    const client = make();
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
+    expect(await screen.findByText("Review place →")).toBeTruthy();
+  });
+
+  test("an empty subject shows the kind", async () => {
+    const client = make({
+      notifications: async () => ({
+        notifications: [
+          {
+            id: "e",
+            kind: "reputation.help_message",
+            subject: "",
+            body: "x",
+            createdAt: mins(1),
+            readAt: null,
+            target: null,
+          },
+        ],
+        unread: 1,
+      }),
+    });
+    const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
+    await user.click(await screen.findByLabelText(/Notifications, 1 unread/));
+    expect(await screen.findByText("reputation.help_message")).toBeTruthy();
+  });
+
+  test("one unread notification is announced in the singular", async () => {
+    const client = make({
+      notifications: async () => ({
+        notifications: [{ ...items[0], readAt: null }],
+        unread: 1,
+      }),
+    });
+    setup(<NotificationsMenu surface="manager" client={client} />);
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe("1 unread notification"),
+    );
   });
 
   test("rows are grouped under day headings", async () => {
@@ -265,6 +307,14 @@ describe("NotificationsPage", () => {
     setup(<NotificationsPage surface="manager" client={client} />);
     const link = await screen.findByRole("link", { name: /A guest needs a reply at Bellaire/ });
     expect(link.getAttribute("href")).toBe("/reputation/cases?case=case-9");
+  });
+
+  test("a row with no page shows no action on the Platform", async () => {
+    const client = make();
+    setup(<NotificationsPage surface="platform" client={client} />);
+    await screen.findByText(/A new location is waiting for approval/);
+    expect(screen.queryByText("Review place")).toBeNull();
+    expect(screen.getByText("Open case")).toBeTruthy();
   });
 
   test("opening a row marks it read", async () => {
