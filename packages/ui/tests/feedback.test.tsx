@@ -30,6 +30,25 @@ describe("Badge and StatusBadge", () => {
     expect(container.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
   });
 
+  test("a status is a pill with a word and a mark, not a squared label with a left rule", () => {
+    setup(<StatusBadge status="danger">Overdue</StatusBadge>);
+    const pill = screen.getByText("Overdue");
+    expect(pill.className).toContain("rounded-full");
+    expect(pill.className).not.toContain("inset_3px");
+    expect(pill.querySelector("svg")).toBeTruthy();
+  });
+
+  test("a steady status in a dense table can use a dot instead of an icon", () => {
+    setup(
+      <StatusBadge status="positive" dot>
+        Active
+      </StatusBadge>,
+    );
+    const pill = screen.getByText("Active");
+    expect(pill.querySelector("svg")).toBeNull();
+    expect(pill.className).toContain("rounded-full");
+  });
+
   test("the dot form still carries the word", () => {
     const { container } = setup(
       <StatusBadge status="positive" dot>

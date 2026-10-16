@@ -28,15 +28,11 @@ export function Badge({ variant, className, ...rest }: BadgeProps) {
 export type Status = "positive" | "warning" | "danger" | "info" | "neutral";
 
 const STATUS: Record<Status, string> = {
-  positive:
-    "bg-status-positive-bg text-status-positive-fg shadow-[inset_3px_0_0_var(--status-positive-line)]",
-  warning:
-    "bg-status-warning-bg text-status-warning-fg shadow-[inset_3px_0_0_var(--status-warning-line)]",
-  danger:
-    "bg-status-danger-bg text-status-danger-fg shadow-[inset_3px_0_0_var(--status-danger-line)]",
-  info: "bg-status-info-bg text-status-info-fg shadow-[inset_3px_0_0_var(--status-info-line)]",
-  neutral:
-    "bg-status-neutral-bg text-status-neutral-fg shadow-[inset_3px_0_0_var(--status-neutral-line)]",
+  positive: "bg-status-positive-bg text-status-positive-fg",
+  warning: "bg-status-warning-bg text-status-warning-fg",
+  danger: "bg-status-danger-bg text-status-danger-fg",
+  info: "bg-status-info-bg text-status-info-fg",
+  neutral: "bg-status-neutral-bg text-status-neutral-fg",
 };
 export const STATUS_ICON = {
   positive: CheckCircle2,
@@ -49,14 +45,19 @@ export const STATUS_ICON = {
 export type StatusBadgeProps = ComponentProps<"span"> & { status: Status; dot?: boolean };
 
 /**
- * A status told apart by fill, a 3px left rule and a mark, and always with a word: color never speaks alone.
+ * A status told apart by a pill fill and a mark, and always with a word: color never speaks alone.
  * Use the icon for a state that changes what to do ("Overdue"), the dot for a steady health in a dense table.
  */
 export function StatusBadge({ status, dot, className, children, ...rest }: StatusBadgeProps) {
   const Glyph = STATUS_ICON[status];
   return (
     <span
-      className={cx(badgeStyles({ variant: null }), "pl-2.5", STATUS[status], className)}
+      className={cx(
+        badgeStyles({ variant: null }),
+        "rounded-full px-2.5",
+        STATUS[status],
+        className,
+      )}
       {...rest}
     >
       {dot ? (
