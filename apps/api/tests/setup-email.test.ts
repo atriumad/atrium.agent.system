@@ -40,4 +40,24 @@ describe("the set-password email", () => {
     expect(logs.join("\n")).not.toContain("ana.lopez");
     expect(logs.join("\n")).not.toContain("token=t");
   });
+
+  for (const [status, expected, kind] of [
+    ["failed", "setup_email.failed", "rejected"],
+    ["recorded", "setup_email.recorded", undefined],
+  ] as const) {
+    test(`a ${status} result is logged as ${expected}, never as sent, without address or link`, async () => {
+      const logs: { m: string; f: Record<string, unknown> | undefined }[] = [];
+      const log = (m: string, f?: Record<string, unknown>) => void logs.push({ m, f });
+      await sendSetPasswordEmail(
+        { name: "fake", deliver: async () => ({ status, providerId: null }) },
+        { email: "ana.lopez@mail.com", url: "https://platform.test/set-password?token=t" },
+        { info: log, error: log },
+      );
+      expect(logs.map((l) => l.m)).toEqual([expected]);
+      if (kind) expect(logs[0]?.f?.kind).toBe(kind);
+      const logged = JSON.stringify(logs);
+      expect(logged).not.toContain("ana.lopez");
+      expect(logged).not.toContain("token=t");
+    });
+  }
 });

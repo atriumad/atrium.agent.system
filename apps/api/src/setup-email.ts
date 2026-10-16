@@ -17,7 +17,7 @@ export async function sendSetPasswordEmail(
 ): Promise<void> {
   try {
     const { html, text } = await renderSetPassword({ link: input.url });
-    await transport.deliver({
+    const result = await transport.deliver({
       channel: "email",
       to: input.email,
       subject: "Set your Atrium password",
@@ -26,7 +26,10 @@ export async function sendSetPasswordEmail(
       headers: null,
       idempotencyKey: `set-password-${crypto.randomUUID()}`,
     });
-    log.info("setup_email.sent", { to: maskAddress(input.email) });
+    const to = maskAddress(input.email);
+    if (result.status === "failed") log.error("setup_email.failed", { to, kind: "rejected" });
+    else if (result.status === "recorded") log.info("setup_email.recorded", { to });
+    else log.info("setup_email.sent", { to });
   } catch (error) {
     log.error("setup_email.failed", {
       to: maskAddress(input.email),

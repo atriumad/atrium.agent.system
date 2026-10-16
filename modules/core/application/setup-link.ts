@@ -15,6 +15,8 @@ export function createSetupLinkCapture(options: SetupLinkOptions = {}) {
     onPasswordSetup: async ({ email, url }: { email: string; url: string }) => {
       links.set(email.toLowerCase(), url);
       try {
+        // The link is stored before delivery, so a failure never loses it. Awaiting delivery makes
+        // the approval wait up to the transport timeout: a known cost, accepted for now.
         await options.deliver?.({ email, url });
       } catch {
         // The link is already kept for the approver; delivery logs its own failure.
