@@ -5,3 +5,5 @@ export * from "./delta";
 export * from "./misc";
 export * from "./stat-tile";
 export * from "./table";
+export * from "./table-state";
+export * from "./use-table-state";
