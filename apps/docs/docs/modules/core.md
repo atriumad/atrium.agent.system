@@ -54,6 +54,7 @@ erDiagram
 Email is the only channel. It is sent through Resend behind the `NotificationTransport` port ([ADR 0021](../adr/0021-resend-email-no-sms)). The Resend transport posts to Resend's REST API with an idempotency key. A 4xx answer is recorded as a `failed` delivery; a 429, a 5xx, a timeout or a network failure throws, so the caller retries.
 
 - **Outbox.** Every send is recorded in `core.notifications` with the masked address and the plain text only, never HTML.
+- **Target.** A notification to a person on the team can say what it is about (`target_type` and `target_id`: a `case`, a `location` or a `help_request`). The bell uses it to open that case, place or request (`?case=`, `?place=`, `?request=`) instead of the list. Older rows and messages with no target open the list. The target is never sent to a guest, who has no bell.
 - **Statuses.** `recorded`, `sent`, `failed`, `delivered`, `bounced`, `complained`. A status never moves backwards. Opens and clicks are not tracked yet.
 - **Webhook.** Resend calls `POST /webhooks/resend`. The request is verified with its Svix signature (5-minute tolerance, 256 KB body limit) and updates the status of the notification.
 - **Consent.** A permanent bounce or a complaint withdraws that guest's email consent (sources `email_bounce` and `email_complaint`). The opt-out runs before the status moves. Transient or undetermined bounces change nothing.

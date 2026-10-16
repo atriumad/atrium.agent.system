@@ -54,6 +54,7 @@ erDiagram
 El email es el único canal. Se envía con Resend detrás del puerto `NotificationTransport` ([ADR 0021](../adr/0021-resend-email-no-sms)). El transporte de Resend publica en la API REST de Resend con una clave de idempotencia. Una respuesta 4xx se registra como entrega `failed`; un 429, un 5xx, un tiempo agotado o una falla de red lanzan un error, así que quien llamó reintenta.
 
 - **Bandeja de salida.** Cada envío se registra en `core.notifications` con la dirección enmascarada y solo el texto plano, nunca HTML.
+- **Destino.** Una notificación para una persona del equipo puede indicar de qué trata (`target_type` y `target_id`: un `case`, un `location` o un `help_request`). La campana lo usa para abrir ese caso, lugar o solicitud (`?case=`, `?place=`, `?request=`) en vez de la lista. Las filas antiguas y los mensajes sin destino abren la lista. El destino nunca se envía a un huésped, que no tiene campana.
 - **Estados.** `recorded`, `sent`, `failed`, `delivered`, `bounced`, `complained`. Un estado nunca retrocede. Las aperturas y los clics todavía no se rastrean.
 - **Webhook.** Resend llama a `POST /webhooks/resend`. La solicitud se verifica con su firma Svix (tolerancia de 5 minutos, límite de 256 KB) y actualiza el estado de la notificación.
 - **Consentimiento.** Un rebote permanente o una queja retiran el consentimiento de email de ese guest (orígenes `email_bounce` y `email_complaint`). La baja se ejecuta antes de que el estado avance. Los rebotes transitorios o indeterminados no cambian nada.

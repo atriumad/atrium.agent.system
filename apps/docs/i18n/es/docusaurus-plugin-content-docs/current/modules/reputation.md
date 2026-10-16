@@ -97,7 +97,7 @@ Un mensaje puede llevar un adjunto, de dos tipos:
 - **Una respuesta de encuesta**, mostrada como una tarjeta con la calificación, el comentario, las etiquetas del agente, la fecha y el local. La tarjeta nunca muestra datos de contacto. En la Platform, Responses tiene "Ask for help about this", que abre Help con la respuesta y su local ya elegidos. La respuesta debe pertenecer al cliente del pedido y a un local que el autor puede ver; si no, se rechaza con `422 attachment_not_found`. El selector de adjuntos lista solo las respuestas recientes de ese cliente.
 - **Una reseña externa**, como un link `https` más texto y estrellas opcionales.
 
-Cada mensaje o cierre avisa a todas las personas que atienden al cliente, salvo al autor (los dueños y el equipo asignado), con el tipo `reputation.help_message`. La notificación lleva una vista previa de como máximo 140 caracteres y enlaza a la página Help, no al hilo específico. La lista y el hilo abierto se actualizan cada 15 segundos mientras la pestaña está visible.
+Cada mensaje o cierre avisa a todas las personas que atienden al cliente, salvo al autor (los dueños y el equipo asignado), con el tipo `reputation.help_message`. La notificación lleva una vista previa de como máximo 140 caracteres y apunta a la solicitud, así que la campana abre ese hilo en la página Help (`?request=<id>`). La lista y el hilo abierto se actualizan cada 15 segundos mientras la pestaña está visible.
 
 La API reemplazó `POST /surveys/requests/:id/handle` por `GET /surveys/requests/:id`, `POST /surveys/requests/:id/messages`, `POST /surveys/requests/:id/close` y `GET /surveys/responses/pickable`.
 

@@ -97,7 +97,7 @@ A message can carry one attachment, of two kinds:
 - **A survey response**, shown as a card with the rating, the comment, the agent's labels, the date and the location. The card never shows contact details. In the Platform, Responses has "Ask for help about this", which opens Help with the response and its place already chosen. The response must belong to the request's client and to a place the author can see; otherwise it is refused with `422 attachment_not_found`. The attach picker lists only the recent responses of that client.
 - **An external review**, as an `https` link plus optional text and stars.
 
-Every message or close notifies everyone who handles the client except its author (the owners and the assigned team) with the kind `reputation.help_message`. The notification carries a preview of at most 140 characters and links to the Help page, not to the specific thread. The list and the open thread refresh every 15 seconds while the tab is visible.
+Every message or close notifies everyone who handles the client except its author (the owners and the assigned team) with the kind `reputation.help_message`. The notification carries a preview of at most 140 characters and points at the request, so the bell opens that thread on the Help page (`?request=<id>`). The list and the open thread refresh every 15 seconds while the tab is visible.
 
 The API replaced `POST /surveys/requests/:id/handle` with `GET /surveys/requests/:id`, `POST /surveys/requests/:id/messages`, `POST /surveys/requests/:id/close` and `GET /surveys/responses/pickable`.
 
