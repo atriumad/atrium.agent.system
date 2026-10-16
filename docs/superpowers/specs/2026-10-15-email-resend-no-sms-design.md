@@ -85,7 +85,7 @@ Hub  GET/POST /u/<token>   ◄── link in the email footer
 ### 5. Set-password email
 
 - On approving an account, the owner gets an email with the set-password link, in addition to the link shown to the approver. A short React Email template.
-- The link is a credential, so the outbox stores a body without it ("A link to set your password was sent"). The real body goes only to the transport.
+- The link is a credential, so this email is not recorded in the outbox at all (there is no client to attach a row to at that moment); only a masked log line is written.
 
 ### 6. Sentiment on a real model
 

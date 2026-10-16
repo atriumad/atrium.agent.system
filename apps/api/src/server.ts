@@ -6,6 +6,7 @@ import {
   transportFromEnv,
 } from "@atrium/core";
 import { createApp } from "./app";
+import { sendSetPasswordEmail } from "./setup-email";
 
 const { db, close } = createDatabase();
 const bus = createEventBus(db);
@@ -14,7 +15,16 @@ await bus.start();
 // Sign-in and the case routes need a secret; without one the API still takes connector traffic.
 const secret = process.env.BETTER_AUTH_SECRET;
 const agencySlug = process.env.AGENCY_SLUG ?? "atrium";
-const setup = createSetupLinkCapture();
+const apiLog = {
+  info: (message: string, fields?: Record<string, unknown>) =>
+    console.log(JSON.stringify({ level: "info", message, ...fields })),
+  error: (message: string, fields?: Record<string, unknown>) =>
+    console.error(JSON.stringify({ level: "error", message, ...fields })),
+};
+const transport = transportFromEnv(process.env);
+const setup = createSetupLinkCapture({
+  deliver: (input) => sendSetPasswordEmail(transport, input, apiLog),
+});
 const session = secret
   ? {
       auth: createAuth(db, {
@@ -43,7 +53,6 @@ if (!session)
     }),
   );
 
-const transport = transportFromEnv(process.env);
 const unsubscribeSecret = process.env.SURVEY_SECRET ?? secret;
 
 const resendWebhookSecret = process.env.RESEND_WEBHOOK_SECRET;
