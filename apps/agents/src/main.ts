@@ -27,6 +27,16 @@ if (!process.env.PUBLIC_BASE_URL && !dev) {
   process.exit(1);
 }
 
+// The API verifies unsubscribe tokens with SURVEY_SECRET ?? BETTER_AUTH_SECRET: sign with the same.
+const unsubscribeSecret = process.env.SURVEY_SECRET ?? process.env.BETTER_AUTH_SECRET;
+if (!unsubscribeSecret && !dev) {
+  jsonLogger.error("agents.cannot_start", {
+    reason:
+      "neither SURVEY_SECRET nor BETTER_AUTH_SECRET is set; unsubscribe links could not be signed",
+  });
+  process.exit(1);
+}
+
 const transport = transportFromEnv(process.env);
 
 const { db, close } = createDatabase();
@@ -52,6 +62,7 @@ const app = createAgentsService({
   token,
   meter,
   ...(reader ? { reader } : {}),
+  ...(unsubscribeSecret ? { unsubscribeSecret } : {}),
   publicBaseUrl: process.env.PUBLIC_BASE_URL ?? "http://localhost:3001",
   ...(process.env.ADMIN_BASE_URL ? { adminBaseUrl: process.env.ADMIN_BASE_URL } : {}),
 });

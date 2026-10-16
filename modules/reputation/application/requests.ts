@@ -1,4 +1,12 @@
-import { type Channel, contactFor, listLocations, sendToGuest, type Tx } from "@atrium/core";
+import {
+  type Channel,
+  contactFor,
+  listLocations,
+  sendToGuest,
+  signUnsubscribeToken,
+  type Tx,
+} from "@atrium/core";
+import { renderReviewRequest } from "@atrium/email";
 import { and, asc, eq, lte } from "drizzle-orm";
 import {
   generateInvitationToken,
@@ -97,7 +105,7 @@ async function chooseChannel(
 export async function sendReviewRequest(
   tx: Tx,
   requestId: string,
-  context: { publicBaseUrl: string },
+  context: { publicBaseUrl: string; unsubscribeSecret?: string },
   deps: ReputationDeps = {},
 ): Promise<SendOutcome> {
   const now = clock(deps);
@@ -141,8 +149,16 @@ export async function sendReviewRequest(
     .returning({ id: surveyInvitations.id });
   if (!invitation) throw new Error("invitation was not created");
 
-  const link = `${context.publicBaseUrl.replace(/\/$/, "")}/s/${token}`;
-  const body = `Thanks for visiting ${location.name}.\n\nHow was your visit? It takes under a minute:\n${link}\n\nThe link works once and expires in 7 days.`;
+  const base = context.publicBaseUrl.replace(/\/$/, "");
+  const link = `${base}/s/${token}`;
+  const unsub = context.unsubscribeSecret
+    ? signUnsubscribeToken(context.unsubscribeSecret, request.clientId, request.guestId)
+    : null;
+  const { html, text } = await renderReviewRequest({
+    placeName: location.name,
+    link,
+    unsubscribeUrl: unsub ? `${base}/u/${unsub}` : null,
+  });
   const sent = await sendToGuest(
     tx,
     {
@@ -152,7 +168,17 @@ export async function sendReviewRequest(
       purpose: "marketing",
       kind: "reputation.review_request",
       subject: `How was your visit to ${location.name}?`,
-      body,
+      body: text,
+      html,
+      idempotencyKey: `review-request-${request.id}`,
+      ...(unsub
+        ? {
+            headers: {
+              "List-Unsubscribe": `<${base}/unsubscribe-api/${unsub}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+        : {}),
     },
     deps.transport,
   );

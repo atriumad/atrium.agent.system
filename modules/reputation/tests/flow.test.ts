@@ -8,11 +8,14 @@ import {
   createLocation,
   eraseGuest,
   listNotifications,
+  type NotificationTransport,
+  type OutgoingMessage,
   recordConsent,
   recordOptOut,
   resolveGuest,
   type Scope,
   setPackage,
+  TransportUnavailableError,
   withAgency,
   withScope,
   withTenant,
@@ -333,6 +336,104 @@ describe("sending a review request", () => {
     expect(
       await inA((tx) => sendReviewRequest(tx, requestId, { publicBaseUrl: BASE }, deps)),
     ).toEqual({ outcome: "skipped", reason: "opted_out" });
+  });
+
+  async function scheduledRequest(name: string) {
+    const guestId = await guestWithConsent(name);
+    const requestId = await inA(async (tx) => {
+      await scheduleReviewRequest(
+        tx,
+        { clientId: a, locationId: locA, guestId, visitDate: "2026-10-06" },
+        deps,
+      );
+      return (
+        (
+          await tx.execute<{ id: string }>(
+            sql`select id from reputation.review_requests where guest_id = ${guestId}`,
+          )
+        )[0] as { id: string }
+      ).id;
+    });
+    return { guestId, requestId };
+  }
+
+  test("the email carries html, the plain text, an unsubscribe link, headers and an idempotency key", async () => {
+    const { guestId, requestId } = await scheduledRequest("html");
+    const seen: OutgoingMessage[] = [];
+    const transport: NotificationTransport = {
+      name: "recording",
+      deliver: async (m) => {
+        seen.push(m);
+        return { status: "sent", providerId: "p1" };
+      },
+    };
+    await inA((tx) =>
+      sendReviewRequest(
+        tx,
+        requestId,
+        { publicBaseUrl: BASE, unsubscribeSecret: "test-unsubscribe-secret" },
+        { ...deps, transport },
+      ),
+    );
+    const m = seen[0] as OutgoingMessage;
+    expect(m.html).toContain(`${BASE}/s/svy_`);
+    expect(m.html).toContain(`${BASE}/u/un1.`);
+    expect(m.body).toContain(`${BASE}/s/svy_`);
+    expect(m.body).not.toContain("<");
+    expect(m.headers?.["List-Unsubscribe"]).toContain("/unsubscribe-api/un1.");
+    expect(m.headers?.["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+    expect(m.idempotencyKey).toBe(`review-request-${requestId}`);
+    const [note] = (await admin.unsafe(
+      "select body from core.notifications where recipient_id = $1",
+      [guestId],
+    )) as { body: string }[];
+    expect(note?.body).toBe(m.body);
+    expect(note?.body).not.toContain("<");
+  });
+
+  test("without an unsubscribe secret the email has no unsubscribe link or headers", async () => {
+    const { requestId } = await scheduledRequest("nosecret");
+    const seen: OutgoingMessage[] = [];
+    const transport: NotificationTransport = {
+      name: "recording",
+      deliver: async (m) => {
+        seen.push(m);
+        return { status: "sent", providerId: null };
+      },
+    };
+    await inA((tx) =>
+      sendReviewRequest(tx, requestId, { publicBaseUrl: BASE }, { ...deps, transport }),
+    );
+    const m = seen[0] as OutgoingMessage;
+    expect(m.html).not.toContain("/u/un1.");
+    expect(m.headers).toBeNull();
+  });
+
+  test("an unavailable provider throws, leaves the request scheduled, and the retry reuses the key", async () => {
+    const { requestId } = await scheduledRequest("retry");
+    const keys: (string | null)[] = [];
+    let down = true;
+    const transport: NotificationTransport = {
+      name: "flaky",
+      deliver: async (m) => {
+        keys.push(m.idempotencyKey);
+        if (down) throw new TransportUnavailableError("network");
+        return { status: "sent", providerId: "p2" };
+      },
+    };
+    const send = () =>
+      inA((tx) =>
+        sendReviewRequest(tx, requestId, { publicBaseUrl: BASE }, { ...deps, transport }),
+      );
+    await expect(send()).rejects.toBeInstanceOf(TransportUnavailableError);
+    const [req] = (await admin.unsafe(
+      "select status from reputation.review_requests where id = $1",
+      [requestId],
+    )) as { status: string }[];
+    expect(req?.status).toBe("scheduled");
+    down = false;
+    expect((await send()).outcome).toBe("sent");
+    expect(keys).toEqual([`review-request-${requestId}`, `review-request-${requestId}`]);
   });
 
   test("handling a request twice sends one message", async () => {

@@ -19,6 +19,8 @@ export type ReputationToolConfig = {
   adminBaseUrl?: string;
   /** The model that reads guests' words. Without it, `read_response` refuses to run. */
   reader?: ResponseReader;
+  /** Signs the unsubscribe link in a review request. Without it the email has no unsubscribe link. */
+  unsubscribe?: { secret: string };
 } & Pick<ReputationDeps, "publish" | "transport">;
 
 const uuid = z.string().uuid();
@@ -112,7 +114,10 @@ export function reputationTools(config: ReputationToolConfig): Tool<never, unkno
       const result = await sendReviewRequest(
         tx,
         input.requestId,
-        { publicBaseUrl: config.publicBaseUrl },
+        {
+          publicBaseUrl: config.publicBaseUrl,
+          ...(config.unsubscribe ? { unsubscribeSecret: config.unsubscribe.secret } : {}),
+        },
         deps(context.now),
       );
       return result.outcome === "skipped"

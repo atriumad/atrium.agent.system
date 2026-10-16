@@ -10,6 +10,7 @@
   "dependencies": {
     "@atrium/contracts": "workspace:*",
     "@atrium/core": "workspace:*",
+    "@atrium/email": "workspace:*",
     "@atrium/reputation": "workspace:*",
     "@atrium/signals": "workspace:*",
     "@hono/zod-openapi": "^1.6.3",

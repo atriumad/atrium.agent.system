@@ -21,6 +21,8 @@ export type AgentsServiceDeps = {
   publicBaseUrl: string;
   /** Where case alerts point the team. Optional. */
   adminBaseUrl?: string;
+  /** Signs the unsubscribe link in a review request. Same secret the API verifies with. */
+  unsubscribeSecret?: string;
   now?: () => Date;
   log?: Logger;
 };
@@ -36,6 +38,7 @@ export function createAgentsService(deps: AgentsServiceDeps) {
     tools: reputationTools({
       publicBaseUrl: deps.publicBaseUrl,
       ...(deps.adminBaseUrl ? { adminBaseUrl: deps.adminBaseUrl } : {}),
+      ...(deps.unsubscribeSecret ? { unsubscribe: { secret: deps.unsubscribeSecret } } : {}),
       publish: deps.publish,
       ...(deps.transport ? { transport: deps.transport } : {}),
       ...(deps.reader ? { reader: deps.reader } : {}),

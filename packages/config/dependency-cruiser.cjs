@@ -19,12 +19,12 @@ module.exports = {
       name: "no-cross-module-packages",
       comment:
         "Workspaces resolve by package name, which the path rule above cannot see. A module may " +
-        "import only core, signals (their public API) and the shared packages.",
+        "import only core, signals (their public API) and the shared packages (email renders the messages they send).",
       severity: "error",
       from: { path: "^modules/([^/]+)/" },
       to: {
         path: "^@atrium/",
-        pathNot: ["^@atrium/$1$", "^@atrium/(core|signals|contracts|scoring|policy|config)$"],
+        pathNot: ["^@atrium/$1$", "^@atrium/(core|signals|contracts|scoring|policy|config|email)$"],
       },
     },
     {
