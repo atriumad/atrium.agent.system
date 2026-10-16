@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./tokens.css";
+@import "./tokens-product.css";
 
 /*
  * The ATRIUM AD design system as a Tailwind v4 theme.
@@ -87,6 +88,9 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
+  /* The product's shapes: cards and tables, and controls. */
+  --radius-card: 12px;
+  --radius-control: 8px;
 
   --shadow-card: 0 1px 0 rgba(36, 39, 38, 0.06);
   --shadow-raised: 0 2px 0 var(--charcoal-800);
