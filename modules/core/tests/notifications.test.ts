@@ -7,6 +7,7 @@ import {
   createDatabase,
   eraseGuest,
   listNotifications,
+  listUserNotifications,
   maskAddress,
   type NotificationTransport,
   recordConsent,
@@ -207,6 +208,49 @@ describe("sendToUser", () => {
       }),
     );
     expect(result).toMatchObject({ sent: true, to: "o***@casa.test" });
+  });
+
+  test("remembers what the notification is about, so the panel can open it", async () => {
+    const caseId = crypto.randomUUID();
+    await inA((tx) =>
+      sendToUser(tx, {
+        clientId: a,
+        userId,
+        kind: "reputation.case_alert",
+        subject: "with a target",
+        body: "x",
+        target: { type: "case", id: caseId },
+      }),
+    );
+    await inA((tx) =>
+      sendToUser(tx, {
+        clientId: a,
+        userId,
+        kind: "reputation.case_alert",
+        subject: "without a target",
+        body: "x",
+      }),
+    );
+    const { notifications: mine } = await inA((tx) => listUserNotifications(tx, userId));
+    expect(mine.find((n) => n.subject === "with a target")?.target).toEqual({
+      type: "case",
+      id: caseId,
+    });
+    expect(mine.find((n) => n.subject === "without a target")?.target).toBeNull();
+  });
+
+  test("refuses a target type it does not know", async () => {
+    await expect(
+      inA((tx) =>
+        sendToUser(tx, {
+          clientId: a,
+          userId,
+          kind: "reputation.case_alert",
+          body: "x",
+          target: { type: "nonsense" as never, id: "1" },
+        }),
+      ),
+    ).rejects.toThrow();
   });
 
   test("an unknown user is a result, not a crash", async () => {

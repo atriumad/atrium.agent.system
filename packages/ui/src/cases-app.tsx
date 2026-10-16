@@ -1,7 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import { ApiError, api, type CaseDetail, type CaseSummary, type Me } from "./api";
 import { Card } from "./data/card";
@@ -23,6 +23,7 @@ import { TextareaField, TextField } from "./forms/input";
 import { Container, PageHeader } from "./layout/layout";
 import { ListPanel, ROW_PAD } from "./layout/list-panel";
 import { cx } from "./lib/cx";
+import { queryParam } from "./lib/query-param";
 import { Tabs } from "./navigation/tabs";
 import { useMe } from "./shell/me-context";
 
@@ -88,6 +89,12 @@ export function CasesPage({ surface }: { surface: Surface }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  // A notification links here as ?case=<id>: open that case once, and show the tab that holds it.
+  const linked = useRef<string | null>(null);
+  useEffect(() => {
+    linked.current = queryParam("case");
+    if (linked.current) setSelected(linked.current);
+  }, []);
 
   const load = useCallback(() => {
     api
@@ -105,6 +112,13 @@ export function CasesPage({ surface }: { surface: Surface }) {
     const timer = setInterval(load, 30_000);
     return () => clearInterval(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!linked.current || cases === null) return;
+    const hit = cases.find((c) => c.id === linked.current);
+    linked.current = null;
+    if (hit) setTab(TABS.find((t) => inTab(hit.status, t)) ?? "all");
+  }, [cases]);
 
   const showClient = me.kind !== "client";
   const visible = (cases ?? []).filter((c) => inTab(c.status, tab));

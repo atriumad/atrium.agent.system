@@ -62,9 +62,17 @@ const call = (label: string, method: string, path: string, body?: unknown) =>
   });
 const list = async (label: string) =>
   (await (await call(label, "GET", "/api/notifications")).json()) as {
-    notifications: { id: string; subject: string; readAt: string | null; kind: string }[];
+    notifications: {
+      id: string;
+      subject: string;
+      readAt: string | null;
+      kind: string;
+      target: { type: string; id: string } | null;
+    }[];
     unread: number;
   };
+
+const placeId = crypto.randomUUID();
 
 beforeAll(async () => {
   await migrate(ADMIN_URL);
@@ -95,6 +103,7 @@ beforeAll(async () => {
         kind: who === "owner" ? "core.location_decided" : "core.location_requested",
         subject,
         body: `${subject}.`,
+        ...(who === "am" ? { target: { type: "location" as const, id: placeId } } : {}),
       }),
     );
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -125,6 +134,11 @@ describe("notifications", () => {
       "A new location is waiting for approval",
     ]);
     expect((await list("admin")).notifications).toEqual([]);
+  });
+
+  test("says what each one is about, or nothing for an older one", async () => {
+    expect((await list("am")).notifications[0]?.target).toEqual({ type: "location", id: placeId });
+    expect((await list("owner")).notifications.map((n) => n.target)).toEqual([null, null]);
   });
 
   test("marking some as read lowers the count and keeps the rest unread", async () => {

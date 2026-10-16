@@ -4,8 +4,10 @@ import {
   devTransport,
   type GuestSendInput,
   isValidNotificationKind,
+  isValidNotificationTarget,
   type MessageDraft,
   maskAddress,
+  type NotificationTarget,
   type NotificationTransport,
 } from "../domain/notifications";
 import { users } from "../infra/auth-schema";
@@ -73,6 +75,8 @@ export async function sendToUser(
 ): Promise<SendResult> {
   if (!isValidNotificationKind(input.kind))
     throw new Error(`invalid notification kind: ${input.kind}`);
+  if (input.target && !isValidNotificationTarget(input.target))
+    throw new Error(`invalid notification target: ${input.target.type}`);
   const [user] = await tx
     .select({ email: users.email })
     .from(users)
@@ -103,6 +107,8 @@ export async function sendToUser(
       transport: transport.name,
       status: result.status,
       providerId: result.providerId,
+      targetType: input.target?.type ?? null,
+      targetId: input.target?.id ?? null,
     })
     .returning({ id: notifications.id });
   if (!row) throw new Error("notification was not recorded");
@@ -126,6 +132,7 @@ export type UserNotification = {
   body: string;
   createdAt: Date;
   readAt: Date | null;
+  target: NotificationTarget | null;
 };
 
 /** What was sent to this person, newest first, and how many they have not read. */
@@ -143,6 +150,8 @@ export async function listUserNotifications(
       body: notifications.body,
       createdAt: notifications.createdAt,
       readAt: notifications.readAt,
+      targetType: notifications.targetType,
+      targetId: notifications.targetId,
     })
     .from(notifications)
     .where(mine)
@@ -152,7 +161,16 @@ export async function listUserNotifications(
     .select({ id: notifications.id })
     .from(notifications)
     .where(and(mine, isNull(notifications.readAt)));
-  return { notifications: rows, unread: unread.length };
+  return {
+    notifications: rows.map(({ targetType, targetId, ...rest }) => ({
+      ...rest,
+      target:
+        targetType && targetId
+          ? { type: targetType as NotificationTarget["type"], id: targetId }
+          : null,
+    })),
+    unread: unread.length,
+  };
 }
 
 /** Marks some (or all) of this person's notifications as read. Anyone else's are left alone. */

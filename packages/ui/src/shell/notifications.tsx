@@ -17,18 +17,51 @@ export type NotificationsClient = {
   markNotificationsRead: (which: { ids: string[] } | { all: true }) => Promise<unknown>;
 };
 
-/** The page where a person can act on a notification of this kind, or null when there is none. */
-export function notificationHref(kind: string, surface: Surface): string | null {
+/**
+ * The page where a person can act on a notification of this kind, or null when there is none.
+ * With a target of the right type the link opens that case, place or request, not just the list.
+ */
+export function notificationHref(
+  kind: string,
+  surface: Surface,
+  target: AppNotification["target"] = null,
+): string | null {
+  const page = pageFor(kind, surface);
+  if (!page) return null;
+  if (!target || target.type !== page.targetType) return page.path;
+  return `${page.path}?${page.param}=${encodeURIComponent(target.id)}`;
+}
+
+function pageFor(
+  kind: string,
+  surface: Surface,
+): {
+  path: string;
+  targetType: NonNullable<AppNotification["target"]>["type"];
+  param: string;
+} | null {
   switch (kind) {
     case "core.location_requested":
-      return surface === "manager" ? "/approvals/places" : null;
+      return surface === "manager"
+        ? { path: "/approvals/places", targetType: "location", param: "place" }
+        : null;
     case "core.location_decided":
-      return surface === "platform" ? "/places" : null;
+      return surface === "platform"
+        ? { path: "/places", targetType: "location", param: "place" }
+        : null;
     case "reputation.case_alert":
     case "reputation.case_resolved":
-      return surface === "manager" ? "/reputation/cases" : "/reputation/feedback";
+      return {
+        path: surface === "manager" ? "/reputation/cases" : "/reputation/feedback",
+        targetType: "case",
+        param: "case",
+      };
     case "reputation.help_message":
-      return surface === "manager" ? "/reputation/help" : "/help";
+      return {
+        path: surface === "manager" ? "/reputation/help" : "/help",
+        targetType: "help_request",
+        param: "request",
+      };
     default:
       return null;
   }
@@ -83,7 +116,7 @@ function Row({
   showBody?: boolean;
 }) {
   const unread = !n.readAt;
-  const href = notificationHref(n.kind, surface);
+  const href = notificationHref(n.kind, surface, n.target);
   const inner = (
     <span className="flex items-start gap-3">
       <span

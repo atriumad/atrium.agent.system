@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { SQL } from "bun";
 import { sql } from "drizzle-orm";
 import { migrate } from "../../../scripts/migrate";
 import {
@@ -33,6 +34,16 @@ const auth = createAuth(db, {
   agencySlug: AGENCY_SLUG,
 });
 const seed = { type: "user", id: `seed-ll-${suffix}` } as const;
+
+const rawDb = new SQL(ADMIN_URL);
+/** The (type, id) each notification of this kind points at, for one target. */
+const targetsOf = async (kind: string, id: string) =>
+  (
+    (await rawDb.unsafe(
+      "select target_type, target_id from core.notifications where kind = $1 and target_id = $2",
+      [kind, id],
+    )) as { target_type: string; target_id: string }[]
+  ).map((r) => [r.target_type, r.target_id]);
 
 const sent: { to: string; subject: string | null }[] = [];
 const transport: NotificationTransport = {
@@ -90,6 +101,7 @@ afterAll(async () => {
     await tx.execute(sql`delete from core.organizations where slug like ${`%-${suffix}`}`);
     await tx.execute(sql`delete from core.users where email like ${`%-${suffix}@ll.atrium.dev`}`);
   });
+  await rawDb.close();
   await close();
 });
 
@@ -101,6 +113,9 @@ describe("asking for a location", () => {
     expect(await locationStatusFor(db, pendingId)).toBe("pending");
     expect(sent.some((m) => m.to === `am-${suffix}@ll.atrium.dev`)).toBe(true);
     expect(sent.some((m) => m.to === `owner-${suffix}@ll.atrium.dev`)).toBe(false);
+    expect(await targetsOf("core.location_requested", pendingId)).toEqual([
+      ["location", pendingId],
+    ]);
   });
 
   test("a bad time zone or an empty name is refused", async () => {
@@ -148,6 +163,7 @@ describe("deciding", () => {
       ),
     ).toBe("active");
     expect(sent.some((m) => m.to === `owner-${suffix}@ll.atrium.dev`)).toBe(true);
+    expect(await targetsOf("core.location_decided", pendingId)).toEqual([["location", pendingId]]);
     await expect(
       withScope(db, amScope, (tx) => decideLocation(tx, amScope, pendingId, "approve", null)),
     ).rejects.toBeInstanceOf(LocationStateError);

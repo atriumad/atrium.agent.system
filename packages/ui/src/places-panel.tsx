@@ -10,6 +10,7 @@ import { Banner } from "./feedback/banner";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { TextField } from "./forms/input";
 import { PageHeader } from "./layout/layout";
+import { linkedRowProps, useQueryParam } from "./lib/query-param";
 import { useMe } from "./shell/me-context";
 import { NotAvailable } from "./shell/not-available";
 
@@ -39,6 +40,7 @@ const browserZone = () => {
 /** The owner's places with their status, and the way to ask for another one. */
 export function PlacesPanel({ client = api }: { client?: PlacesClient }) {
   const [places, setPlaces] = useState<Place[] | null>(null);
+  const linkedPlace = useQueryParam("place");
   const [failed, setFailed] = useState(false);
   const [name, setName] = useState("");
   const [zone, setZone] = useState(browserZone);
@@ -87,7 +89,7 @@ export function PlacesPanel({ client = api }: { client?: PlacesClient }) {
           {places?.map((p) => {
             const s = PLACE_STATUS[p.status];
             return (
-              <li key={p.id}>
+              <li key={p.id} {...linkedRowProps(p.id === linkedPlace)}>
                 <Card padding="sm">
                   <div className="flex flex-wrap items-center gap-3">
                     <strong className="min-w-0 flex-1 font-medium">{p.name}</strong>

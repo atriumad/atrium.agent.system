@@ -704,10 +704,20 @@ describe("recovery", () => {
     expect(eventsOf("recovery.case.opened").length).toBe(before + 1);
 
     const alerts = (await admin.unsafe(
-      "select recipient_id, body from core.notifications where kind = 'reputation.case_alert' and body like $1",
+      "select recipient_id, body, target_type, target_id from core.notifications where kind = 'reputation.case_alert' and body like $1",
       [`%${first.caseId}%`],
-    )) as { recipient_id: string; body: string }[];
+    )) as {
+      recipient_id: string;
+      body: string;
+      target_type: string | null;
+      target_id: string | null;
+    }[];
     expect(alerts.map((x) => x.recipient_id).sort()).toEqual([amId, ownerId].sort());
+    // Each alert knows which case it is about, so the panel can open that case.
+    expect(alerts.map((x) => [x.target_type, x.target_id])).toEqual([
+      ["case", first.caseId],
+      ["case", first.caseId],
+    ]);
     expect(alerts[0]?.body).toContain(`https://admin.example.test/admin/cases/${first.caseId}`);
 
     const again = await inA((tx) =>
@@ -810,8 +820,8 @@ describe("recovery", () => {
     expect(contacted.status).toBe("contacted");
     const resolvedNotes = async () =>
       (await admin.unsafe(
-        "select recipient_id from core.notifications where kind = 'reputation.case_resolved'",
-      )) as { recipient_id: string }[];
+        "select recipient_id, target_type, target_id from core.notifications where kind = 'reputation.case_resolved'",
+      )) as { recipient_id: string; target_type: string | null; target_id: string | null }[];
     expect(await resolvedNotes()).toEqual([]);
     const before = eventsOf("recovery.case.resolved").length;
     const resolved = await run(am, (tx) =>
@@ -819,6 +829,9 @@ describe("recovery", () => {
     );
     // The owner is told it closed; the person who closed it is not told about their own act.
     expect((await resolvedNotes()).map((n) => n.recipient_id)).toEqual([ownerId]);
+    expect((await resolvedNotes()).map((n) => [n.target_type, n.target_id])).toEqual([
+      ["case", caseId],
+    ]);
     expect(resolved).toMatchObject({
       status: "resolved",
       resolvedBy: amId,

@@ -133,6 +133,8 @@ export type AppNotification = {
   body: string;
   createdAt: string;
   readAt: string | null;
+  /** What it is about, so the panel can open it. Null on older notifications. */
+  target: { type: "case" | "location" | "help_request"; id: string } | null;
 };
 
 export type PlaceOption = { id: string; locationName: string; clientName: string };

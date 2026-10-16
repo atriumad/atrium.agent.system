@@ -9,7 +9,10 @@ import { FormsPage, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/sur
 import { amMe, fakeFetch, meOf, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup } from "./helpers";
 
-afterEach(restoreFetch);
+afterEach(() => {
+  restoreFetch();
+  window.history.replaceState({}, "", "/");
+});
 
 const hours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
 const aCase = (id: string, over: Record<string, unknown> = {}) => ({
@@ -136,6 +139,99 @@ describe("pages carry no navigation chrome of their own", () => {
     first.unmount();
     inside(amMe, <PlacesApprovalsPage />);
     expect(await screen.findByText("Patio")).toBeTruthy();
+  });
+});
+
+/** What a notification's link does: the page opens on the thing it was about. */
+describe("opening the thing a notification is about", () => {
+  const visit = (search: string) => window.history.replaceState({}, "", `/${search}`);
+  const detail = (id: string, over: Record<string, unknown> = {}) => ({
+    ...aCase(id),
+    contactedAt: null,
+    resolvedAt: null,
+    resolvedBy: null,
+    note: null,
+    response: { bestPart: null, improve: null, comment: "The soup was cold", createdAt: hours(-3) },
+    contact: null,
+    ...over,
+  });
+
+  test("the cases page opens the case named in the address", async () => {
+    visit("?case=b");
+    const calls = fakeFetch({
+      "/api/cases": { cases: [aCase("a"), aCase("b")] },
+      "/api/cases/b": { case: detail("b") },
+    });
+    inside(amMe, <CasesPage surface="manager" />);
+    expect(await screen.findByText("The soup was cold")).toBeTruthy();
+    expect(calls.some((c) => c.path === "/api/cases/b")).toBe(true);
+    expect(calls.some((c) => c.path === "/api/cases/a")).toBe(false);
+  });
+
+  test("a resolved case switches to the tab that holds it, so its row shows", async () => {
+    visit("?case=c");
+    fakeFetch({
+      "/api/cases": { cases: [aCase("c", { status: "resolved" })] },
+      "/api/cases/c": { case: detail("c", { status: "resolved" }) },
+    });
+    inside(amMe, <CasesPage surface="manager" />);
+    expect(await screen.findByText(/Bellaire c/)).toBeTruthy();
+  });
+
+  test("a case id nobody can open says so and leaves the list usable", async () => {
+    visit("?case=gone");
+    fakeFetch({ "/api/cases": { cases: [aCase("a")] } });
+    inside(amMe, <CasesPage surface="manager" />);
+    expect(await screen.findByText("Could not load this case.")).toBeTruthy();
+    expect(screen.getByText(/Bellaire a/)).toBeTruthy();
+  });
+
+  test("the help page opens the request named in the address", async () => {
+    visit("?request=r1");
+    const calls = fakeFetch({ "/api/surveys/requests": { requests: [] } });
+    inside(amMe, <HelpRequestsPage />);
+    await screen.findByText("No help requests");
+    expect(calls.some((c) => c.path === "/api/surveys/requests/r1")).toBe(true);
+  });
+
+  test("the place named in the address is marked on the approvals page", async () => {
+    visit("?place=p2");
+    fakeFetch({
+      "/api/locations": {
+        locations: [
+          { id: "p1", name: "Patio", clientId: "c", clientName: "Casa Olivo", status: "pending" },
+          { id: "p2", name: "Heights", clientId: "c", clientName: "Casa Olivo", status: "pending" },
+        ],
+      },
+    });
+    inside(amMe, <PlacesApprovalsPage />);
+    await screen.findByText("Heights");
+    const marked = document.querySelectorAll('[aria-current="true"]');
+    expect(marked.length).toBe(1);
+    expect(marked[0]?.textContent).toContain("Heights");
+  });
+
+  test("the place named in the address is marked on the owner's places page", async () => {
+    visit("?place=l2");
+    fakeFetch({
+      "/api/locations": {
+        locations: [
+          {
+            id: "l1",
+            name: "Bellaire",
+            clientId: "c1",
+            clientName: "Casa Olivo",
+            status: "active",
+          },
+          { id: "l2", name: "Heights", clientId: "c1", clientName: "Casa Olivo", status: "active" },
+        ],
+      },
+    });
+    inside(ownerMe, <PlacesPage />);
+    await screen.findByText("Heights");
+    const marked = document.querySelectorAll('[aria-current="true"]');
+    expect(marked.length).toBe(1);
+    expect(marked[0]?.textContent).toContain("Heights");
   });
 });
 

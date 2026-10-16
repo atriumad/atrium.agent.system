@@ -58,6 +58,18 @@ export function isValidNotificationKind(value: string): boolean {
   return NOTIFICATION_KIND.test(value);
 }
 
+export const NOTIFICATION_TARGET_TYPES = ["case", "location", "help_request"] as const;
+
+/** The thing a notification is about, so the panel can open it. */
+export type NotificationTarget = {
+  type: (typeof NOTIFICATION_TARGET_TYPES)[number];
+  id: string;
+};
+
+export function isValidNotificationTarget(value: NotificationTarget): boolean {
+  return NOTIFICATION_TARGET_TYPES.includes(value.type) && value.id.length > 0;
+}
+
 export type MessageDraft = {
   /** `module.thing`: `reputation.review_request`. */
   kind: string;
@@ -68,6 +80,8 @@ export type MessageDraft = {
   idempotencyKey?: string;
   /** What the outbox keeps when it must not hold `body` (a message that carries a secret link). */
   storedBody?: string;
+  /** What the message is about. Only notifications to the team use it; a guest has no panel. */
+  target?: NotificationTarget;
 };
 
 export type GuestSendInput = MessageDraft & {

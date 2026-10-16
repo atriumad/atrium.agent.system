@@ -62,6 +62,7 @@ export async function requestLocation(
         clientId: scope.clientId,
         userId: recipient.userId,
         kind: "core.location_requested",
+        target: { type: "location", id: row.id },
         subject: `A new location is waiting for approval: ${name}`,
         body: `${name} was requested and is pending. Open the Manager to approve or reject it.`,
       },
@@ -115,6 +116,7 @@ export async function decideLocation(
         clientId: row.clientId,
         userId: recipient.userId,
         kind: "core.location_decided",
+        target: { type: "location", id: locationId },
         subject: `${row.name} is now ${move.to}`,
         body: reason
           ? `${row.name} is now ${move.to}. ${reason}`

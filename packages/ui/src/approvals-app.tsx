@@ -12,6 +12,7 @@ import { EmptyState, ErrorState } from "./feedback/states";
 import { ago } from "./format";
 import { TextareaField } from "./forms/input";
 import { PageHeader } from "./layout/layout";
+import { linkedRowProps, useQueryParam } from "./lib/query-param";
 import { PLACE_STATUS } from "./places-panel";
 import { useFrame } from "./shell/frame-context";
 import { useMe } from "./shell/me-context";
@@ -212,11 +213,14 @@ function PlaceRow({
   client,
   onChanged,
   canManage = true,
+  linked = false,
 }: {
   place: Place;
   client: ApprovalsClient;
   onChanged: () => void;
   canManage?: boolean;
+  /** The place a notification pointed at. */
+  linked?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -247,7 +251,7 @@ function PlaceRow({
   }
 
   return (
-    <li>
+    <li {...linkedRowProps(linked)}>
       <Card padding="sm">
         <div className="flex flex-wrap items-center gap-3">
           <span className="min-w-0 flex-1 text-sm">
@@ -322,6 +326,7 @@ export function Locations({
   canManage?: boolean;
 }) {
   const { data, failed, reload } = useList(client.places);
+  const linkedPlace = useQueryParam("place");
   const waiting = (data ?? []).filter((p) => p.status === "pending");
   const rest = (data ?? []).filter((p) => p.status === "active" || p.status === "suspended");
   return (
@@ -341,6 +346,7 @@ export function Locations({
             place={p}
             client={client}
             canManage={canManage}
+            linked={p.id === linkedPlace}
             onChanged={() => {
               reload();
               onChanged();
@@ -356,6 +362,7 @@ export function Locations({
             place={p}
             client={client}
             canManage={canManage}
+            linked={p.id === linkedPlace}
             onChanged={() => {
               reload();
               onChanged();

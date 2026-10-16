@@ -23,6 +23,7 @@ import { TextareaField, TextField } from "./forms/input";
 import { Select } from "./forms/select";
 import { ListPanel, ROW_PAD } from "./layout/list-panel";
 import { cx } from "./lib/cx";
+import { queryParam } from "./lib/query-param";
 import { useMe } from "./shell/me-context";
 
 type Side = "client" | "agency";
@@ -680,6 +681,11 @@ export function HelpThreads({
   const [requests, setRequests] = useState<SurveyRequest[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(initialSelected);
+  // A notification links here as ?request=<id>.
+  useEffect(() => {
+    const linked = queryParam("request");
+    if (linked && !initialSelected) setSelected(linked);
+  }, [initialSelected]);
   const [focusNow, setFocusNow] = useState(false);
   const stopFocusing = useCallback(() => setFocusNow(false), []);
   const [now, setNow] = useState(() => new Date());

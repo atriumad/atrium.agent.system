@@ -96,9 +96,9 @@ const open = async (note = "I need help with my Google link") =>
 
 const notesTo = async (userId: string) =>
   (await admin.unsafe(
-    "select subject, body from core.notifications where kind = 'reputation.help_message' and recipient_id = $1 order by created_at",
+    "select subject, body, target_type, target_id from core.notifications where kind = 'reputation.help_message' and recipient_id = $1 order by created_at",
     [userId],
-  )) as { subject: string; body: string }[];
+  )) as { subject: string; body: string; target_type: string | null; target_id: string | null }[];
 
 beforeAll(async () => {
   await migrate(ADMIN_URL);
@@ -192,6 +192,9 @@ describe("opening and reading a thread", () => {
     expect((await notesTo(ids.am)).some((n) => n.body.includes("Please change our link"))).toBe(
       true,
     );
+    // The notification knows which request it is about, so the panel can open that thread.
+    const note = (await notesTo(ids.am)).find((n) => n.body.includes("Please change our link"));
+    expect([note?.target_type, note?.target_id]).toEqual(["help_request", id]);
     expect(await notesTo(ids.ownerA)).toEqual([]);
   });
 

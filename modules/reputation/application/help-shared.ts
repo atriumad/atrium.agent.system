@@ -56,6 +56,7 @@ export async function notifyOthers(
         clientId: request.clientId,
         userId: recipient.userId,
         kind: "reputation.help_message",
+        target: { type: "help_request", id: request.id },
         subject: `${subject} · ${locationName}`,
         body: preview(text),
       },

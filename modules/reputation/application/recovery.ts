@@ -169,6 +169,7 @@ async function alertCase(
         clientId: response.clientId,
         userId: recipient.userId,
         kind: "reputation.case_alert",
+        target: { type: "case", id: caseId },
         subject:
           why === "raised"
             ? `A case at ${where} was raised to ${severity}`
@@ -298,6 +299,7 @@ async function alertResolved(
         clientId: closed.clientId,
         userId: recipient.userId,
         kind: "reputation.case_resolved",
+        target: { type: "case", id: closed.id },
         subject: `A guest's case at ${where} was resolved`,
         body: [
           `The private case from a survey at ${where} was closed by the team.`,
