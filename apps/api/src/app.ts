@@ -14,6 +14,7 @@ import { HTTPException } from "hono/http-exception";
 import { mountCases, type SessionDeps } from "./cases";
 import { mountOnboardingPublic } from "./onboarding";
 import { mountQrSurvey, mountSurvey } from "./survey";
+import { mountUnsubscribe } from "./unsubscribe";
 
 export type AppDeps = {
   db: Database;
@@ -25,6 +26,8 @@ export type AppDeps = {
   onError?: (error: unknown) => void;
   /** Better Auth and the agency slug. Without it the case routes and sign-in are not mounted. */
   session?: SessionDeps;
+  /** The secret that signs unsubscribe links. Without it the unsubscribe routes are not mounted. */
+  unsubscribeSecret?: string;
 };
 
 /** Cap on what an error response repeats back: a bad batch can have thousands of problems. */
@@ -160,6 +163,7 @@ export function createApp(deps: AppDeps) {
   });
 
   mountSurvey(app, deps);
+  mountUnsubscribe(app, deps);
   mountQrSurvey(app, deps);
   mountOnboardingPublic(app, deps);
   if (deps.session) mountCases(app, deps, deps.session);

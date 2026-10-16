@@ -100,6 +100,7 @@ export { isValidTimeZone, localDay } from "./domain/location";
 export * from "./domain/location-status";
 export * from "./domain/notifications";
 export * from "./domain/roles";
+export { signUnsubscribeToken, verifyUnsubscribeToken } from "./domain/unsubscribe";
 export type { Auth, AuthConfig } from "./infra/auth";
 export { createAuth } from "./infra/auth";
 export type { Database, Tx } from "./infra/db";

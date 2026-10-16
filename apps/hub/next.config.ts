@@ -12,6 +12,8 @@ const config: NextConfig = {
       { source: "/survey-api/:token/info", destination: `${API_URL}/s/:token/info` },
       { source: "/qr-api/:token", destination: `${API_URL}/q/:token` },
       { source: "/onboarding-api", destination: `${API_URL}/onboarding/request` },
+      { source: "/unsubscribe-api/:token", destination: `${API_URL}/u/:token` },
+      { source: "/unsubscribe-api/:token/info", destination: `${API_URL}/u/:token/info` },
       { source: "/qr-api/:token/info", destination: `${API_URL}/q/:token/info` },
     ];
   },

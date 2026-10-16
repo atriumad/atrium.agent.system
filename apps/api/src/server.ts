@@ -44,10 +44,12 @@ if (!session)
   );
 
 const transport = transportFromEnv(process.env);
+const unsubscribeSecret = process.env.SURVEY_SECRET ?? secret;
 
 const app = createApp({
   db,
   transport,
+  ...(unsubscribeSecret ? { unsubscribeSecret } : {}),
   ...(session ? { session } : {}),
   publish: (event, tx) => bus.publish(event, tx),
   onError: (error) => console.error(JSON.stringify({ level: "error", message: String(error) })),
