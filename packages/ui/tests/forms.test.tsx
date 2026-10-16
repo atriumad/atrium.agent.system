@@ -59,7 +59,9 @@ describe("Field and TextField", () => {
       </Field>,
     );
     const cls = screen.getByRole("textbox").className;
-    expect(cls).toContain("rounded-sm");
+    expect(cls).toContain("rounded-control");
+    expect(cls).toContain("bg-surface-card");
+    expect(cls).not.toContain("bg-cream-100");
     expect(cls).toContain("border-field");
   });
 

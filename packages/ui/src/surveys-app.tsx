@@ -200,7 +200,7 @@ export function FormCard({
         <div className="flex flex-col items-start gap-3">
           {form.qrUrl ? (
             <>
-              <div className="rounded-sm border border-line bg-cream-100 p-3">
+              <div className="rounded-control border border-line bg-surface-card p-3">
                 <QRCodeSVG
                   value={form.qrUrl}
                   size={132}

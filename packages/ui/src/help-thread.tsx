@@ -571,7 +571,7 @@ function Conversation({
     <section
       ref={region}
       aria-label="Conversation"
-      className="flex flex-col gap-4 rounded-md border border-line bg-surface-card p-5"
+      className="flex flex-col gap-4 rounded-card border border-line bg-surface-card p-5"
     >
       {failed ? (
         <ErrorState title="Could not load this conversation" onRetry={() => void load()} />

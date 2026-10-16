@@ -28,7 +28,7 @@ describe("Card", () => {
     );
     const card = screen.getByText("Body");
     expect(card.className).toContain("border-line");
-    expect(card.className).toContain("rounded-md");
+    expect(card.className).toContain("rounded-card");
     expect(card.className).not.toMatch(/shadow-(card|raised|pop)/);
     expect(screen.getByRole("heading", { name: "Title" })).toBeTruthy();
   });

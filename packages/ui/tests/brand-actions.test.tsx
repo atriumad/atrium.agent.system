@@ -88,7 +88,7 @@ describe("Button", () => {
 
   test("is squared: never a pill", () => {
     setup(<Button>Go</Button>);
-    expect(screen.getByRole("button").className).toContain("rounded-sm");
+    expect(screen.getByRole("button").className).toContain("rounded-control");
     expect(screen.getByRole("button").className).not.toContain("rounded-full");
   });
 

@@ -9,7 +9,7 @@ export function ListPanel({ className, ...rest }: ComponentProps<"ul">) {
   return (
     <ul
       className={cx(
-        "m-0 list-none divide-y divide-line overflow-hidden rounded-md border border-line bg-surface-card p-0",
+        "m-0 list-none divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-card p-0",
         className,
       )}
       {...rest}

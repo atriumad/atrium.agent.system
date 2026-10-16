@@ -1,6 +1,6 @@
 /** Shared class strings for the form controls, so a field looks the same whatever it wraps. */
 export const controlBase =
-  "w-full rounded-sm border border-field bg-cream-100 px-[13px] py-[11px] text-base leading-[1.4] text-fg-body " +
+  "w-full rounded-control border border-field bg-surface-card px-[13px] py-[11px] text-base leading-[1.4] text-fg-body " +
   "placeholder:text-charcoal-500/80 transition-colors duration-(--dur-base) ease-out " +
   "hover:border-charcoal-800 focus-visible:border-charcoal-800 focus-visible:outline-offset-1 " +
   "data-invalid:border-clay-500 data-disabled:cursor-not-allowed data-disabled:opacity-40 " +

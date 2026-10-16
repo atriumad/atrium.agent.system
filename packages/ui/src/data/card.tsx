@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cx } from "../lib/cx";
 
 export const cardStyles = cva(
-  "relative rounded-md border transition-[transform,box-shadow,border-color] duration-(--dur-base) ease-out",
+  "relative rounded-card border transition-[transform,box-shadow,border-color] duration-(--dur-base) ease-out",
   {
     variants: {
       tone: {

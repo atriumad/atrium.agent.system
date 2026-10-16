@@ -8,7 +8,7 @@ import { cx } from "../lib/cx";
 
 export const buttonStyles = cva(
   [
-    "inline-flex items-center justify-center rounded-sm border font-medium leading-none tracking-[0.01em] whitespace-nowrap no-underline select-none",
+    "inline-flex items-center justify-center rounded-control border font-medium leading-none tracking-[0.01em] whitespace-nowrap no-underline select-none",
     "cursor-pointer transition-[background-color,color,transform] duration-(--dur-base) ease-out",
     "active:translate-y-(--press-shift)",
     "data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:active:translate-y-0",

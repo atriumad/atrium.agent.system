@@ -12,7 +12,7 @@ function Stat({ href, value, label }: { href: string; value: number | null; labe
   return (
     <a
       href={href}
-      className="flex flex-col gap-1 rounded-md border border-line bg-surface-card p-5 no-underline transition-colors hover:border-charcoal-400"
+      className="flex flex-col gap-1 rounded-card border border-line bg-surface-card p-5 no-underline transition-colors hover:border-charcoal-400"
     >
       <span className="text-4xl leading-none">{value === null ? "–" : value}</span>
       <span className="text-sm text-fg-muted">{label}</span>

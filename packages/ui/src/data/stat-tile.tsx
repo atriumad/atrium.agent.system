@@ -28,7 +28,7 @@ export function StatTile({
   return (
     <div
       className={cx(
-        "flex flex-col gap-2 rounded-md border border-line bg-surface-card p-5",
+        "flex flex-col gap-2 rounded-card border border-line bg-surface-card p-5",
         className,
       )}
       {...rest}
