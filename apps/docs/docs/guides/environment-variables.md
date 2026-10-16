@@ -63,6 +63,7 @@ Host's agents run in their own service ([ADR 0020](../adr/0020-agents-in-their-o
 | `HOST_LLM_API_KEY` | Host's model key, shared by its subagents. Empty means no model: Sentiment answers "rejected" and Recovery still works from the rating. | none | agents |
 | `HOST_MODEL_DEFAULT` | Model every Host subagent uses unless it has its own. | none | agents |
 | `HOST_MODEL_SENTIMENT` | Model for `host.sentiment`. Falls back to `HOST_MODEL_DEFAULT`. | none | agents |
+| `HOST_MODEL_TIMEOUT_MS` | Time limit of one model call, in milliseconds. A reading holds a database transaction for that long, so keep it low in production. Free reasoning models need about 60000. Ignored if it is not a positive whole number. | `15000` | agents |
 | `HOST_ALLOW_FREE` | Set to `true` to allow a model id ending in `:free` outside development and test. Only for test data. | not set | agents |
 
 ## Connectors and providers

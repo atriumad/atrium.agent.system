@@ -26,7 +26,9 @@ Las respuestas de clientes reales van solo a un modelo pago, o a un modelo cuya 
 
 - Cambiar de proveedor cambia un texto, no el módulo.
 - Un modelo gratuito que limita el uso o falla deja respuestas sin leer; Recovery sigue funcionando con la calificación.
-- Una llamada de lectura mantiene una transacción de base de datos como máximo 15 segundos.
+- Una llamada de lectura mantiene una transacción de base de datos como máximo 15 segundos por defecto. `HOST_MODEL_TIMEOUT_MS` sube ese límite y, con él, el tiempo que una transacción permanece abierta.
+- Los modelos gratuitos que soportan salida estructurada son todos modelos de razonamiento. Medido con `nvidia/nemotron-3.5-super-vl:free`: de 4 a 31 segundos por lectura, entre 450 y 1.000 tokens de razonamiento antes de una respuesta de 35 tokens, algún 502 del proveedor y una llamada que se colgó más de 90 segundos. El tope de salida es de 2.000 tokens porque con 400 un modelo así se quedaba sin texto. En desarrollo, usa `HOST_MODEL_TIMEOUT_MS=60000`; la cola reintenta lo que aún falle.
+- El adaptador informa un modelo que no devolvió texto como `invalid_output`, no como un fallo del proveedor.
 - Los agentes corren en su propio servicio, al que llama el worker ([0020](./0020-agents-in-their-own-service)); los eventos y los reintentos siguen en pg-boss ([0006](./0006-events-with-pg-boss)). Las variables de este ADR ahora son `HOST_LLM_API_KEY`, `HOST_MODEL_*` y `HOST_ALLOW_FREE`.
 - Antes de habilitar un modelo para clientes reales, correr una vez los casos dorados y hostiles contra ese modelo (`bun apps/agents/scripts/eval-sentiment.ts` con `HOST_LLM_API_KEY` y `HOST_MODEL_SENTIMENT` definidos) y registrar en este ADR el modelo y su política de datos. La llamada real al SDK todavía no se ejercitó contra un proveedor real.
 

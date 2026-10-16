@@ -26,7 +26,9 @@ Real clients' responses go only to a paid model, or to a model whose data policy
 
 - Changing provider changes a string, not the module.
 - A free model that rate-limits or fails leaves responses unread; Recovery still works from the rating.
-- A reading call holds one database transaction for at most 15 seconds.
+- A reading call holds one database transaction for at most 15 seconds by default. `HOST_MODEL_TIMEOUT_MS` raises that limit, and with it the time a transaction stays open.
+- The free models that support structured output are all reasoning models. Measured on `nvidia/nemotron-3.5-super-vl:free`: 4 to 31 seconds per reading, about 450 to 1,000 tokens of thinking before a 35-token answer, an occasional 502 from the provider and one call that hung past 90 seconds. The output cap is 2,000 tokens because a cap of 400 left such a model with no text at all. For development, set `HOST_MODEL_TIMEOUT_MS=60000`; the queue retries what still fails.
+- The adapter reports a model that returned no text as `invalid_output`, not as a provider failure.
 - Agents run in their own service, called by the worker ([0020](./0020-agents-in-their-own-service)); events and retries stay on pg-boss ([0006](./0006-events-with-pg-boss)). The variables in this ADR are now `HOST_LLM_API_KEY`, `HOST_MODEL_*` and `HOST_ALLOW_FREE`.
 - Before enabling a model for real clients, run the golden and hostile cases once against that model (`bun apps/agents/scripts/eval-sentiment.ts` with `HOST_LLM_API_KEY` and `HOST_MODEL_SENTIMENT` set) and record the model and its data policy in this ADR. The live SDK call has not been exercised against a real provider yet.
 

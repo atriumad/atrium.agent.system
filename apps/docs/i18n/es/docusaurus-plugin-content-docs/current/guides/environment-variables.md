@@ -63,6 +63,7 @@ Los agentes de Host corren en su propio servicio ([ADR 0020](../adr/0020-agents-
 | `HOST_LLM_API_KEY` | Key del modelo de Host, compartida por sus subagentes. Vacía significa sin modelo: Sentiment responde "rejected" y Recovery sigue funcionando con la calificación. | ninguno | agentes |
 | `HOST_MODEL_DEFAULT` | Modelo que usan todos los subagentes de Host salvo que tengan el suyo. | ninguno | agentes |
 | `HOST_MODEL_SENTIMENT` | Modelo para `host.sentiment`. Si falta, usa `HOST_MODEL_DEFAULT`. | ninguno | agentes |
+| `HOST_MODEL_TIMEOUT_MS` | Límite de tiempo de una llamada al modelo, en milisegundos. Una lectura mantiene una transacción abierta todo ese tiempo, así que en producción conviene dejarlo bajo. Los modelos gratuitos de razonamiento necesitan unos 60000. Se ignora si no es un entero positivo. | `15000` | agentes |
 | `HOST_ALLOW_FREE` | Con `true` permite un id de modelo que termina en `:free` fuera de development y test. Solo para datos de prueba. | sin definir | agentes |
 
 ## Conectores y proveedores
