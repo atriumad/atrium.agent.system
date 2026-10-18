@@ -9,6 +9,7 @@ import { FormsPage, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/sur
 import {
   agencyInsightsFixture,
   amMe,
+  casesBandFixture,
   fakeFetch,
   meOf,
   ownerInsightsFixture,
@@ -55,7 +56,15 @@ const inside = (me: typeof ownerMe, ui: React.ReactNode) =>
 
 describe("pages carry no navigation chrome of their own", () => {
   test("the cases page lists cases without section links or an account block", async () => {
-    fakeFetch({ "/api/cases": { cases: [aCase("a")] } });
+    fakeFetch({
+      "/api/locations": { locations: [] },
+      "/api/cases?range=30d": {
+        cases: [{ ...aCase("a"), comment: null, topics: null, sentiment: null, safety: null }],
+        counts: { active: 1, open: 1, contacted: 0, resolved: 0, all: 1 },
+        truncated: false,
+      },
+      "/api/insights/cases?range=30d": casesBandFixture,
+    });
     inside(amMe, <CasesPage surface="manager" />);
     expect(await screen.findByText(/Bellaire a/)).toBeTruthy();
     expect(screen.queryByRole("navigation", { name: "Sections" })).toBeNull();
@@ -162,36 +171,6 @@ describe("opening the thing a notification is about", () => {
     response: { bestPart: null, improve: null, comment: "The soup was cold", createdAt: hours(-3) },
     contact: null,
     ...over,
-  });
-
-  test("the cases page opens the case named in the address", async () => {
-    visit("?case=b");
-    const calls = fakeFetch({
-      "/api/cases": { cases: [aCase("a"), aCase("b")] },
-      "/api/cases/b": { case: detail("b") },
-    });
-    inside(amMe, <CasesPage surface="manager" />);
-    expect(await screen.findByText("The soup was cold")).toBeTruthy();
-    expect(calls.some((c) => c.path === "/api/cases/b")).toBe(true);
-    expect(calls.some((c) => c.path === "/api/cases/a")).toBe(false);
-  });
-
-  test("a resolved case switches to the tab that holds it, so its row shows", async () => {
-    visit("?case=c");
-    fakeFetch({
-      "/api/cases": { cases: [aCase("c", { status: "resolved" })] },
-      "/api/cases/c": { case: detail("c", { status: "resolved" }) },
-    });
-    inside(amMe, <CasesPage surface="manager" />);
-    expect(await screen.findByText(/Bellaire c/)).toBeTruthy();
-  });
-
-  test("a case id nobody can open says so and leaves the list usable", async () => {
-    visit("?case=gone");
-    fakeFetch({ "/api/cases": { cases: [aCase("a")] } });
-    inside(amMe, <CasesPage surface="manager" />);
-    expect(await screen.findByText("Could not load this case.")).toBeTruthy();
-    expect(screen.getByText(/Bellaire a/)).toBeTruthy();
   });
 
   test("the help page opens the request named in the address", async () => {

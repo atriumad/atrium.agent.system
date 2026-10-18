@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import { ApiError, api, type CaseDetail, type CaseSummary, type Me } from "./api";
+import { CasesTablePage } from "./cases-table-page";
 import { Card } from "./data/card";
 import { DescriptionList, Skeleton } from "./data/misc";
 import { Badge, StatusBadge } from "./feedback/badge";
@@ -83,147 +84,7 @@ export function SignIn({ surface }: { surface: Surface }) {
 }
 
 export function CasesPage({ surface }: { surface: Surface }) {
-  const me = useMe();
-  const [cases, setCases] = useState<CaseSummary[] | null>(null);
-  const [tab, setTab] = useState<Tab>("active");
-  const [selected, setSelected] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [now, setNow] = useState(() => new Date());
-  // A notification links here as ?case=<id>: open that case once, and show the tab that holds it.
-  const linked = useRef<string | null>(null);
-  useEffect(() => {
-    linked.current = queryParam("case");
-    if (linked.current) setSelected(linked.current);
-  }, []);
-
-  const load = useCallback(() => {
-    api
-      .cases()
-      .then((rows) => {
-        setCases(rows);
-        setFailed(false);
-        setNow(new Date());
-      })
-      .catch(() => setFailed(true));
-  }, []);
-
-  useEffect(() => {
-    load();
-    const timer = setInterval(load, 30_000);
-    return () => clearInterval(timer);
-  }, [load]);
-
-  useEffect(() => {
-    if (!linked.current || cases === null) return;
-    const hit = cases.find((c) => c.id === linked.current);
-    linked.current = null;
-    if (hit) setTab(TABS.find((t) => inTab(hit.status, t)) ?? "all");
-  }, [cases]);
-
-  const showClient = me.kind !== "client";
-  const visible = (cases ?? []).filter((c) => inTab(c.status, tab));
-  const count = (t: Tab) => (cases ?? []).filter((c) => inTab(c.status, t)).length;
-  const overdue = (cases ?? []).filter(
-    (c) => dueLabel(c.status, c.dueAt, now)?.tone === "overdue",
-  ).length;
-
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader compact title={COPY[surface].title} description={COPY[surface].blurb} />
-
-      {overdue > 0 ? (
-        <Banner
-          status="warning"
-          title={`${overdue} ${overdue === 1 ? "case is" : "cases are"} past the 24-hour target`}
-        />
-      ) : null}
-      {failed ? (
-        <ErrorState title="Could not load cases" onRetry={load}>
-          We will keep trying.
-        </ErrorState>
-      ) : null}
-
-      <Tabs
-        label="Filter by status"
-        value={tab}
-        onValueChange={(v) => setTab(v as Tab)}
-        items={TABS.map((t) => ({ value: t, label: t, count: count(t) }))}
-      />
-
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <ListPanel aria-label="Cases" aria-busy={cases === null || undefined}>
-          {cases === null
-            ? [0, 1, 2].map((i) => (
-                <li key={i} className={ROW_PAD}>
-                  <div className="flex flex-col gap-2.5">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="w-3/4" />
-                    <Skeleton className="w-1/2" />
-                  </div>
-                </li>
-              ))
-            : null}
-          {cases !== null && visible.length === 0 ? (
-            <li className={ROW_PAD}>
-              <p className="m-0 font-medium">
-                {tab === "active" ? "Nothing needs follow-up right now." : "No cases here."}
-              </p>
-              <p className="m-0 mt-1 text-sm text-fg-muted">
-                New cases appear here the moment a guest leaves a low rating.
-              </p>
-            </li>
-          ) : null}
-          {visible.map((c) => (
-            <CaseRow
-              key={c.id}
-              item={c}
-              now={now}
-              showClient={showClient}
-              active={selected === c.id}
-              onSelect={() => setSelected(c.id)}
-            />
-          ))}
-        </ListPanel>
-        <div className="lg:sticky lg:top-6">
-          {selected ? (
-            <Detail
-              key={selected}
-              id={selected}
-              me={me}
-              now={now}
-              onChanged={load}
-              onClose={() => setSelected(null)}
-            />
-          ) : (
-            <p className="m-0 hidden rounded-md border border-dashed border-charcoal-400 p-6 text-fg-muted lg:block">
-              Pick a case to read what the guest said.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span
-      className="inline-flex gap-0.5 text-charcoal-800 dark:text-cream-200"
-      role="img"
-      aria-label={`Rating ${rating} of 5`}
-    >
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          size={14}
-          strokeWidth={1.5}
-          fill={n <= rating ? "currentColor" : "none"}
-          className={n <= rating ? "" : "opacity-30"}
-          aria-hidden="true"
-        />
-      ))}
-    </span>
-  );
+  return <CasesTablePage surface={surface} />;
 }
 
 function DueBadge({ status, dueAt, now }: { status: string; dueAt: string; now: Date }) {
@@ -235,44 +96,6 @@ function DueBadge({ status, dueAt, now }: { status: string; dueAt: string; now: 
     >
       {due.text}
     </StatusBadge>
-  );
-}
-
-function CaseRow(props: {
-  item: CaseSummary;
-  now: Date;
-  showClient: boolean;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  const { item, now } = props;
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={props.onSelect}
-        aria-current={props.active}
-        className={cx(
-          "block w-full cursor-pointer text-left transition-colors hover:bg-surface-sunken",
-          ROW_PAD,
-          props.active && "bg-surface-sunken",
-        )}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <Badge variant={SEVERITY_BADGE[item.severity]}>{SEVERITY_LABEL[item.severity]}</Badge>
-          <Stars rating={item.rating} />
-        </div>
-        <p className="mt-2 mb-1 text-base">
-          {props.showClient ? `${item.clientName} · ` : ""}
-          {item.locationName}
-        </p>
-        <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-fg-muted">
-          <span>{STATUS_LABEL[item.status]}</span>
-          <span>opened {ago(item.openedAt, now)}</span>
-          <DueBadge status={item.status} dueAt={item.dueAt} now={now} />
-        </p>
-      </button>
-    </li>
   );
 }
 

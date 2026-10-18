@@ -109,6 +109,22 @@ describe("useTableState", () => {
     expect(window.location.search).toBe("");
   });
 
+  test("a change keeps the parameters the table does not own", () => {
+    window.history.replaceState(null, "", "/?range=7d&place=p1&status=open");
+    const { result } = renderHook(() => useTableState(SPEC));
+    act(() => result.current.setFilter("severity", "high"));
+    const q = new URLSearchParams(window.location.search);
+    expect(q.get("range")).toBe("7d");
+    expect(q.get("place")).toBe("p1");
+    expect(q.get("severity")).toBe("high");
+    act(() => result.current.clearFilters());
+    const after = new URLSearchParams(window.location.search);
+    expect(after.get("range")).toBe("7d");
+    expect(after.get("place")).toBe("p1");
+    expect(after.get("severity")).toBeNull();
+    expect(after.get("status")).toBeNull();
+  });
+
   test("clear removes search and filters but keeps the sort", () => {
     window.history.replaceState(null, "", "/?q=a&severity=high&sort=rating:desc");
     const { result } = renderHook(() => useTableState(SPEC));

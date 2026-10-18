@@ -30,7 +30,12 @@ export function useTableState(spec: TableSpec) {
     (next: TableState, mode: "push" | "replace") => {
       current.current = next;
       setState(next);
-      const url = `${window.location.pathname}${serializeTableState(next, spec)}${window.location.hash}`;
+      // Keep what the table does not own (a range, a place), replace what it does.
+      const params = new URLSearchParams(window.location.search);
+      for (const key of ["q", "sort", "page", ...spec.filterKeys]) params.delete(key);
+      for (const [k, v] of new URLSearchParams(serializeTableState(next, spec))) params.set(k, v);
+      const query = params.toString();
+      const url = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
       if (mode === "push") window.history.pushState(null, "", url);
       else window.history.replaceState(null, "", url);
     },

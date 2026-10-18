@@ -1,0 +1,198 @@
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
+import { CasesTablePage } from "../src/cases-table-page";
+import { MeProvider } from "../src/shell/me-context";
+import {
+  amMe,
+  casesBandFixture,
+  casesTableFixture,
+  fakeFetch,
+  ownerMe,
+  restoreFetch,
+} from "./fake-api";
+import { screen, setup, waitFor, within } from "./helpers";
+
+const UUID = "123e4567-e89b-42d3-a456-426614174000";
+const places = {
+  locations: [
+    {
+      id: "p1",
+      name: "Harbor Dental Downtown",
+      clientId: "c1",
+      clientName: "Harbor Dental",
+      status: "active",
+    },
+    {
+      id: "p2",
+      name: "Harbor Dental Uptown",
+      clientId: "c1",
+      clientName: "Harbor Dental",
+      status: "active",
+    },
+  ],
+};
+const routes = (table = casesTableFixture, band = casesBandFixture) => ({
+  "/api/locations": places,
+  "/api/cases?range=30d": table,
+  "/api/cases?range=7d": table,
+  "/api/insights/cases?range=30d": band,
+  "/api/insights/cases?range=7d": { ...band, range: "7d" },
+});
+const page = (
+  surface: "manager" | "platform" = "manager",
+  me = amMe,
+  replace?: (u: string) => void,
+) =>
+  setup(
+    <MeProvider me={me}>
+      <CasesTablePage surface={surface} {...(replace ? { replace } : {})} />
+    </MeProvider>,
+  );
+
+beforeEach(() => setSystemTime(new Date("2026-10-18T09:00:00.000Z")));
+afterEach(() => {
+  setSystemTime();
+  restoreFetch();
+  window.history.replaceState({}, "", "/");
+});
+
+describe("cases table page", () => {
+  test("band tiles show figures and units", async () => {
+    fakeFetch(routes());
+    page();
+    const band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("6h 12m"));
+    expect(band.textContent).toContain("6h 12m");
+    expect(band.textContent).toContain("Target 24h");
+    expect(band.textContent).toContain("94% inside target");
+    expect(band.textContent).toContain("1 overdue");
+    expect(band.textContent).toContain("Was 0 in the previous 30 days");
+    expect(band.textContent).not.toContain("NaN");
+  });
+
+  test("tab counts come from the server, not the loaded rows", async () => {
+    fakeFetch(routes());
+    page();
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: /Resolved/ }).textContent).toContain("11"),
+    );
+  });
+
+  test("the overdue case sorts first and says overdue", async () => {
+    fakeFetch(routes());
+    page();
+    const rows = await screen.findAllByRole("row");
+    expect(rows[1]?.textContent).toContain("A tool was dropped");
+    expect(rows[1]?.textContent).toContain("Overdue");
+  });
+
+  test("a tab and a filter update the address and the rows", async () => {
+    fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.click(screen.getByRole("tab", { name: /Resolved/ }));
+    await waitFor(() => expect(window.location.search).toContain("tab=resolved"));
+    expect(screen.queryByText(/A tool was dropped/)).toBeNull();
+    await user.click(screen.getByRole("tab", { name: /^Active/ }));
+    await user.click(screen.getByRole("combobox", { name: "Severity" }));
+    await user.click(await screen.findByRole("option", { name: "Low" }));
+    await waitFor(() => expect(window.location.search).toContain("severity=low"));
+  });
+
+  test("a row links to the case route with the table search as back", async () => {
+    fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.click(screen.getByRole("tab", { name: /^All/ }));
+    await waitFor(() => {
+      const link = document.querySelector("a[data-row-link]") as HTMLAnchorElement;
+      expect(link.getAttribute("href")).toBe(
+        `/reputation/cases/k3?back=${encodeURIComponent("?tab=all")}`,
+      );
+    });
+  });
+
+  test("platform rows link to the feedback route and hide the client name", async () => {
+    fakeFetch(routes());
+    page("platform", ownerMe);
+    await screen.findByText(/A tool was dropped/);
+    const link = document.querySelector("a[data-row-link]") as HTMLAnchorElement;
+    expect(link.getAttribute("href")).toBe("/reputation/feedback/k3");
+    expect(screen.queryByText(/Harbor Dental ·/)).toBeNull();
+  });
+
+  test("a truncated list says so", async () => {
+    fakeFetch(routes({ ...casesTableFixture, truncated: true }));
+    page();
+    expect(await screen.findByText(/Showing the latest 200 cases/)).toBeTruthy();
+  });
+
+  test("an unread answer shows a dash in Topics", async () => {
+    fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.click(screen.getByRole("tab", { name: /^Resolved/ }));
+    const row = (await screen.findAllByRole("row"))[1] as HTMLElement;
+    expect(row.textContent).toContain("—");
+  });
+
+  test("changing the range refetches the band and the table", async () => {
+    const calls = fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.click(screen.getByRole("radio", { name: "7D" }));
+    await waitFor(() => {
+      expect(calls.some((c) => c.path === "/api/cases?range=7d")).toBe(true);
+      expect(calls.some((c) => c.path === "/api/insights/cases?range=7d")).toBe(true);
+    });
+  });
+
+  test("a band error keeps the table and Retry refetches only the band", async () => {
+    let fail = true;
+    const calls = fakeFetch({
+      ...routes(),
+      "/api/insights/cases?range=30d": () => {
+        if (fail) throw new Error("x");
+        return casesBandFixture;
+      },
+    });
+    const { user } = page();
+    expect(await screen.findByText(/A tool was dropped/)).toBeTruthy();
+    const retry = await screen.findByRole("button", { name: "Retry" });
+    const tableCalls = () => calls.filter((c) => c.path === "/api/cases?range=30d").length;
+    const before = tableCalls();
+    fail = false;
+    await user.click(retry);
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Retry" })).toBeNull());
+    expect(tableCalls()).toBe(before);
+  });
+
+  test("an old ?case= address redirects keeping the other parameters", async () => {
+    window.history.replaceState({}, "", `/?case=${UUID}&range=7d`);
+    const seen: string[] = [];
+    fakeFetch(routes());
+    page("manager", amMe, (u) => seen.push(u));
+    await waitFor(() => expect(seen).toEqual([`/reputation/cases/${UUID}?range=7d`]));
+  });
+
+  test("empty states: nothing to follow up, and filters that found nothing", async () => {
+    fakeFetch(
+      routes({
+        cases: [],
+        counts: { active: 0, open: 0, contacted: 0, resolved: 0, all: 0 },
+        truncated: false,
+      }),
+    );
+    page();
+    expect(await screen.findByText("Nothing needs follow-up right now.")).toBeTruthy();
+  });
+
+  test("filters that match nothing offer Clear filters", async () => {
+    fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.type(screen.getByRole("searchbox"), "zzzz");
+    expect(await screen.findByText("Your filters found nothing")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(await screen.findByText(/A tool was dropped/)).toBeTruthy();
+  });
+});
