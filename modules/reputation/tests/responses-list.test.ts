@@ -176,6 +176,10 @@ describe("listResponsesPage", () => {
     expect((await run(f, { sentiment: "negative" })).total).toBe(1);
     expect((await run(f, { topic: "wait" })).total).toBe(2);
     expect((await run(f, { topic: "food", sentiment: "negative" })).total).toBe(0);
+    await answer(f, f.chicago, ago(4), 3, { sentiment: "mixed", topics: ["price"] });
+    const mixed = await run(f, { sentiment: "mixed" });
+    expect(mixed.total).toBe(1);
+    expect(mixed.rows[0]?.sentiment).toBe("mixed");
   });
 
   test("q matches literally: % and _ are not wildcards, injection text is inert", async () => {

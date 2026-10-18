@@ -48,6 +48,26 @@ describe("table pages client", () => {
     });
     expect(url()).toBe("/api/surveys/responses?range=7d&place=p1&page=1&wantsContact=1&safety=1");
   });
+  test("responsesPage defaults to page 1", async () => {
+    const url = stub(responsesPageFixture);
+    await api.responsesPage({ range: "90d" });
+    expect(url()).toBe("/api/surveys/responses?range=90d&page=1");
+  });
+  test("responsesPage keeps place, rating, sentiment and topic in order", async () => {
+    const url = stub(responsesPageFixture);
+    await api.responsesPage({
+      range: "30d",
+      place: "p1",
+      page: 3,
+      rating: 2,
+      sentiment: "mixed",
+      topic: "wait",
+      hasCase: true,
+    });
+    expect(url()).toBe(
+      "/api/surveys/responses?range=30d&place=p1&page=3&rating=2&sentiment=mixed&topic=wait&hasCase=1",
+    );
+  });
   test("casesTable", async () => {
     const url = stub(casesTableFixture);
     await api.casesTable("7d");

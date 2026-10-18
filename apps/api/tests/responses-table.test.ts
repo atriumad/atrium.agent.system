@@ -152,6 +152,7 @@ describe("GET /api/surveys/responses (table)", () => {
       "dir=sideways",
       "rating=6",
       "sentiment=angry",
+      "sentiment=neutral",
       "topic=nope",
     ]) {
       const res = await get("owner-a", `?page=1&${q}`.replace("page=1&page=", "page="));
@@ -164,6 +165,14 @@ describe("GET /api/surveys/responses (table)", () => {
     const place = await get("owner-a", "?page=1&place=not-a-uuid");
     expect(place.status).toBe(422);
     expect(((await place.json()) as any).error).toBe("invalid_id");
+  });
+
+  test("sentiment=mixed and a real topic are accepted", async () => {
+    for (const q of ["sentiment=mixed", "topic=price"]) {
+      const res = await get("owner-a", `?page=1&${q}`);
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as any).total).toBe(0);
+    }
   });
 
   test("without page the legacy shape stays", async () => {

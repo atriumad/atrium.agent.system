@@ -1,4 +1,10 @@
-import { HelpCloseInput, HelpMessageInput, HelpRequestInput, TOPICS } from "@atrium/contracts";
+import {
+  HelpCloseInput,
+  HelpMessageInput,
+  HelpRequestInput,
+  SENTIMENTS,
+  TOPICS,
+} from "@atrium/contracts";
 import { can, describeLocations, listLocationLabels, type Scope, withScope } from "@atrium/core";
 import {
   closeRequest,
@@ -25,7 +31,6 @@ import type { AppDeps } from "./app";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SORTS = ["date", "rating", "place", "sentiment"] as const;
-const SENTIMENTS = ["positive", "neutral", "negative"] as const;
 const WHOLE = /^\d+$/;
 
 /** Everything from the query string is checked here, before the database. Unknowns are 422. */
@@ -78,7 +83,7 @@ function parseResponsesQuery(
     ...(rating ? { rating: Number(rating) } : {}),
     ...(maxRating ? { maxRating: Number(maxRating) } : {}),
     ...(sentiment ? { sentiment: sentiment as (typeof SENTIMENTS)[number] } : {}),
-    ...(topic ? { topic } : {}),
+    ...(topic ? { topic: topic as (typeof TOPICS)[number] } : {}),
     ...(flag(get("wantsContact")) ? { wantsContact: true } : {}),
     ...(flag(get("hasCase")) ? { hasCase: true } : {}),
     ...(flag(get("safety")) ? { safety: true } : {}),

@@ -1,3 +1,4 @@
+import type { Reading } from "@atrium/contracts";
 import {
   describeLocations,
   listLocationLabels,
@@ -32,8 +33,8 @@ export type ResponseQuery = {
   q?: string;
   maxRating?: number;
   rating?: number;
-  sentiment?: "positive" | "neutral" | "negative";
-  topic?: string;
+  sentiment?: Reading["sentiment"];
+  topic?: Reading["topics"][number];
   wantsContact?: boolean;
   hasCase?: boolean;
   safety?: boolean;

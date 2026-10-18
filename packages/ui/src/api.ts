@@ -199,6 +199,16 @@ export type ResponsesPage = {
 
 export type ResponseSort = "date" | "rating" | "place" | "sentiment";
 
+export type Topic =
+  | "food"
+  | "service"
+  | "wait"
+  | "cleanliness"
+  | "price"
+  | "atmosphere"
+  | "staff"
+  | "other";
+
 export type ResponsesQuery = {
   range: RangeKey;
   place?: string;
@@ -209,8 +219,9 @@ export type ResponsesQuery = {
   q?: string;
   maxRating?: number;
   rating?: number;
-  sentiment?: "positive" | "neutral" | "negative";
-  topic?: string;
+  /** The contract's SENTIMENTS and TOPICS (packages/contracts/src/sentiment.ts). */
+  sentiment?: "positive" | "mixed" | "negative";
+  topic?: Topic;
   wantsContact?: boolean;
   hasCase?: boolean;
   safety?: boolean;
