@@ -1,7 +1,14 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { type ElementType, type MouseEvent, type ReactNode, useMemo, useState } from "react";
+import {
+  type ElementType,
+  isValidElement,
+  type MouseEvent,
+  type ReactNode,
+  useMemo,
+  useState,
+} from "react";
 import { Button } from "../actions/button";
 import { Checkbox } from "../forms/toggles";
 import { cx } from "../lib/cx";
@@ -15,6 +22,10 @@ export type Column<Row> = {
   numeric?: boolean;
   /** Keep the cell on one line. */
   nowrap?: boolean;
+  /** One line with an ellipsis. The cell's title holds the full text. */
+  truncate?: boolean;
+  /** The full text for the title of a truncated cell. Without it the cell's own text is used. */
+  titleOf?: (row: Row) => string;
   /** A string or number to sort by. Without it the column does not sort. */
   sortValue?: (row: Row) => string | number;
 };
@@ -45,8 +56,20 @@ export type DataTableProps<Row> = {
   /** The current page, 1-based. Without it the table keeps its own. */
   page?: number;
   onPageChange?: (page: number) => void;
+  /** 44px single-line rows, `px-3`, and a sticky header. */
+  dense?: boolean;
+  /** The header stays in view while the table scrolls. On by default when `dense`. */
+  stickyHeader?: boolean;
   className?: string;
 };
+
+/** The plain text of a cell, for a title. Anything that is not text or a number has none. */
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (isValidElement(node)) return textOf((node.props as { children?: ReactNode }).children);
+  return "";
+}
 
 const INTERACTIVE = 'a, button, input, textarea, select, label, [role="checkbox"], [role="button"]';
 
@@ -72,6 +95,8 @@ export function DataTable<Row>({
   pageSize = 25,
   page: pageProp,
   onPageChange,
+  dense,
+  stickyHeader = dense,
 }: DataTableProps<Row>) {
   const [innerSort, setInnerSort] = useState<Sort | null>(null);
   const sort = sortProp !== undefined ? sortProp : innerSort;
@@ -123,12 +148,14 @@ export function DataTable<Row>({
 
   if (!loading && rows.length === 0 && empty) return <>{empty}</>;
 
+  const stick = Boolean(stickyHeader);
+
   const table = (
     <Table aria-label={label} aria-busy={loading || undefined}>
       <THead>
         <tr>
           {selectable ? (
-            <Th className="w-10">
+            <Th dense={stick} className="w-10">
               <Checkbox
                 label={<span className="sr-only">Select all rows</span>}
                 checked={all}
@@ -146,9 +173,13 @@ export function DataTable<Row>({
           {columns.map((c) => (
             <Th
               key={c.key}
+              dense={stick}
               className={cx(
                 c.numeric && "text-right",
-                columns[0]?.key === c.key && "max-md:sticky max-md:left-0 max-md:bg-surface-card",
+                columns[0]?.key === c.key &&
+                  (stick
+                    ? "max-md:left-0 max-md:z-20"
+                    : "max-md:sticky max-md:left-0 max-md:bg-surface-card"),
               )}
               aria-sort={
                 sort?.key === c.key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined
@@ -184,9 +215,9 @@ export function DataTable<Row>({
       <TBody>
         {loading
           ? [0, 1, 2].map((i) => (
-              <Tr key={i}>
+              <Tr key={i} dense={dense}>
                 {(selectable ? [{ key: "sel" }, ...columns] : columns).map((c) => (
-                  <Td key={c.key}>
+                  <Td key={c.key} dense={dense}>
                     <span
                       className="block h-3.5 w-3/4 animate-pulse rounded-xs bg-surface-sunken motion-reduce:animate-none"
                       aria-hidden="true"
@@ -201,13 +232,14 @@ export function DataTable<Row>({
               return (
                 <Tr
                   key={k}
+                  dense={dense}
                   aria-selected={selectable ? on : undefined}
                   {...(rowHref?.(row)
                     ? { onClick: openRow(row), className: "cursor-pointer" }
                     : {})}
                 >
                   {selectable ? (
-                    <Td className="relative z-10">
+                    <Td dense={dense} className="relative z-10">
                       <Checkbox
                         label={<span className="sr-only">Select row</span>}
                         checked={on}
@@ -219,14 +251,24 @@ export function DataTable<Row>({
                   ) : null}
                   {columns.map((c, i) => {
                     const href = i === 0 && rowHref ? rowHref(row) : null;
+                    const cellTitle = c.truncate
+                      ? (c.titleOf?.(row) ?? textOf(c.cell(row)))
+                      : undefined;
                     return (
                       <Td
                         key={c.key}
                         numeric={c.numeric}
+                        dense={dense}
+                        {...(cellTitle ? { title: cellTitle } : {})}
                         className={cx(
                           c.nowrap && "whitespace-nowrap",
+                          c.truncate && "max-w-0 truncate",
                           i === 0 &&
-                            "max-md:sticky max-md:left-0 max-md:bg-surface-card max-md:group-hover:bg-surface-sunken max-md:group-aria-selected:bg-lime-100 dark:max-md:group-aria-selected:bg-charcoal-700",
+                            "max-md:sticky max-md:left-0 max-md:bg-surface-card max-md:group-aria-selected:bg-lime-100 dark:max-md:group-aria-selected:bg-charcoal-700",
+                          i === 0 &&
+                            (dense
+                              ? "max-md:group-hover:bg-lime-100 dark:max-md:group-hover:bg-charcoal-700"
+                              : "max-md:group-hover:bg-surface-sunken"),
                         )}
                       >
                         {href ? (
@@ -251,9 +293,26 @@ export function DataTable<Row>({
     </Table>
   );
 
+  const from = sorted.length === 0 ? 0 : (current - 1) * size + 1;
+  const to = Math.min(current * size, sorted.length);
+
   return (
     <div className="flex flex-col gap-3">
-      <TableWrap className={className}>{table}</TableWrap>
+      <TableWrap
+        className={cx(
+          dense && "rounded-[16px] border-charcoal-800 dark:border-cream-300",
+          className,
+        )}
+      >
+        {table}
+        {dense && !loading ? (
+          <div className="flex items-center justify-between gap-3 border-t border-charcoal-800 px-3.5 py-2.5 text-xs text-fg-muted tabular-nums dark:border-cream-300">
+            <span>
+              Showing {from}–{to} of {sorted.length}
+            </span>
+          </div>
+        ) : null}
+      </TableWrap>
       {pages > 1 ? (
         <nav aria-label="Pagination" className="flex items-center justify-end gap-3 text-sm">
           <Button

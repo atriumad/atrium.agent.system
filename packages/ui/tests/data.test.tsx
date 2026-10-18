@@ -574,3 +574,86 @@ describe("DataTable as a page of data", () => {
     expect(th.className).not.toContain("group-");
   });
 });
+
+describe("DataTable dense rules", () => {
+  type R = { id: string; name: string; n: number };
+  const rows: R[] = [{ id: "a", name: "A very long place name", n: 5 }];
+  const cols = [
+    {
+      key: "name",
+      header: "Name",
+      cell: (r: R) => r.name,
+      truncate: true,
+      sortValue: (r: R) => r.name,
+    },
+    {
+      key: "txt",
+      header: "Text",
+      cell: (r: R) => <span>{r.name}</span>,
+      truncate: true,
+      titleOf: () => "The full text",
+    },
+    { key: "n", header: "N", cell: (r: R) => String(r.n), numeric: true, sortValue: (r: R) => r.n },
+  ];
+
+  test("dense has a sticky sunken header with an ink border and aria-sort", async () => {
+    const { user } = setup(
+      <DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />,
+    );
+    const th = screen.getByRole("columnheader", { name: "Name" });
+    expect(th.className).toContain("sticky");
+    expect(th.className).toContain("bg-surface-sunken");
+    expect(th.className).toContain("border-charcoal-800");
+    await user.click(within(th).getByRole("button"));
+    expect(th.getAttribute("aria-sort")).toBe("ascending");
+  });
+
+  test("a truncate cell is one line with the full text in its title", () => {
+    setup(<DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />);
+    const plain = document.querySelector<HTMLElement>('td[title="A very long place name"]');
+    expect(plain).toBeTruthy();
+    expect(plain?.className).toContain("truncate");
+    const custom = document.querySelector('td[title="The full text"]');
+    expect(custom?.className).toContain("truncate");
+  });
+
+  test("numbers keep tabular figures and dense rows are 44px", () => {
+    setup(<DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />);
+    const n = screen.getByRole("cell", { name: "5" });
+    expect(n.className).toContain("tabular-nums");
+    expect(n.className).toContain("h-11");
+    expect(n.className).toContain("px-3");
+  });
+
+  test("a link and an inner button in a dense row: a row click opens only the link", async () => {
+    const onRowOpen = mock();
+    const onInner = mock();
+    const { user } = setup(
+      <DataTable
+        dense
+        label="T"
+        rows={rows}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/x/${r.id}`}
+        onRowOpen={onRowOpen}
+        columns={[
+          { key: "name", header: "Name", cell: (r: R) => r.name },
+          {
+            key: "b",
+            header: "B",
+            cell: () => (
+              <button type="button" onClick={onInner}>
+                inner
+              </button>
+            ),
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "inner" }));
+    expect(onInner).toHaveBeenCalledTimes(1);
+    expect(onRowOpen).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("cell", { name: "inner" }));
+    expect(onRowOpen).toHaveBeenCalledTimes(1);
+  });
+});

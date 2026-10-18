@@ -1,4 +1,5 @@
 export * from "./card";
+export * from "./cells";
 export * from "./charts";
 export * from "./data-table";
 export * from "./delta";
@@ -6,6 +7,7 @@ export * from "./filter-bar";
 export * from "./kpi-tile";
 export * from "./misc";
 export * from "./page-controls";
+export * from "./section-page";
 export * from "./split-bars";
 export * from "./stat-tile";
 export * from "./table";
