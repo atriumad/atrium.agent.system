@@ -6,7 +6,15 @@ import { MeProvider } from "../src/shell/me-context";
 import { OverviewPage } from "../src/shell/overview";
 import { ModulePage } from "../src/shell/teaser";
 import { FormsPage, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/surveys-app";
-import { amMe, fakeFetch, meOf, ownerInsightsFixture, ownerMe, restoreFetch } from "./fake-api";
+import {
+  agencyInsightsFixture,
+  amMe,
+  fakeFetch,
+  meOf,
+  ownerInsightsFixture,
+  ownerMe,
+  restoreFetch,
+} from "./fake-api";
 import { screen, setup } from "./helpers";
 
 afterEach(() => {
@@ -267,21 +275,17 @@ describe("overview", () => {
     expect(waiting?.getAttribute("href")).toBe("/reputation/cases?status=overdue");
   });
 
-  test("the agency sees accounts and places waiting", async () => {
+  test("the agency sees what needs a person first", async () => {
     fakeFetch({
-      "/api/cases": { cases: [] },
-      "/api/onboarding/requests": { requests: [{ status: "open" }] },
-      "/api/locations": {
-        locations: [{ id: "p", name: "P", clientId: "c", clientName: "C", status: "pending" }],
-      },
+      "/api/locations": { locations: [] },
+      "/api/insights/agency?range=30d": agencyInsightsFixture,
     });
     inside(amMe, <OverviewPage surface="manager" />);
-    const accounts = await screen.findByRole("link", { name: /Accounts waiting/ });
-    expect(accounts.textContent).toContain("1");
-    expect(accounts.getAttribute("href")).toBe("/approvals/accounts");
-    expect(screen.getByRole("link", { name: /Places waiting/ }).getAttribute("href")).toBe(
-      "/approvals/places",
+    expect(await screen.findByText("Needs a person now")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Open case/ }).getAttribute("href")).toBe(
+      "/reputation/cases?case=k1",
     );
+    expect(screen.getByText("Median time to contact")).toBeTruthy();
   });
 });
 
