@@ -17,7 +17,8 @@
     "docs:build": "bun run --filter @atrium/docs build",
     "db:migrate": "bun scripts/migrate.ts",
     "ci": "bun run lint && bun run check:deps && bun run typecheck && bun run test",
-    "seed": "bun apps/worker/scripts/seed.ts"
+    "seed": "bun apps/worker/scripts/seed.ts",
+    "seed:history": "bun apps/worker/scripts/seed-history.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
