@@ -45,6 +45,8 @@ A figure from few answers says nothing, so it is not dressed up as a trend. The 
 - **Percentage points**, for a rate (the answer rate going from 40% to 50% is `10 pts`).
 - **Percent**, for a count (answers this window against the previous window).
 
+Numbers are rounded for reading: a change in points shows one decimal ("0.3 pts", "3 pts"); a change in percent is a whole number from 10 up and keeps one decimal below 10 ("1.8%", "12%"). A change that rounds to zero reads "no change", and so does a time-to-contact change under 0.05 hours. A figure with no answers at all says "No data yet"; one to nine answers say "Too few answers (n)".
+
 Whether up is good depends on the figure. More overdue cases is bad, so it is shown as clay when it rises.
 
 **Responses.** The number of answers created in the window. Its change is in percent.
@@ -90,7 +92,7 @@ From top to bottom:
 | Account | A request to join, not yet reviewed | `/approvals/accounts` |
 | Place to activate | A place waiting for approval | `/approvals/places` |
 
-It shows at most **8 rows**: cases first (overdue before due, then by due time), then approvals, accounts and places. When there is more, a footer links to each list ("N more cases", "N more accounts", "N more places"), because there is no single queue page. Account requests belong to no client yet, so they appear only when no client is selected, and only for agency roles with the `location: manage` permission; an assigned account manager sees none because of row-level security. When there is nothing to show, the block says "Nothing needs a person right now".
+It shows at most **8 rows**: cases first (overdue before due, then by due time), then approvals, accounts and places. When there is more, a footer links to each list ("N more cases", "N more approvals", "N more accounts", "N more places"), because there is no single queue page. Account requests belong to no client yet, so they appear only when no client is selected, and only for agency roles with the `location: manage` permission; an assigned account manager sees none because of row-level security. When there is nothing to show, the block says "Nothing needs a person right now".
 
 **Your clients** shows, per client: rating, a trend line, change, responses, answer rate, overdue cases and a status. The status is one of:
 
@@ -107,7 +109,7 @@ Every tile and block opens the page that explains it, with the range and the pla
 | Block | Opens |
 | --- | --- |
 | Platform: Average rating, Responses, Review link clicks | `/reputation/responses?range=…&place=…` |
-| Platform: Waiting on you | `/reputation/cases`, or `/reputation/cases?status=overdue` when something is overdue |
+| Platform: Waiting on you | `/reputation/feedback`, or `/reputation/feedback?status=overdue` when something is overdue |
 | Platform: a topic | Responses with `&topic=<topic>` |
 | Platform: a place | Responses for that place |
 | Manager: Median time to contact | `/reputation/cases` |

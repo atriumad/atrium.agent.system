@@ -45,6 +45,8 @@ Una cifra con pocas respuestas no dice nada, así que no se disfraza de tendenci
 - **Puntos porcentuales**, para una tasa (la tasa de respuesta pasando de 40% a 50% es `10 pts`).
 - **Porcentaje**, para un conteo (las respuestas de esta ventana contra la anterior).
 
+Las cifras se redondean para leerse: un cambio en puntos muestra un decimal ("0.3 pts", "3 pts"); un cambio en porcentaje es un número entero desde 10 y conserva un decimal por debajo de 10 ("1.8%", "12%"). Un cambio que se redondea a cero dice "no change", y también un cambio del tiempo de contacto menor de 0.05 horas. Una cifra sin ninguna respuesta dice "No data yet"; de una a nueve respuestas dice "Too few answers (n)".
+
 Si subir es bueno depende de la cifra. Más casos vencidos es malo, así que cuando sube se muestra en clay.
 
 **Responses (respuestas).** El número de respuestas creadas en la ventana. Su cambio es en porcentaje.
@@ -90,7 +92,7 @@ De arriba abajo:
 | Account | Una solicitud para unirse, aún sin revisar | `/approvals/accounts` |
 | Place to activate | Un lugar esperando aprobación | `/approvals/places` |
 
-Muestra como máximo **8 filas**: primero los casos (vencidos antes que por vencer, luego por hora límite), después aprobaciones, cuentas y lugares. Cuando hay más, un pie enlaza cada lista ("N more cases", "N more accounts", "N more places"), porque no existe una página única de cola. Las solicitudes de cuenta aún no pertenecen a ningún cliente, así que aparecen solo cuando no hay un cliente elegido, y solo para los roles de agencia con el permiso `location: manage`; un account manager asignado no ve ninguna por la seguridad por filas. Cuando no hay nada que mostrar, el bloque dice "Nothing needs a person right now".
+Muestra como máximo **8 filas**: primero los casos (vencidos antes que por vencer, luego por hora límite), después aprobaciones, cuentas y lugares. Cuando hay más, un pie enlaza cada lista ("N more cases", "N more approvals", "N more accounts", "N more places"), porque no existe una página única de cola. Las solicitudes de cuenta aún no pertenecen a ningún cliente, así que aparecen solo cuando no hay un cliente elegido, y solo para los roles de agencia con el permiso `location: manage`; un account manager asignado no ve ninguna por la seguridad por filas. Cuando no hay nada que mostrar, el bloque dice "Nothing needs a person right now".
 
 **Your clients** muestra, por cliente: rating, una línea de tendencia, cambio, respuestas, tasa de respuesta, casos vencidos y un estado. El estado es uno de:
 
@@ -107,7 +109,7 @@ Cada ficha y bloque abre la página que lo explica, con el rango y el lugar o cl
 | Bloque | Abre |
 | --- | --- |
 | Platform: Average rating, Responses, Review link clicks | `/reputation/responses?range=…&place=…` |
-| Platform: Waiting on you | `/reputation/cases`, o `/reputation/cases?status=overdue` cuando hay algo vencido |
+| Platform: Waiting on you | `/reputation/feedback`, o `/reputation/feedback?status=overdue` cuando hay algo vencido |
 | Platform: un tema | Responses con `&topic=<topic>` |
 | Platform: un lugar | Responses de ese lugar |
 | Manager: Median time to contact | `/reputation/cases` |
