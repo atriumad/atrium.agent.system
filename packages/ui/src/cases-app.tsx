@@ -276,24 +276,32 @@ function CaseRow(props: {
   );
 }
 
-function Detail(props: {
+export function Detail(props: {
   id: string;
   me: Me;
   now: Date;
   onChanged: () => void;
   onClose: () => void;
+  /** Called when the case could not be loaded, so a page can say why (for example, not found). */
+  onLoadError?: (error: unknown) => void;
+  /** Hides the Close button, for a page where the case is not in a panel. */
+  hideClose?: boolean;
 }) {
   const [item, setItem] = useState<CaseDetail | null>(null);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { onLoadError } = props;
 
   useEffect(() => {
     api
       .detail(props.id)
       .then(setItem)
-      .catch(() => setError("Could not load this case."));
-  }, [props.id]);
+      .catch((e) => {
+        setError("Could not load this case.");
+        onLoadError?.(e);
+      });
+  }, [props.id, onLoadError]);
 
   async function move(to: "contacted" | "resolved") {
     setBusy(true);
@@ -337,9 +345,11 @@ function Detail(props: {
             <DueBadge status={item.status} dueAt={item.dueAt} now={props.now} />
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={props.onClose} className="lg:hidden">
-          Close
-        </Button>
+        {props.hideClose ? null : (
+          <Button variant="ghost" size="sm" onClick={props.onClose} className="lg:hidden">
+            Close
+          </Button>
+        )}
       </div>
 
       <DescriptionList

@@ -4,6 +4,7 @@ import { AlertTriangle, Bell, MapPin, MessageCircle } from "lucide-react";
 import { type ElementType, useCallback, useEffect, useState } from "react";
 import { Button } from "../actions/button";
 import { type AppNotification, api } from "../api";
+import { caseHref } from "../case-detail-page";
 import type { Surface } from "../cases-app";
 import { type Column, DataTable } from "../data/data-table";
 import { FilterBar } from "../data/filter-bar";
@@ -41,6 +42,7 @@ export function notificationHref(
 ): string | null {
   const page = pageFor(kind, surface);
   if (!page) return null;
+  if (page.targetType === "case" && target?.type === "case") return caseHref(surface, target.id);
   if (!target || target.type !== page.targetType) return page.path;
   return `${page.path}?${page.param}=${encodeURIComponent(target.id)}`;
 }

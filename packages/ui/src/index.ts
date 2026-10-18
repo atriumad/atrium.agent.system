@@ -14,6 +14,7 @@ export * from "./brand/highlight";
 export * from "./brand/rule";
 export * from "./brand/stat-figure";
 export * from "./brand/wordmark";
+export { CaseDetailPage, caseHref, redirectLegacyCase } from "./case-detail-page";
 export { CasesPage, type Surface } from "./cases-app";
 export * from "./data";
 export * from "./feedback";

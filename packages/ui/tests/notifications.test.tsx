@@ -69,11 +69,9 @@ describe("notificationHref with a target", () => {
 
   test("opens the very thing the notification is about", () => {
     const href = notificationHref;
-    expect(href("reputation.case_alert", "manager", at("case", "c1"))).toBe(
-      "/reputation/cases?case=c1",
-    );
+    expect(href("reputation.case_alert", "manager", at("case", "c1"))).toBe("/reputation/cases/c1");
     expect(href("reputation.case_resolved", "platform", at("case", "c1"))).toBe(
-      "/reputation/feedback?case=c1",
+      "/reputation/feedback/c1",
     );
     expect(href("core.location_requested", "manager", at("location", "p1"))).toBe(
       "/approvals/places?place=p1",
@@ -98,7 +96,7 @@ describe("notificationHref with a target", () => {
 
   test("an id cannot break out of the address", () => {
     expect(notificationHref("reputation.case_alert", "manager", at("case", "a&b=c d"))).toBe(
-      "/reputation/cases?case=a%26b%3Dc%20d",
+      "/reputation/cases/a%26b%3Dc%20d",
     );
   });
 
@@ -123,7 +121,7 @@ describe("NotificationsMenu", () => {
     const { user } = setup(<NotificationsMenu surface="manager" client={client} />);
     await user.click(await screen.findByLabelText(/Notifications, 2 unread/));
     const hrefOf = (text: RegExp) => screen.getByText(text).closest("a")?.getAttribute("href");
-    expect(hrefOf(/A guest needs a reply at Bellaire/)).toBe("/reputation/cases?case=case-9");
+    expect(hrefOf(/A guest needs a reply at Bellaire/)).toBe("/reputation/cases/case-9");
     expect(hrefOf(/A new location is waiting for approval/)).toBe(
       "/approvals/places?place=p-patio",
     );
@@ -306,7 +304,7 @@ describe("NotificationsPage", () => {
     const client = make();
     setup(<NotificationsPage surface="manager" client={client} />);
     const link = await screen.findByRole("link", { name: /A guest needs a reply at Bellaire/ });
-    expect(link.getAttribute("href")).toBe("/reputation/cases?case=case-9");
+    expect(link.getAttribute("href")).toBe("/reputation/cases/case-9");
   });
 
   test("a row with no page shows no action on the Platform", async () => {
