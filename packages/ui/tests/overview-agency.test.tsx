@@ -241,3 +241,20 @@ describe("agency overview numbers", () => {
     expect(container.querySelector("span.font-sans.font-medium")?.textContent).toBe("6h 12m");
   });
 });
+
+describe("agency overview empty tiles", () => {
+  test("zero answers say No data yet, a few say Too few answers", async () => {
+    fakeFetch(
+      routes({
+        ...fx,
+        portfolio: { ...fx.portfolio, value: null, small: true, n: 0, change: null, spark: [] },
+        answerRate: { ...fx.answerRate, value: null, small: true, sent: 5, change: null },
+      }),
+    );
+    inside();
+    const portfolio = (await screen.findByText("Portfolio rating")).closest("a") as HTMLElement;
+    expect(within(portfolio).getByText("No data yet")).toBeTruthy();
+    const rate = screen.getByText("Request → answer rate").closest("a") as HTMLElement;
+    expect(within(rate).getByText("Too few answers (5)")).toBeTruthy();
+  });
+});

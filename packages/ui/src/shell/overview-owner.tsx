@@ -18,7 +18,9 @@ type Option = { value: string; label: string };
 const DAYS: Record<RangeKey, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
 const pct = (v: number) => Math.round(v * 100);
-const state = (small: boolean, n: number): KpiState => (small ? { tooFew: n } : "ok");
+/** Nothing at all is "No data yet"; one to nine is "Too few answers". */
+const state = (small: boolean, n: number): KpiState =>
+  small ? (n === 0 ? "none" : { tooFew: n }) : "ok";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -146,7 +148,9 @@ export function OwnerOverview() {
               note={`${data.waiting.overdue} past the 24-hour target`}
               tone="lime"
               href={
-                data.waiting.overdue > 0 ? "/reputation/cases?status=overdue" : "/reputation/cases"
+                data.waiting.overdue > 0
+                  ? "/reputation/feedback?status=overdue"
+                  : "/reputation/feedback"
               }
             />
           </div>

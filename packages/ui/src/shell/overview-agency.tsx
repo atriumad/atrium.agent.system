@@ -21,7 +21,9 @@ const DAYS: Record<RangeKey, number> = { "7d": 7, "30d": 30, "90d": 90 };
 const TARGET_HOURS = 24;
 
 const pct = (v: number) => Math.round(v * 100);
-const state = (small: boolean, n: number): KpiState => (small ? { tooFew: n } : "ok");
+/** Nothing at all is "No data yet"; one to nine is "Too few answers". */
+const state = (small: boolean, n: number): KpiState =>
+  small ? (n === 0 ? "none" : { tooFew: n }) : "ok";
 
 /** 6.2 hours is `6h 12m`. */
 function hoursAndMinutes(hours: number): string {

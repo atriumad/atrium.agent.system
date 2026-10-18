@@ -113,7 +113,7 @@ describe("owner overview", () => {
     fakeFetch(routes());
     inside();
     const tile = (await screen.findByText("Waiting on you")).closest("a") as HTMLElement;
-    expect(tile.getAttribute("href")).toBe("/reputation/cases?status=overdue");
+    expect(tile.getAttribute("href")).toBe("/reputation/feedback?status=overdue");
     expect(tile.className).toContain("bg-lime-300");
   });
 
@@ -121,7 +121,7 @@ describe("owner overview", () => {
     fakeFetch(routes({ ...ownerInsightsFixture, waiting: { open: 1, overdue: 0 } }));
     inside();
     const tile = (await screen.findByText("Waiting on you")).closest("a") as HTMLElement;
-    expect(tile.getAttribute("href")).toBe("/reputation/cases");
+    expect(tile.getAttribute("href")).toBe("/reputation/feedback");
   });
 
   test("topic rows link to the answers for that topic", async () => {
@@ -188,5 +188,23 @@ describe("owner overview numbers and wash", () => {
     for (const t of ["Average rating", "Responses", "Review link clicks"]) {
       expect((screen.getByText(t).closest("a") as HTMLElement).className).not.toContain("lime");
     }
+  });
+});
+
+describe("owner overview empty tiles", () => {
+  test("zero answers say No data yet; one to nine say Too few answers", async () => {
+    const d = ownerInsightsFixture;
+    fakeFetch(
+      routes({
+        ...d,
+        rating: { ...d.rating, value: null, small: true, n: 0, change: null },
+        responses: { ...d.responses, small: true, n: 4 },
+      }),
+    );
+    inside();
+    const rating = (await screen.findByText("Average rating")).closest("a") as HTMLElement;
+    expect(within(rating).getByText("No data yet")).toBeTruthy();
+    const responses = screen.getByText("Responses").closest("a") as HTMLElement;
+    expect(within(responses).getByText("Too few answers (4)")).toBeTruthy();
   });
 });

@@ -272,7 +272,7 @@ describe("overview", () => {
     inside(ownerMe, <OverviewPage surface="platform" />);
     expect(await screen.findByText("Average rating")).toBeTruthy();
     const waiting = screen.getByText("Waiting on you").closest("a");
-    expect(waiting?.getAttribute("href")).toBe("/reputation/cases?status=overdue");
+    expect(waiting?.getAttribute("href")).toBe("/reputation/feedback?status=overdue");
   });
 
   test("the agency sees what needs a person first", async () => {
