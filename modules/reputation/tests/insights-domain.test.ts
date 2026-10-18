@@ -2,7 +2,6 @@
 import { describe, expect, test } from "bun:test";
 import {
   type AnswerRow,
-  clientStatus,
   compareCount,
   compareMean,
   compareRate,
@@ -223,15 +222,6 @@ describe("splitByTopic", () => {
   });
   test("limit", () => {
     expect(splitByTopic(rows, 1)).toHaveLength(1);
-  });
-});
-
-describe("clientStatus", () => {
-  test("precedence", () => {
-    expect(clientStatus({ overdue: 1, approvals: 2, pendingPlaces: 0 })).toBe("needs_a_person");
-    expect(clientStatus({ overdue: 0, approvals: 2, pendingPlaces: 0 })).toBe("approvals_waiting");
-    expect(clientStatus({ overdue: 0, approvals: 0, pendingPlaces: 1 })).toBe("setting_up");
-    expect(clientStatus({ overdue: 0, approvals: 0, pendingPlaces: 0 })).toBe("healthy");
   });
 });
 

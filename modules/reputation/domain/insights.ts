@@ -178,19 +178,6 @@ export function splitByTopic(
     .slice(0, limit);
 }
 
-export type ClientStatus = "needs_a_person" | "approvals_waiting" | "setting_up" | "healthy";
-
-export function clientStatus(input: {
-  overdue: number;
-  approvals: number;
-  pendingPlaces: number;
-}): ClientStatus {
-  if (input.overdue > 0) return "needs_a_person";
-  if (input.approvals > 0) return "approvals_waiting";
-  if (input.pendingPlaces > 0) return "setting_up";
-  return "healthy";
-}
-
 export function weightedMean(parts: { sum: number; n: number }[]): number | null {
   const n = parts.reduce((a, p) => a + p.n, 0);
   if (n === 0) return null;

@@ -820,7 +820,8 @@ describe("recovery", () => {
     expect(contacted.status).toBe("contacted");
     const resolvedNotes = async () =>
       (await admin.unsafe(
-        "select recipient_id, target_type, target_id from core.notifications where kind = 'reputation.case_resolved'",
+        "select recipient_id, target_type, target_id from core.notifications where kind = 'reputation.case_resolved' and target_id = $1",
+        [caseId],
       )) as { recipient_id: string; target_type: string | null; target_id: string | null }[];
     expect(await resolvedNotes()).toEqual([]);
     const before = eventsOf("recovery.case.resolved").length;
