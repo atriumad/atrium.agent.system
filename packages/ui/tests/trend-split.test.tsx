@@ -1,5 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
-import { render, within } from "@testing-library/react";
+import { fireEvent, render, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { humaniseTopic, SplitBars } from "../src/data/split-bars";
 import { TrendChart } from "../src/data/trend-chart";
 import { screen } from "./helpers";
@@ -71,11 +72,43 @@ describe("TrendChart marks", () => {
     err.mockRestore();
   });
 
-  test("the slider carries the readout text and starts on the last day", () => {
-    render(<TrendChart points={mk([4, 3.5])} label="x" />);
-    const text = "2026-09-11: 3.5, 1 answers";
-    expect(screen.getByRole("slider").getAttribute("aria-valuetext")).toBe(text);
-    expect(screen.getByText(text)).toBeTruthy();
+  test("there is no range input", () => {
+    const { container } = render(<TrendChart points={mk([4, 3.5])} label="x" />);
+    expect(container.querySelector("input")).toBeNull();
+    expect(screen.queryByRole("slider")).toBeNull();
+  });
+
+  test("arrow keys move the active point and the live region follows", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<TrendChart points={mk([4, 3.5, null])} label="x" />);
+    const live = container.querySelector("[data-live]") as HTMLElement;
+    expect(live.textContent).toBe("");
+    await user.tab();
+    expect(document.activeElement?.getAttribute("role")).toBe("group");
+    await user.keyboard("{ArrowRight}");
+    expect(live.textContent).toBe("2026-09-12: no answers");
+    await user.keyboard("{ArrowLeft}");
+    expect(live.textContent).toBe("2026-09-11: 3.5, 1 answers");
+    await user.keyboard("{Home}");
+    expect(live.textContent).toBe("2026-09-10: 4.0, 1 answers");
+    expect(container.querySelector("[data-tooltip]")?.textContent).toBe(live.textContent);
+    await user.keyboard("{End}");
+    expect(live.textContent).toBe("2026-09-12: no answers");
+    await user.keyboard("{Escape}");
+    expect(live.textContent).toBe("");
+    expect(container.querySelector("[data-tooltip]")).toBeNull();
+  });
+
+  test("moving the pointer over the chart shows the tooltip", () => {
+    const { container } = render(<TrendChart points={mk([4, 3.5])} label="x" />);
+    const group = screen.getByRole("group");
+    group.getBoundingClientRect = () => ({ left: 0, top: 0, width: 640, height: 220 }) as DOMRect;
+    fireEvent.pointerMove(group, { clientX: 640, clientY: 10 });
+    expect(container.querySelector("[data-tooltip]")?.textContent).toBe(
+      "2026-09-11: 3.5, 1 answers",
+    );
+    fireEvent.pointerLeave(group);
+    expect(container.querySelector("[data-tooltip]")).toBeNull();
   });
 });
 
