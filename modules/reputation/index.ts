@@ -30,8 +30,8 @@ export {
   listPickableResponses,
   postMessage,
 } from "./application/help";
-export type { OwnerInsights, Tile } from "./application/insights";
-export { ownerInsights } from "./application/insights";
+export type { AgencyInsights, OwnerInsights, Tile } from "./application/insights";
+export { agencyInsights, ownerInsights } from "./application/insights";
 export type {
   CaseDetail,
   CaseSummary,
