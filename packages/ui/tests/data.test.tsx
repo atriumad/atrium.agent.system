@@ -657,3 +657,57 @@ describe("DataTable dense rules", () => {
     expect(onRowOpen).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("DataTable dense frame and footer", () => {
+  type R = { id: string; name: string };
+  const rows: R[] = Array.from({ length: 30 }, (_, i) => ({ id: `r${i}`, name: `Row ${i + 1}` }));
+  const cols = [{ key: "name", header: "Name", cell: (r: R) => r.name }];
+
+  test("the scroll area is bounded from lg and the header sticks with a solid background", () => {
+    setup(<DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />);
+    const scroll = document.querySelector("[data-table-scroll]");
+    expect(scroll?.className).toContain("overflow-auto");
+    expect(scroll?.className).toContain("lg:max-h-[70vh]");
+    const th = screen.getByRole("columnheader", { name: "Name" });
+    expect(th.className).toContain("sticky");
+    expect(th.className).toContain("top-0");
+    expect(th.className).toContain("bg-surface-sunken");
+  });
+
+  test("footer text with and without a note", () => {
+    const { unmount } = setup(
+      <DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />,
+    );
+    expect(document.querySelector("[data-table-footer]")?.textContent).toContain(
+      "Showing 1–25 of 30",
+    );
+    expect(document.querySelector("[data-table-footer]")?.textContent).not.toContain("·");
+    unmount();
+    setup(
+      <DataTable
+        dense
+        label="T"
+        rows={rows}
+        columns={cols}
+        rowKey={(r) => r.id}
+        footerNote="sorted by date"
+      />,
+    );
+    expect(document.querySelector("[data-table-footer]")?.textContent).toContain(
+      "Showing 1–25 of 30 · sorted by date",
+    );
+  });
+
+  test("the pager lives in the footer, outside the scroll area, and pages", async () => {
+    const { user } = setup(
+      <DataTable dense label="T" rows={rows} columns={cols} rowKey={(r) => r.id} />,
+    );
+    const footer = document.querySelector("[data-table-footer]") as HTMLElement;
+    const scroll = document.querySelector("[data-table-scroll]") as HTMLElement;
+    const nav = screen.getByRole("navigation", { name: "Pagination" });
+    expect(footer.contains(nav)).toBe(true);
+    expect(scroll.contains(footer)).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(footer.textContent).toContain("Showing 26–30 of 30");
+  });
+});

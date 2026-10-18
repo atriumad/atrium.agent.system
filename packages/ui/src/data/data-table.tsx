@@ -60,6 +60,8 @@ export type DataTableProps<Row> = {
   dense?: boolean;
   /** The header stays in view while the table scrolls. On by default when `dense`. */
   stickyHeader?: boolean;
+  /** Dense tables only: said in the footer after the count, e.g. "sorted by date". */
+  footerNote?: ReactNode;
   className?: string;
 };
 
@@ -97,6 +99,7 @@ export function DataTable<Row>({
   onPageChange,
   dense,
   stickyHeader = dense,
+  footerNote,
 }: DataTableProps<Row>) {
   const [innerSort, setInnerSort] = useState<Sort | null>(null);
   const sort = sortProp !== undefined ? sortProp : innerSort;
@@ -251,8 +254,11 @@ export function DataTable<Row>({
                   ) : null}
                   {columns.map((c, i) => {
                     const href = i === 0 && rowHref ? rowHref(row) : null;
+                    const content = c.cell(row);
                     const cellTitle = c.truncate
-                      ? (c.titleOf?.(row) ?? textOf(c.cell(row)))
+                      ? c.titleOf
+                        ? c.titleOf(row)
+                        : textOf(content)
                       : undefined;
                     return (
                       <Td
@@ -278,10 +284,10 @@ export function DataTable<Row>({
                             onClick={() => onRowOpen?.(row)}
                             className="font-medium text-fg-strong no-underline before:absolute before:inset-0 before:content-[''] hover:underline focus-visible:underline"
                           >
-                            {c.cell(row)}
+                            {content}
                           </LinkAs>
                         ) : (
-                          c.cell(row)
+                          content
                         )}
                       </Td>
                     );
@@ -296,48 +302,70 @@ export function DataTable<Row>({
   const from = sorted.length === 0 ? 0 : (current - 1) * size + 1;
   const to = Math.min(current * size, sorted.length);
 
-  return (
-    <div className="flex flex-col gap-3">
-      <TableWrap
+  const pager =
+    pages > 1 ? (
+      <nav
+        aria-label="Pagination"
+        className={cx("flex items-center justify-end gap-3 text-sm", dense && "ml-auto")}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={current <= 1}
+          onClick={() => goTo(current - 1)}
+          aria-label="Previous page"
+        >
+          Previous
+        </Button>
+        <span className="tabular-nums text-fg-muted">
+          Page {current} of {pages}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={current >= pages}
+          onClick={() => goTo(current + 1)}
+          aria-label="Next page"
+        >
+          Next
+        </Button>
+      </nav>
+    ) : null;
+
+  if (dense) {
+    return (
+      <div
         className={cx(
-          dense && "rounded-[16px] border-charcoal-800 dark:border-cream-300",
+          "overflow-hidden rounded-[16px] border border-charcoal-800 bg-surface-card dark:border-cream-300",
           className,
         )}
       >
-        {table}
-        {dense && !loading ? (
-          <div className="flex items-center justify-between gap-3 border-t border-charcoal-800 px-3.5 py-2.5 text-xs text-fg-muted tabular-nums dark:border-cream-300">
-            <span>
+        <div
+          data-table-scroll=""
+          className="overflow-auto lg:max-h-[70vh] [&_tr:last-child>td]:border-b-0"
+        >
+          {table}
+        </div>
+        {!loading ? (
+          <div
+            data-table-footer=""
+            className="flex flex-wrap items-center justify-between gap-3 border-t border-charcoal-800 px-3.5 py-2 text-xs text-fg-muted dark:border-cream-300"
+          >
+            <span className="tabular-nums">
               Showing {from}–{to} of {sorted.length}
+              {footerNote ? <> · {footerNote}</> : null}
             </span>
+            {pager}
           </div>
         ) : null}
-      </TableWrap>
-      {pages > 1 ? (
-        <nav aria-label="Pagination" className="flex items-center justify-end gap-3 text-sm">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={current <= 1}
-            onClick={() => goTo(current - 1)}
-            aria-label="Previous page"
-          >
-            Previous
-          </Button>
-          <span className="tabular-nums text-fg-muted">
-            Page {current} of {pages}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={current >= pages}
-            onClick={() => goTo(current + 1)}
-            aria-label="Next page"
-          >
-            Next
-          </Button>
-        </nav>
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <TableWrap className={className}>{table}</TableWrap>
+      {pager}
     </div>
   );
 }

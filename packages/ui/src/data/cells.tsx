@@ -45,27 +45,35 @@ export function TopicChips({ topics }: { topics: string[] | null }) {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function relative(from: Date, now: Date): string {
-  const secs = Math.round((now.getTime() - from.getTime()) / 1000);
+  const secs = Math.trunc((now.getTime() - from.getTime()) / 1000);
   const abs = Math.abs(secs);
   const [n, unit] =
     abs < 60
       ? [abs, "second"]
       : abs < 3600
-        ? [Math.round(abs / 60), "minute"]
+        ? [Math.floor(abs / 60), "minute"]
         : abs < 86400
-          ? [Math.round(abs / 3600), "hour"]
-          : [Math.round(abs / 86400), "day"];
+          ? [Math.floor(abs / 3600), "hour"]
+          : [Math.floor(abs / 86400), "day"];
   const text = `${n} ${unit}${n === 1 ? "" : "s"}`;
   return secs >= 0 ? `${text} ago` : `in ${text}`;
 }
 
-/** `Oct 18, 9:40` in the viewer's time zone, with how long ago in the title. */
+/**
+ * `Oct 18, 9:40` in the viewer's time zone, with how long ago in the title.
+ * The zone is the viewer's by design, so server-rendered text can differ from the client's: do not rely on it for SSR.
+ */
 export function When({ date, now }: { date: string; now: Date }) {
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return dash;
   const mm = String(d.getMinutes()).padStart(2, "0");
   return (
-    <time dateTime={d.toISOString()} title={relative(d, now)} className="whitespace-nowrap">
+    <time
+      suppressHydrationWarning
+      dateTime={d.toISOString()}
+      title={relative(d, now)}
+      className="whitespace-nowrap"
+    >
       {`${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getHours()}:${mm}`}
     </time>
   );

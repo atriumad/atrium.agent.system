@@ -128,3 +128,30 @@ describe("DataSectionPage", () => {
     expect(within(document.body).getByText("What guests said")).toBeTruthy();
   });
 });
+
+describe("When, more cases", () => {
+  const now = new Date(2026, 9, 18, 12, 0, 0);
+  const at = (ms: number) => new Date(now.getTime() + ms).toISOString();
+  const titleOf = (ms: number) =>
+    (document.querySelector("time") as HTMLElement).getAttribute("title");
+  test("future dates", () => {
+    setup(<When date={at(2 * 3600_000)} now={now} />);
+    expect(titleOf(0)).toBe("in 2 hours");
+  });
+  test("exactly 60 seconds is 1 minute", () => {
+    setup(<When date={at(-60_000)} now={now} />);
+    expect(titleOf(0)).toBe("1 minute ago");
+  });
+  test("59.5 minutes floors to 59", () => {
+    setup(<When date={at(-59.5 * 60_000)} now={now} />);
+    expect(titleOf(0)).toBe("59 minutes ago");
+  });
+  test("days", () => {
+    setup(<When date={at(-3 * 86400_000)} now={now} />);
+    expect(titleOf(0)).toBe("3 days ago");
+  });
+  test("an invalid date is a dash", () => {
+    setup(<When date="nope" now={now} />);
+    expect(screen.getByText("—")).toBeTruthy();
+  });
+});
