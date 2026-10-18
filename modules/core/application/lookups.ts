@@ -43,6 +43,7 @@ export type LocationLabel = {
   clientId: string;
   clientName: string;
   status: LocationStatus;
+  timeZone: string;
 };
 
 /** Names for a set of locations, for screens that list rows from several clients. RLS applies. */
@@ -58,6 +59,7 @@ export async function describeLocations(
       clientId: clients.id,
       clientName: clients.name,
       status: locations.status,
+      timeZone: locations.timeZone,
     })
     .from(locations)
     .innerJoin(clients, eq(clients.id, locations.clientId))
@@ -70,6 +72,7 @@ export async function describeLocations(
         clientId: r.clientId,
         clientName: r.clientName,
         status: r.status as LocationStatus,
+        timeZone: r.timeZone,
       },
     ]),
   );
@@ -84,6 +87,7 @@ export async function listLocationLabels(tx: Tx): Promise<(LocationLabel & { id:
       clientId: locations.clientId,
       clientName: clients.name,
       status: locations.status,
+      timeZone: locations.timeZone,
     })
     .from(locations)
     .innerJoin(clients, eq(clients.id, locations.clientId))

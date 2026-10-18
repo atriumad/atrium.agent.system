@@ -30,6 +30,8 @@ export {
   listPickableResponses,
   postMessage,
 } from "./application/help";
+export type { OwnerInsights, Tile } from "./application/insights";
+export { ownerInsights } from "./application/insights";
 export type {
   CaseDetail,
   CaseSummary,
@@ -76,6 +78,7 @@ export {
   resolveInvitation,
   submitSurvey,
 } from "./application/survey";
+export { parseRange, RANGE_DAYS, type Range } from "./domain/insights";
 export * from "./domain/invitations";
 export * from "./domain/recovery";
 export * from "./domain/sentiment";
