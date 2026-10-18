@@ -17,8 +17,9 @@ const DEFAULT = { w: 640, h: 220 };
 const PAD = { l: 34, r: 8, t: 10, b: 24 };
 
 /** A daily average line (broken where there is no average) over quiet volume bars. It fills the room its parent gives it. */
-export function TrendChart({ points, label, min = 3, max = 5, className }: TrendChartProps) {
+export function TrendChart({ points, label, min: minProp, max = 5, className }: TrendChartProps) {
   const [active, setActive] = useState<number | null>(null);
+  const [announced, setAnnounced] = useState("");
   const [size, setSize] = useState(DEFAULT);
   const box = useRef<HTMLDivElement>(null);
   const valid = points.filter((p) => p.average !== null);
@@ -45,6 +46,9 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
     return <p className="text-sm text-fg-muted">Too few answers to draw a trend</p>;
   }
   const { w: W, h: H } = size;
+  // Without an explicit axis, it reaches down to the lowest day (never under 1), so a bad day is drawn where it is.
+  const lowest = Math.min(...valid.map((p) => p.average ?? max));
+  const min = minProp ?? Math.max(1, Math.min(3, Math.floor(lowest)));
   const first = valid[0]?.average;
   const last = valid.at(-1)?.average;
   const answers = points.reduce((s, p) => s + p.count, 0);
@@ -72,9 +76,13 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
   const ticks = [min, (min + max) / 2, max];
   const labelEvery = Math.max(1, Math.ceil(n / 6));
   const shown = active === null ? null : points[active];
-  const readout = shown
-    ? `${shown.date}: ${shown.average === null ? "no answers" : `${shown.average.toFixed(1)}, ${shown.count} answers`}`
-    : "";
+  const describe = (i: number) => {
+    const p = points[i];
+    return p
+      ? `${p.date}: ${p.average === null ? "no answers" : `${p.average.toFixed(1)}, ${p.count} answers`}`
+      : "";
+  };
+  const readout = active === null ? "" : describe(active);
   const tipX = shown && active !== null ? Math.min(W - 70, Math.max(70, x(active))) : 0;
   const tipY = shown?.average != null ? y(shown.average) : H / 2;
 
@@ -93,7 +101,11 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
     if (next !== null) {
       e.preventDefault();
       setActive(next);
-    } else if (e.key === "Escape") setActive(null);
+      setAnnounced(describe(next));
+    } else if (e.key === "Escape") {
+      setActive(null);
+      setAnnounced("");
+    }
   };
 
   return (
@@ -105,7 +117,10 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
         aria-label={`${label}: use the left and right arrow keys to read each day`}
         className="relative min-h-56 flex-1 rounded-xs outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         onKeyDown={onKey}
-        onBlur={() => setActive(null)}
+        onBlur={() => {
+          setActive(null);
+          setAnnounced("");
+        }}
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           if (!r.width) return;
@@ -199,7 +214,7 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
         ) : null}
       </div>
       <span className="sr-only" aria-live="polite" data-live="">
-        {readout}
+        {announced}
       </span>
       <table className="sr-only">
         <caption>{label}</caption>

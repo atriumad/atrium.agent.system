@@ -72,6 +72,28 @@ describe("TrendChart marks", () => {
     err.mockRestore();
   });
 
+  test("a day under 3.0 is drawn below the 3.0 gridline and the axis reaches 1", () => {
+    const { container } = render(<TrendChart points={mk([4, 1.5, 4])} label="x" />);
+    const ticks = [...container.querySelectorAll("svg > g text")].map((t) => t.textContent);
+    expect(ticks).toEqual(["1.0", "3.0", "5.0"]);
+    const lines = [...container.querySelectorAll("svg > g line")].map((l) =>
+      Number(l.getAttribute("y1")),
+    );
+    const cys = [...container.querySelectorAll("circle")].map((c) => Number(c.getAttribute("cy")));
+    const gridAtThree = lines[1] as number;
+    expect(Math.max(...cys)).toBeGreaterThan(gridAtThree);
+    expect(Math.max(...cys)).toBeLessThan((lines[0] as number) + 0.01);
+  });
+
+  test("a normal series keeps the 3 to 5 axis", () => {
+    const { container } = render(<TrendChart points={mk([4, 3.5])} label="x" />);
+    expect([...container.querySelectorAll("svg > g text")].map((t) => t.textContent)).toEqual([
+      "3.0",
+      "4.0",
+      "5.0",
+    ]);
+  });
+
   test("there is no range input", () => {
     const { container } = render(<TrendChart points={mk([4, 3.5])} label="x" />);
     expect(container.querySelector("input")).toBeNull();
@@ -107,6 +129,7 @@ describe("TrendChart marks", () => {
     expect(container.querySelector("[data-tooltip]")?.textContent).toBe(
       "2026-09-11: 3.5, 1 answers",
     );
+    expect((container.querySelector("[data-live]") as HTMLElement).textContent).toBe("");
     fireEvent.pointerLeave(group);
     expect(container.querySelector("[data-tooltip]")).toBeNull();
   });
