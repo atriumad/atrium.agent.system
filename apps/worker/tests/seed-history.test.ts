@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildHistory } from "../scripts/seed-history";
+import { buildHistory, isLocalDatabase } from "../scripts/seed-history";
 
 const MIN_SAMPLE = 10;
 const localDate = (at: Date, timeZone: string) =>
@@ -124,5 +124,19 @@ describe("buildHistory", () => {
     }
     expect(reqs.some((r) => r.status === "sent" && r.answerKey !== null)).toBe(true);
     expect(reqs.some((r) => r.status === "sent" && r.answerKey === null)).toBe(true);
+  });
+});
+
+describe("isLocalDatabase", () => {
+  test("accepts localhost, 127.0.0.1 and ::1", () => {
+    expect(isLocalDatabase("postgres://a:b@localhost:5432/atrium")).toBe(true);
+    expect(isLocalDatabase("postgres://a:b@127.0.0.1:5432/atrium")).toBe(true);
+    expect(isLocalDatabase("postgres://a:b@[::1]:5432/atrium")).toBe(true);
+  });
+  test("refuses anything else, including look-alikes and junk", () => {
+    expect(isLocalDatabase("postgres://a:b@db.example.com/atrium")).toBe(false);
+    expect(isLocalDatabase("postgres://a:b@localhost.evil.com/atrium")).toBe(false);
+    expect(isLocalDatabase("postgres://localhost@prod.example.com/atrium")).toBe(false);
+    expect(isLocalDatabase("not a url")).toBe(false);
   });
 });

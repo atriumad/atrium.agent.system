@@ -371,6 +371,16 @@ export function buildHistory(input: { seed: number; now: Date; days: number }): 
 // The script: inserts the plan the way seed.ts does.
 // ---------------------------------------------------------------------------------------------
 
+/** Only a database on this machine may be seeded with demo history. */
+export function isLocalDatabase(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   const ADMIN_URL =
     process.env.DATABASE_ADMIN_URL ?? "postgres://atrium:atrium@localhost:5432/atrium";
@@ -378,276 +388,290 @@ async function main() {
     process.env.DATABASE_URL ?? "postgres://atrium_app:atrium_app@localhost:5432/atrium";
   const API = process.env.PUBLIC_BASE_URL ?? "http://localhost:3001";
   const REVIEW_URL = "https://search.google.com/local/writereview?placeid=DEMO-HISTORY";
+  for (const url of [ADMIN_URL, APP_URL]) {
+    if (!isLocalDatabase(url)) {
+      console.error(
+        "seed-history only runs against a local database (localhost, 127.0.0.1 or ::1).",
+      );
+      process.exit(1);
+    }
+  }
   // The demo password and auth secret of seed.ts: the same sign-in works for every demo login.
+  // These literals must stay identical to the ones in apps/worker/scripts/seed.ts.
   const PASSWORD = "demo-password-1";
   const actor = { type: "user", id: "seed-history" } as const;
 
   const { db, close } = createDatabase(APP_URL);
   const admin = new SQL(ADMIN_URL);
-  const plan = buildHistory({ seed: 20261017, now: new Date(), days: 90 });
+  try {
+    const plan = buildHistory({ seed: 20261017, now: new Date(), days: 90 });
 
-  const auth = createAuth(db, {
-    secret: process.env.BETTER_AUTH_SECRET ?? "seed-only-secret-seed-only-secret-32",
-    baseURL: API,
-    agencySlug: "demo-atrium",
-  });
-  const hash = (await auth.$context).password.hash;
-  const ensurePassword = async (userId: string) => {
-    const has = await admin.unsafe("select 1 from core.accounts where user_id = $1", [userId]);
-    if (has.length === 0) {
+    const auth = createAuth(db, {
+      secret: process.env.BETTER_AUTH_SECRET ?? "seed-only-secret-seed-only-secret-32",
+      baseURL: API,
+      agencySlug: "demo-atrium",
+    });
+    const hash = (await auth.$context).password.hash;
+    const ensurePassword = async (userId: string) => {
+      const has = await admin.unsafe("select 1 from core.accounts where user_id = $1", [userId]);
+      if (has.length === 0) {
+        await admin.unsafe(
+          "insert into core.accounts (id, account_id, provider_id, user_id, password) values ($1, $2, 'credential', $2, $3)",
+          [crypto.randomUUID(), userId, await hash(PASSWORD)],
+        );
+      }
+    };
+
+    const ensureOwner = async (owner: { id: string; email: string }, orgId: string) => {
       await admin.unsafe(
-        "insert into core.accounts (id, account_id, provider_id, user_id, password) values ($1, $2, 'credential', $2, $3)",
-        [crypto.randomUUID(), userId, await hash(PASSWORD)],
+        "insert into core.users (id, name, email) values ($1, $1, $2) on conflict do nothing",
+        [owner.id, owner.email],
       );
-    }
-  };
-
-  const ensureOwner = async (owner: { id: string; email: string }, orgId: string) => {
-    await admin.unsafe(
-      "insert into core.users (id, name, email) values ($1, $1, $2) on conflict do nothing",
-      [owner.id, owner.email],
-    );
-    const [member] = await admin.unsafe(
-      "select 1 from core.members where organization_id = $1 and user_id = $2",
-      [orgId, owner.id],
-    );
-    if (!member) {
-      await admin.unsafe(
-        "insert into core.members (id, organization_id, user_id, role) values ($1, $2, $3, 'client_owner')",
-        [crypto.randomUUID(), orgId, owner.id],
+      const [member] = await admin.unsafe(
+        "select 1 from core.members where organization_id = $1 and user_id = $2",
+        [orgId, owner.id],
       );
-    }
-  };
+      if (!member) {
+        await admin.unsafe(
+          "insert into core.members (id, organization_id, user_id, role) values ($1, $2, $3, 'client_owner')",
+          [crypto.randomUUID(), orgId, owner.id],
+        );
+      }
+    };
 
-  // The agency and its account manager: reuse the ones seed.ts made, create them if absent.
-  let [agency] = (await admin.unsafe(
-    "select id from core.organizations where slug = 'demo-atrium'",
-  )) as {
-    id: string;
-  }[];
-  if (!agency) {
-    await withAgency(db, (tx) =>
-      createAgencyOrganization(tx, { name: "Atrium Demo", slug: "demo-atrium" }),
-    );
-    [agency] = (await admin.unsafe(
+    // The agency and its account manager: reuse the ones seed.ts made, create them if absent.
+    let [agency] = (await admin.unsafe(
       "select id from core.organizations where slug = 'demo-atrium'",
     )) as {
       id: string;
     }[];
-  }
-  const agencyOrg = agency?.id ?? "";
-  const [am] = await admin.unsafe("select 1 from core.users where id = 'demo-am'");
-  if (!am) {
-    await admin.unsafe(
-      "insert into core.users (id, name, email) values ('demo-am', 'demo-am', 'demo-am@demo.test')",
-    );
-    await admin.unsafe(
-      "insert into core.members (id, organization_id, user_id, role) values ($1, $2, 'demo-am', 'account_manager')",
-      [crypto.randomUUID(), agencyOrg],
-    );
-  }
-  await ensurePassword("demo-am");
+    if (!agency) {
+      await withAgency(db, (tx) =>
+        createAgencyOrganization(tx, { name: "Atrium Demo", slug: "demo-atrium" }),
+      );
+      [agency] = (await admin.unsafe(
+        "select id from core.organizations where slug = 'demo-atrium'",
+      )) as {
+        id: string;
+      }[];
+    }
+    const agencyOrg = agency?.id ?? "";
+    const [am] = await admin.unsafe("select 1 from core.users where id = 'demo-am'");
+    if (!am) {
+      await admin.unsafe(
+        "insert into core.users (id, name, email) values ('demo-am', 'demo-am', 'demo-am@demo.test')",
+      );
+      await admin.unsafe(
+        "insert into core.members (id, organization_id, user_id, role) values ($1, $2, 'demo-am', 'account_manager')",
+        [crypto.randomUUID(), agencyOrg],
+      );
+    }
+    await ensurePassword("demo-am");
 
-  const summary: string[] = [];
-  const logins = ["demo-am@demo.test"];
-  let added = 0;
+    const summary: string[] = [];
+    const logins = ["demo-am@demo.test"];
+    let added = 0;
 
-  for (const client of plan.clients) {
-    const [found] = (await admin.unsafe("select id from core.clients where slug = $1", [
-      client.slug,
-    ])) as { id: string }[];
-    let clientId = found?.id ?? "";
-    const locationIds = new Map<string, string>();
+    for (const client of plan.clients) {
+      const [found] = (await admin.unsafe("select id from core.clients where slug = $1", [
+        client.slug,
+      ])) as { id: string }[];
+      let clientId = found?.id ?? "";
+      const locationIds = new Map<string, string>();
 
-    if (!found) {
-      let clientOrg = "";
-      await withAgency(db, async (tx) => {
-        const created = await createClientWithOrganization(tx, {
-          name: client.name,
-          slug: client.slug,
+      if (!found) {
+        let clientOrg = "";
+        await withAgency(db, async (tx) => {
+          const created = await createClientWithOrganization(tx, {
+            name: client.name,
+            slug: client.slug,
+          });
+          clientId = created.client.id;
+          clientOrg = created.organization.id;
+          for (const loc of client.locations) {
+            const id = (
+              await createLocation(tx, clientId, { name: loc.name, timeZone: loc.timeZone })
+            ).id;
+            locationIds.set(loc.key, id);
+            await updateLocationSettings(
+              tx,
+              clientId,
+              id,
+              { reviewUrl: REVIEW_URL, requestDelayMinutes: 0 },
+              actor,
+            );
+          }
+          await setPackage(tx, clientId, "pillar_2", actor);
         });
-        clientId = created.client.id;
-        clientOrg = created.organization.id;
+        await admin.unsafe("update core.organizations set slug = $2 where id = $1", [
+          clientOrg,
+          `${client.slug}-org`,
+        ]);
+        await ensureOwner(client.owner, clientOrg);
+        await withAgency(db, (tx) => assignClient(tx, "demo-am", clientId, actor));
+      } else {
         for (const loc of client.locations) {
-          const id = (
-            await createLocation(tx, clientId, { name: loc.name, timeZone: loc.timeZone })
-          ).id;
-          locationIds.set(loc.key, id);
-          await updateLocationSettings(
-            tx,
-            clientId,
-            id,
-            { reviewUrl: REVIEW_URL, requestDelayMinutes: 0 },
-            actor,
+          const [row] = (await admin.unsafe(
+            "select id from core.locations where client_id = $1 and name = $2",
+            [clientId, loc.name],
+          )) as { id: string }[];
+          if (row) locationIds.set(loc.key, row.id);
+        }
+      }
+      if (found) {
+        const [org] = (await admin.unsafe("select id from core.organizations where slug = $1", [
+          `${client.slug}-org`,
+        ])) as { id: string }[];
+        if (org) await ensureOwner(client.owner, org.id);
+      }
+      await ensurePassword(client.owner.id);
+      logins.push(client.owner.email);
+
+      const [has] = (await admin.unsafe(
+        "select count(*)::int as n from reputation.survey_responses where client_id = $1",
+        [clientId],
+      )) as { n: number }[];
+      if ((has?.n ?? 0) > 0) {
+        summary.push(`${client.name}: history already there, nothing added`);
+        continue;
+      }
+
+      // Guests for the review requests, a small pool per client.
+      const guestIds = await withTenant(db, clientId, async (tx) => {
+        const ids: string[] = [];
+        for (let i = 0; i < GUEST_POOL; i++) {
+          ids.push(
+            await resolveGuest(tx, clientId, { email: `${client.slug}-guest-${i}@demo.test` }),
           );
         }
-        await setPackage(tx, clientId, "pillar_2", actor);
+        return ids;
       });
-      await admin.unsafe("update core.organizations set slug = $2 where id = $1", [
-        clientOrg,
-        `${client.slug}-org`,
-      ]);
-      await ensureOwner(client.owner, clientOrg);
-      await withAgency(db, (tx) => assignClient(tx, "demo-am", clientId, actor));
-    } else {
-      for (const loc of client.locations) {
-        const [row] = (await admin.unsafe(
-          "select id from core.locations where client_id = $1 and name = $2",
-          [clientId, loc.name],
-        )) as { id: string }[];
-        if (row) locationIds.set(loc.key, row.id);
-      }
-    }
-    if (found) {
-      const [org] = (await admin.unsafe("select id from core.organizations where slug = $1", [
-        `${client.slug}-org`,
-      ])) as { id: string }[];
-      if (org) await ensureOwner(client.owner, org.id);
-    }
-    await ensurePassword(client.owner.id);
-    logins.push(client.owner.email);
 
-    const [has] = (await admin.unsafe(
-      "select count(*)::int as n from reputation.survey_responses where client_id = $1",
-      [clientId],
-    )) as { n: number }[];
-    if ((has?.n ?? 0) > 0) {
-      summary.push(`${client.name}: history already there, nothing added`);
-      continue;
-    }
+      let answers = 0;
+      let requests = 0;
+      let cases = 0;
+      await admin.begin(async (tx) => {
+        for (const loc of client.locations) {
+          const locationId = locationIds.get(loc.key);
+          if (!locationId) throw new Error(`Location ${loc.name} is missing`);
+          const responseOf = new Map<string, string>();
+          const invitationOf = new Map<string, string>();
 
-    // Guests for the review requests, a small pool per client.
-    const guestIds = await withTenant(db, clientId, async (tx) => {
-      const ids: string[] = [];
-      for (let i = 0; i < GUEST_POOL; i++) {
-        ids.push(
-          await resolveGuest(tx, clientId, { email: `${client.slug}-guest-${i}@demo.test` }),
-        );
-      }
-      return ids;
-    });
-
-    let answers = 0;
-    let requests = 0;
-    let cases = 0;
-    await admin.begin(async (tx) => {
-      for (const loc of client.locations) {
-        const locationId = locationIds.get(loc.key);
-        if (!locationId) throw new Error(`Location ${loc.name} is missing`);
-        const responseOf = new Map<string, string>();
-        const invitationOf = new Map<string, string>();
-
-        // Invitations first: every sent request has one; some were used by an answer.
-        const requestRows: { req: HistoryRequest; invitationId: string | null }[] = [];
-        for (const req of loc.requests) {
-          let invitationId: string | null = null;
-          if (req.status === "sent" && req.sentAt) {
-            invitationId = crypto.randomUUID();
-            await tx.unsafe(
-              `insert into reputation.survey_invitations (id, client_id, location_id, guest_id, token_hash, channel, created_at, expires_at)
+          // Invitations first: every sent request has one; some were used by an answer.
+          const requestRows: { req: HistoryRequest; invitationId: string | null }[] = [];
+          for (const req of loc.requests) {
+            let invitationId: string | null = null;
+            if (req.status === "sent" && req.sentAt) {
+              invitationId = crypto.randomUUID();
+              await tx.unsafe(
+                `insert into reputation.survey_invitations (id, client_id, location_id, guest_id, token_hash, channel, created_at, expires_at)
                values ($1, $2, $3, $4, $5, 'email', $6, $7)`,
-              [
-                invitationId,
-                clientId,
-                locationId,
-                guestIds[req.guestSlot] ?? null,
-                hashInvitationToken(`history:${client.slug}:${req.key}`),
-                req.sentAt,
-                new Date(req.sentAt.getTime() + 30 * DAY),
-              ],
-            );
-            if (req.answerKey) invitationOf.set(req.answerKey, invitationId);
+                [
+                  invitationId,
+                  clientId,
+                  locationId,
+                  guestIds[req.guestSlot] ?? null,
+                  hashInvitationToken(`history:${client.slug}:${req.key}`),
+                  req.sentAt,
+                  new Date(req.sentAt.getTime() + 30 * DAY),
+                ],
+              );
+              if (req.answerKey) invitationOf.set(req.answerKey, invitationId);
+            }
+            requestRows.push({ req, invitationId });
           }
-          requestRows.push({ req, invitationId });
-        }
 
-        for (const a of loc.answers) {
-          const id = crypto.randomUUID();
-          responseOf.set(a.key, id);
-          const read = a.readAt !== null;
-          await tx.unsafe(
-            `insert into reputation.survey_responses
+          for (const a of loc.answers) {
+            const id = crypto.randomUUID();
+            responseOf.set(a.key, id);
+            const read = a.readAt !== null;
+            await tx.unsafe(
+              `insert into reputation.survey_responses
                (id, client_id, location_id, invitation_id, rating, comment, review_clicked_at,
                 sentiment, topics, concern, safety, read_at, read_model, created_at)
              values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-            [
-              id,
-              clientId,
-              locationId,
-              invitationOf.get(a.key) ?? null,
-              a.rating,
-              a.comment,
-              a.reviewClickedAt,
-              a.sentiment,
-              a.topics ? `{${a.topics.join(",")}}` : null,
-              read ? (a.sentiment === "negative" ? "medium" : "none") : null,
-              read ? false : null,
-              a.readAt,
-              read ? "demo/history" : null,
-              a.at,
-            ],
-          );
-          answers++;
-          const invitationId = invitationOf.get(a.key);
-          if (invitationId) {
-            await tx.unsafe("update reputation.survey_invitations set used_at = $2 where id = $1", [
-              invitationId,
-              a.at,
-            ]);
-          }
-          if (a.case) {
-            await tx.unsafe(
-              `insert into reputation.recovery_cases
+              [
+                id,
+                clientId,
+                locationId,
+                invitationOf.get(a.key) ?? null,
+                a.rating,
+                a.comment,
+                a.reviewClickedAt,
+                a.sentiment,
+                a.topics ? `{${a.topics.join(",")}}` : null,
+                read ? (a.sentiment === "negative" ? "medium" : "none") : null,
+                read ? false : null,
+                a.readAt,
+                read ? "demo/history" : null,
+                a.at,
+              ],
+            );
+            answers++;
+            const invitationId = invitationOf.get(a.key);
+            if (invitationId) {
+              await tx.unsafe(
+                "update reputation.survey_invitations set used_at = $2 where id = $1",
+                [invitationId, a.at],
+              );
+            }
+            if (a.case) {
+              await tx.unsafe(
+                `insert into reputation.recovery_cases
                  (client_id, location_id, response_id, severity, status, opened_at, due_at,
                   contacted_at, resolved_at, resolved_by, note)
                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'demo history')`,
+                [
+                  clientId,
+                  locationId,
+                  id,
+                  a.case.severity,
+                  a.case.status,
+                  a.at,
+                  a.case.dueAt,
+                  a.case.contactedAt,
+                  a.case.resolvedAt,
+                  a.case.resolvedAt ? "demo-am" : null,
+                ],
+              );
+              cases++;
+            }
+          }
+
+          for (const { req, invitationId } of requestRows) {
+            await tx.unsafe(
+              `insert into reputation.review_requests
+               (client_id, location_id, guest_id, visit_date, status, send_at, sent_at, skipped_reason, invitation_id, created_at)
+             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
               [
                 clientId,
                 locationId,
-                id,
-                a.case.severity,
-                a.case.status,
-                a.at,
-                a.case.dueAt,
-                a.case.contactedAt,
-                a.case.resolvedAt,
-                a.case.resolvedAt ? "demo-am" : null,
+                guestIds[req.guestSlot],
+                req.visitDate,
+                req.status,
+                req.sendAt,
+                req.sentAt,
+                req.skippedReason,
+                invitationId,
+                req.sentAt ?? new Date(Math.min(req.sendAt.getTime(), plan.now.getTime())),
               ],
             );
-            cases++;
+            requests++;
           }
         }
+      });
+      added += answers;
+      summary.push(
+        `${client.name}: added ${answers} answers, ${requests} requests, ${cases} cases`,
+      );
+    }
 
-        for (const { req, invitationId } of requestRows) {
-          await tx.unsafe(
-            `insert into reputation.review_requests
-               (client_id, location_id, guest_id, visit_date, status, send_at, sent_at, skipped_reason, invitation_id, created_at)
-             values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [
-              clientId,
-              locationId,
-              guestIds[req.guestSlot],
-              req.visitDate,
-              req.status,
-              req.sendAt,
-              req.sentAt,
-              req.skippedReason,
-              invitationId,
-              req.sentAt ?? new Date(Math.min(req.sendAt.getTime(), plan.now.getTime())),
-            ],
-          );
-          requests++;
-        }
-      }
-    });
-    added += answers;
-    summary.push(`${client.name}: added ${answers} answers, ${requests} requests, ${cases} cases`);
-  }
-
-  console.log(`${summary.join("\n")}\n\n${added === 0 ? "Nothing new was added." : `Added ${added} answers.`}
+    console.log(`${summary.join("\n")}\n\n${added === 0 ? "Nothing new was added." : `Added ${added} answers.`}
 Sign in with ${PASSWORD}:\n${logins.map((e) => `  ${e}`).join("\n")}`);
-  await admin.close();
-  await close();
+  } finally {
+    await admin.close();
+    await close();
+  }
 }
 
 if (import.meta.main) await main();
