@@ -71,7 +71,7 @@ La encuesta, la pantalla de gracias y el formulario *Request access* para un neg
 
 | Área | Qué contiene |
 | --- | --- |
-| **Overview** | Casos abiertos, casos pasados del plazo de 24 horas, respuestas de la semana |
+| **Overview** | Rating, respuestas, clics del enlace de reseña y casos abiertos con su cambio, temas, lugares. Ver [Leer el Overview](../guides/reading-the-overview) |
 | **Reputation → Feedback** | Los casos de recuperación de los lugares del client, filtrados por estado, con severidad y cuánto lleva cada uno esperando |
 | **Reputation → Responses** | Lo que respondieron los guests, con un filtro de 3 estrellas o menos y un botón para preguntarle al equipo de Atrium por una respuesta |
 | **Reputation → QR & links** | El QR impreso de cada lugar (copiar, vista previa), el enlace de reseña de Google (solo lectura: *only the Atrium team can change this*), el retraso de envío y **Generate link** para un enlace de un solo uso |
@@ -84,7 +84,7 @@ La encuesta, la pantalla de gracias y el formulario *Request access* para un neg
 
 | Área | Qué contiene |
 | --- | --- |
-| **Overview** | Toda la cartera: casos pasados del plazo, casos abiertos, cuentas y lugares esperando aprobación |
+| **Overview** | Toda la cartera: una cola de lo que necesita a una persona, tiempo a contacto, casos vencidos, rating de la cartera, clientes. Ver [Leer el Overview](../guides/reading-the-overview) |
 | **Reputation → Cases** | Los casos de todos los clients, con un panel de detalle: calificación, qué mejorar, lo que escribió el guest, cómo contactarlo, una nota y los botones de estado |
 | **Reputation → Responses** | Todas las respuestas con insignias: *Link*, *QR*, *Wants contact*, *Recovery case* |
 | **Reputation → Forms & QR** | Por lugar: QR (copiar, vista previa, **Rotate QR**), el enlace de reseña de Google, el retraso de envío y enlaces de un solo uso. Solo la agencia puede editar el enlace de reseña |

@@ -25,6 +25,8 @@ The Manager is where Atrium runs its delivery. The same view can be seen **as** 
 | **Daily entry** | The manual log of what shipped, timestamped |
 | **Team** | People, clients, MRR managed, open tasks, capacity |
 
+The Overview answers "what in my portfolio needs a person now?" with a queue first and the figures after; every definition is in [Reading the Overview](../guides/reading-the-overview).
+
 ## Roles
 
 | Role | Code | Owns |

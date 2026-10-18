@@ -26,6 +26,8 @@ La Platform es donde el restaurante ve su crecimiento: el mapa, el score y lo qu
 
 La navegación los agrupa como Dashboard · Engines (Discoverability, Attention, Retention, Reputation, Growth, Reporting) · Insights y equipo (Benchmarks, Management) · Cuenta (Settings). Las etiquetas "Attention" y "Reputation" son los nombres en la Platform de los engines Acquisition y Reputation.
 
+El Overview del dueño responde "¿cómo va mi negocio y qué me necesita?" con el rating, las respuestas, los clics del enlace de reseña y los casos abiertos, cada uno con su cambio; cada definición está en [Leer el Overview](../guides/reading-the-overview).
+
 ## Qué contiene cada sección
 
 ### Dashboard

@@ -11,6 +11,7 @@ description: "Cómo trabajar en el repositorio de Atrium."
 | [Desarrollo local](./local-development) | Levantar el repositorio y las apps |
 | [Tema del producto](./product-theme) | Cómo se diferencia la interfaz del producto de la marca, y las reglas para pantallas de datos |
 | [Variables de entorno](./environment-variables) | Qué hace cada variable, su valor por defecto y quién la lee |
+| [Leer el Overview](./reading-the-overview) | Qué responde cada página Overview, cómo se define cada cifra y qué todavía no está |
 | [Convenciones](./conventions) | Código, nombres, commits y pull requests |
 | [Crear un módulo](./create-a-module) | Agregar un módulo nuevo con su forma estándar |
 | [Crear un subagente](./create-a-subagent) | Manifiesto, herramientas, playbook y evals |

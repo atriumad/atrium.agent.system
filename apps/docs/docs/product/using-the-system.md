@@ -70,7 +70,7 @@ The survey, the thank-you screen and the *Request access* form for a new busines
 
 | Area | What it holds |
 | --- | --- |
-| **Overview** | Open cases, cases past the 24-hour target, answers this week |
+| **Overview** | Rating, responses, review link clicks and open cases with their change, topics, places. See [Reading the Overview](../guides/reading-the-overview) |
 | **Reputation → Feedback** | The recovery cases of the client's places, filtered by status, with severity and how long each has waited |
 | **Reputation → Responses** | What guests answered, with a filter for 3 stars or fewer and a button to ask the Atrium team about a response |
 | **Reputation → QR & links** | Each place's printed QR (copy, preview), the Google review link (read only: *only the Atrium team can change this*), the send delay and a **Generate link** for a one-time link |
@@ -83,7 +83,7 @@ The survey, the thank-you screen and the *Request access* form for a new busines
 
 | Area | What it holds |
 | --- | --- |
-| **Overview** | The whole portfolio: cases past the target, open cases, accounts and places waiting for approval |
+| **Overview** | The whole portfolio: a queue of what needs a person, time to contact, overdue cases, portfolio rating, clients. See [Reading the Overview](../guides/reading-the-overview) |
 | **Reputation → Cases** | Every client's cases, with a detail panel: rating, what to improve, what the guest wrote, how to reach them, a note, and the status buttons |
 | **Reputation → Responses** | All responses with badges: *Link*, *QR*, *Wants contact*, *Recovery case* |
 | **Reputation → Forms & QR** | Per place: QR (copy, preview, **Rotate QR**), the Google review link, the send delay, one-time links. Only the agency can edit the review link |
