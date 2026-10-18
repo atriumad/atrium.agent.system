@@ -49,7 +49,7 @@ Whether up is good depends on the figure. More overdue cases is bad, so it is sh
 
 **Responses.** The number of answers created in the window. Its change is in percent.
 
-**Answer rate.** Of the review requests sent in the window (status `sent`), the share whose invitation was used by an answer. Scheduled and skipped requests are not counted. On the Platform it appears as a note under Responses ("N% of M requests answered"); on the Manager it is a tile.
+**Answer rate.** Of the review requests sent in the window (status `sent`), the share whose invitation was used by an answer. Scheduled and skipped requests are not counted. On the Platform it appears as a note under Responses ("N% of M requests answered"); on the Manager it is a tile. The Platform note has no 10-answer rule.
 
 **Review link click rate.** Answers with a recorded click on the review link, divided by **all** answers in the window. It is not divided by happy guests: the Hub offers the review link to every respondent whatever the rating, so the honest base is every answer. The Platform tile shows the click count, with the rate as a note.
 
@@ -85,12 +85,12 @@ From top to bottom:
 
 | Kind | What it is | Opens |
 | --- | --- | --- |
-| Case | An open case that is overdue or due within 24 hours | `/reputation/cases` |
+| Case | An open case that is overdue or due within 24 hours | `/reputation/cases?case=<id>` |
 | Approval | A request waiting for the agency's OK | `/approvals/places` |
 | Account | A request to join, not yet reviewed | `/approvals/accounts` |
 | Place to activate | A place waiting for approval | `/approvals/places` |
 
-It shows at most **8 rows**: cases first (overdue before due, then by due time), then approvals, accounts and places. When there is more, a footer links to each list ("N more cases", "N more accounts", "N more places"), because there is no single queue page. Account requests belong to no client yet, so they appear only when no client is selected, and only for roles that can manage locations. An assigned account manager does not see account requests. When there is nothing to show, the block says "Nothing needs a person right now".
+It shows at most **8 rows**: cases first (overdue before due, then by due time), then approvals, accounts and places. When there is more, a footer links to each list ("N more cases", "N more accounts", "N more places"), because there is no single queue page. Account requests belong to no client yet, so they appear only when no client is selected, and only for agency roles with the `location: manage` permission; an assigned account manager sees none because of row-level security. When there is nothing to show, the block says "Nothing needs a person right now".
 
 **Your clients** shows, per client: rating, a trend line, change, responses, answer rate, overdue cases and a status. The status is one of:
 
@@ -130,7 +130,7 @@ The demo database holds a handful of answers, which is too little to see a chart
 - It is deterministic: the same data every time.
 - It is idempotent: a client that already has answers is skipped, so a second run adds nothing.
 - It is for development only. It does not touch the existing demo client or the default `seed`. Run `bun run db:migrate` (and normally `bun run seed`) first.
-- It prints the demo logins at the end. The sign-in is the one the seed prints, the demo emails it lists.
+- It prints the demo emails and the sign-in at the end.
 
 ## Not there yet
 

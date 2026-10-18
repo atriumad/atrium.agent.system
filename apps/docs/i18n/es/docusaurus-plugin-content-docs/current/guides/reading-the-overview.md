@@ -49,7 +49,7 @@ Si subir es bueno depende de la cifra. Más casos vencidos es malo, así que cua
 
 **Responses (respuestas).** El número de respuestas creadas en la ventana. Su cambio es en porcentaje.
 
-**Answer rate (tasa de respuesta).** De las review requests enviadas en la ventana (estado `sent`), la parte cuya invitación usó una respuesta. Las programadas y las omitidas no cuentan. En la Platform aparece como nota bajo Responses ("N% of M requests answered"); en el Manager es una ficha.
+**Answer rate (tasa de respuesta).** De las review requests enviadas en la ventana (estado `sent`), la parte cuya invitación usó una respuesta. Las programadas y las omitidas no cuentan. En la Platform aparece como nota bajo Responses ("N% of M requests answered"); en el Manager es una ficha. La nota de la Platform no tiene regla de 10 respuestas.
 
 **Tasa de clics del enlace de reseña.** Las respuestas con un clic registrado en el enlace de reseña, divididas entre **todas** las respuestas de la ventana. No se divide entre los invitados contentos: el Hub ofrece el enlace de reseña a cada persona que responde, sea cual sea su rating, así que la base honesta es cada respuesta. La ficha de la Platform muestra el conteo de clics, con la tasa como nota.
 
@@ -85,12 +85,12 @@ De arriba abajo:
 
 | Tipo | Qué es | Abre |
 | --- | --- | --- |
-| Case | Un caso abierto, vencido o por vencer en 24 horas | `/reputation/cases` |
+| Case | Un caso abierto, vencido o por vencer en 24 horas | `/reputation/cases?case=<id>` |
 | Approval | Una solicitud esperando el OK de la agencia | `/approvals/places` |
 | Account | Una solicitud para unirse, aún sin revisar | `/approvals/accounts` |
 | Place to activate | Un lugar esperando aprobación | `/approvals/places` |
 
-Muestra como máximo **8 filas**: primero los casos (vencidos antes que por vencer, luego por hora límite), después aprobaciones, cuentas y lugares. Cuando hay más, un pie enlaza cada lista ("N more cases", "N more accounts", "N more places"), porque no existe una página única de cola. Las solicitudes de cuenta aún no pertenecen a ningún cliente, así que aparecen solo cuando no hay un cliente elegido, y solo para los roles que pueden gestionar lugares. Un account manager asignado no ve las solicitudes de cuenta. Cuando no hay nada que mostrar, el bloque dice "Nothing needs a person right now".
+Muestra como máximo **8 filas**: primero los casos (vencidos antes que por vencer, luego por hora límite), después aprobaciones, cuentas y lugares. Cuando hay más, un pie enlaza cada lista ("N more cases", "N more accounts", "N more places"), porque no existe una página única de cola. Las solicitudes de cuenta aún no pertenecen a ningún cliente, así que aparecen solo cuando no hay un cliente elegido, y solo para los roles de agencia con el permiso `location: manage`; un account manager asignado no ve ninguna por la seguridad por filas. Cuando no hay nada que mostrar, el bloque dice "Nothing needs a person right now".
 
 **Your clients** muestra, por cliente: rating, una línea de tendencia, cambio, respuestas, tasa de respuesta, casos vencidos y un estado. El estado es uno de:
 
@@ -130,7 +130,7 @@ La base de datos demo tiene un puñado de respuestas, muy poco para ver un gráf
 - Es determinista: los mismos datos cada vez.
 - Es idempotente: un cliente que ya tiene respuestas se omite, así que una segunda ejecución no agrega nada.
 - Es solo para desarrollo. No toca al cliente demo existente ni el `seed` por defecto. Corre antes `bun run db:migrate` (y normalmente `bun run seed`).
-- Al final imprime los logins demo. El acceso es el que imprime el seed, con los emails demo que lista.
+- Al final imprime los emails demo y el acceso.
 
 ## Lo que todavía no está
 
