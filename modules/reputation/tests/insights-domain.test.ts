@@ -43,6 +43,9 @@ describe("localDate", () => {
     expect(localDate(at, "America/Chicago")).toBe("2026-10-17");
     expect(localDate(at, "Asia/Tokyo")).toBe("2026-10-18");
   });
+  test("empty zone falls back to UTC", () => {
+    expect(localDate(at, "")).toBe("2026-10-18");
+  });
   test("falls back to UTC for an invalid zone", () => {
     expect(localDate(at, "Not/AZone")).toBe("2026-10-18");
   });
@@ -92,6 +95,12 @@ describe("compareCount", () => {
     expect(compareCount(130, 100).change).toBeCloseTo(30, 9);
     expect(compareCount(5, 0).change).toBeNull();
   });
+  test("exact 10 boundary", () => {
+    const ok = compareCount(10, 10);
+    expect(ok.small).toBe(false);
+    expect(ok.change).toBeCloseTo(0, 9);
+    expect(compareCount(10, 9).change).toBeNull();
+  });
 });
 
 describe("compareRate", () => {
@@ -99,6 +108,12 @@ describe("compareRate", () => {
     const r = compareRate({ num: 40, den: 100 }, { num: 45, den: 100 });
     expect(r.value).toBe(0.4);
     expect(r.change).toBeCloseTo(-5, 9);
+  });
+  test("exact 10 boundary", () => {
+    const ok = compareRate({ num: 5, den: 10 }, { num: 4, den: 10 });
+    expect(ok.small).toBe(false);
+    expect(ok.change).toBeCloseTo(10, 9);
+    expect(compareRate({ num: 5, den: 10 }, { num: 4, den: 9 }).change).toBeNull();
   });
   test("zero denominator", () => {
     const r = compareRate({ num: 0, den: 0 }, { num: 45, den: 100 });
@@ -132,6 +147,57 @@ describe("dailySeries", () => {
     const s = dailySeries([row({ createdAt: old })], [{ id: "p1", timeZone: "UTC" }], now, 90);
     expect(s).toHaveLength(90);
     expect(s.reduce((a, d) => a + d.count, 0)).toBe(0);
+  });
+  test("Tokyo: a late-UTC answer lands on the next local day", () => {
+    const s = dailySeries(
+      [row({ createdAt: new Date("2026-10-17T15:30:00Z") })],
+      [{ id: "p1", timeZone: "Asia/Tokyo" }],
+      new Date("2026-10-17T16:00:00Z"),
+      7,
+    );
+    expect(s[6]).toEqual({ date: "2026-10-18", average: 5, count: 1 });
+  });
+  test("Chicago: the series ends on the place's local today", () => {
+    const s = dailySeries(
+      [row({ createdAt: new Date("2026-10-16T20:00:00Z") })],
+      [{ id: "p1", timeZone: "America/Chicago" }],
+      new Date("2026-10-17T02:00:00Z"),
+      7,
+    );
+    expect(s[6]?.date).toBe("2026-10-16");
+    expect(s[6]?.count).toBe(1);
+    expect(s[0]?.date).toBe("2026-10-10");
+  });
+  test("Kiritimati: 23:30 local on the last day is in the window", () => {
+    const s = dailySeries(
+      [row({ createdAt: new Date("2026-10-18T09:30:00Z") })],
+      [{ id: "p1", timeZone: "Pacific/Kiritimati" }],
+      new Date("2026-10-18T09:45:00Z"),
+      7,
+    );
+    expect(s[6]).toEqual({ date: "2026-10-18", average: 5, count: 1 });
+  });
+  test("two places: exact length, ascending, rows outside their own window excluded", () => {
+    const s = dailySeries(
+      [
+        row({ locationId: "t", createdAt: new Date("2026-10-17T15:30:00Z") }),
+        row({ locationId: "c", createdAt: new Date("2026-10-17T10:00:00Z") }),
+        row({ locationId: "c", createdAt: new Date("2026-10-11T18:00:00Z") }),
+        row({ locationId: "t", createdAt: new Date("2026-10-11T12:00:00Z") }),
+      ],
+      [
+        { id: "t", timeZone: "Asia/Tokyo" },
+        { id: "c", timeZone: "America/Chicago" },
+      ],
+      new Date("2026-10-17T16:00:00Z"),
+      7,
+    );
+    expect(s).toHaveLength(7);
+    expect(s.map((d) => d.date)).toEqual([...s.map((d) => d.date)].sort());
+    expect(s[6]?.date).toBe("2026-10-18");
+    expect(s.reduce((a, d) => a + d.count, 0)).toBe(2);
+    expect(s[5]?.count).toBe(1);
+    expect(s[6]?.count).toBe(1);
   });
   test("empty days are null, no NaN", () => {
     const s = dailySeries([row({ rating: 4 })], [{ id: "p1", timeZone: "UTC" }], now, 7);

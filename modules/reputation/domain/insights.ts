@@ -89,10 +89,7 @@ export function compareMean(current: number[], previous: number[]): Compared {
 /** Percent change of a count. */
 export function compareCount(current: number, previous: number): Compared {
   const small = current < MIN_SAMPLE;
-  const change =
-    small || previous < MIN_SAMPLE || previous === 0
-      ? null
-      : ((current - previous) / previous) * 100;
+  const change = small || previous < MIN_SAMPLE ? null : ((current - previous) / previous) * 100;
   return { value: current, change, n: current, nPrevious: previous, small };
 }
 
@@ -127,11 +124,26 @@ export function dailySeries(
   days: number,
 ): { date: string; average: number | null; count: number }[] {
   const zoneOf = new Map(zones.map((z) => [z.id, z.timeZone]));
-  const dates = windowDates(now, "UTC", days).current;
+  const today = zones.reduce(
+    (latest, z) => {
+      const d = localDate(now, z.timeZone);
+      return d > latest ? d : latest;
+    },
+    zones.length === 0 ? localDate(now, "UTC") : "",
+  );
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) dates.push(shiftDate(today, -i));
   const buckets = new Map<string, number[]>(dates.map((d) => [d, []]));
+  const ownWindow = new Map<string, Set<string>>();
   for (const r of rows) {
-    const bucket = buckets.get(localDate(r.createdAt, zoneOf.get(r.locationId) ?? "UTC"));
-    if (bucket) bucket.push(r.rating);
+    const zone = zoneOf.get(r.locationId) ?? "UTC";
+    let own = ownWindow.get(zone);
+    if (!own) {
+      own = new Set(windowDates(now, zone, days).current);
+      ownWindow.set(zone, own);
+    }
+    const date = localDate(r.createdAt, zone);
+    if (own.has(date)) buckets.get(date)?.push(r.rating);
   }
   return dates.map((date) => {
     const ratings = buckets.get(date) ?? [];
@@ -162,7 +174,7 @@ export function splitByTopic(
     }
   }
   return [...byTopic.values()]
-    .sort((a, b) => b.total - a.total || a.topic.localeCompare(b.topic))
+    .sort((a, b) => b.total - a.total || (a.topic < b.topic ? -1 : a.topic > b.topic ? 1 : 0))
     .slice(0, limit);
 }
 
