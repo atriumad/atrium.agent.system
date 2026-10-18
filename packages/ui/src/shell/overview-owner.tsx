@@ -132,7 +132,7 @@ export function OwnerOverview() {
               value={data.reviewClicks.clicks}
               state={state(data.reviewClicks.small, data.reviewClicks.answers)}
               {...(data.reviewClicks.change !== null
-                ? { delta: pct(data.reviewClicks.change), deltaUnit: "pts" as const }
+                ? { delta: data.reviewClicks.change, deltaUnit: "pts" as const }
                 : {})}
               {...(data.reviewClicks.rate !== null
                 ? { note: `${pct(data.reviewClicks.rate)}% of answers clicked the review link` }

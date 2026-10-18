@@ -40,6 +40,14 @@ describe("owner overview", () => {
     expect(screen.getByText("Waiting on you")).toBeTruthy();
   });
 
+  test("the review clicks change is shown in points as the server sends it", async () => {
+    fakeFetch(routes());
+    inside();
+    const tile = (await screen.findByText("Review link clicks")).closest("a") as HTMLElement;
+    expect(tile.textContent).toContain("8 pts");
+    expect(tile.textContent).toContain("up");
+  });
+
   test("a small rating says too few answers and draws no trend", async () => {
     fakeFetch(
       routes({

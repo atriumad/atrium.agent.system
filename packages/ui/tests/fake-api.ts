@@ -85,7 +85,7 @@ export const ownerInsightsFixture: OwnerInsights = {
     answerRate: 0.4,
     sent: 30,
   },
-  reviewClicks: { clicks: 5, answers: 9, rate: 0.56, change: 0.08, small: false },
+  reviewClicks: { clicks: 5, answers: 9, rate: 0.56, change: 8, small: false },
   waiting: { open: 1, overdue: 1 },
   series: [
     { date: "2026-09-19", average: 4.2, count: 1 },
@@ -173,7 +173,7 @@ export const agencyInsightsFixture: AgencyOverview = {
     small: false,
     spark: [4.0, 4.1, 4.2, 4.1, 4.3, 4.2],
   },
-  answerRate: { value: 0.38, change: 0.04, sent: 226, answered: 86, small: false },
+  answerRate: { value: 0.38, change: 4, sent: 226, answered: 86, small: false },
   clients: [
     {
       clientId: "c1",
