@@ -18,6 +18,7 @@ import {
 } from "@atrium/reputation";
 import { Hono } from "hono";
 import type { AppDeps } from "./app";
+import { mountInsights } from "./insights";
 import { mountLocations } from "./locations";
 import { mountNotifications } from "./notifications";
 import { mountOnboardingAdmin } from "./onboarding";
@@ -153,6 +154,7 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
 
   mountLocations(api, deps);
   mountNotifications(api, deps);
+  mountInsights(api, deps);
   mountOnboardingAdmin(api, deps, session);
   mountSurveyAdmin(api, deps, {
     qrSecret: session.surveySecret,
