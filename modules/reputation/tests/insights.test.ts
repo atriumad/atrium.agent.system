@@ -278,3 +278,73 @@ describe("ownerInsights", () => {
     expect(r.places[0]?.overdueCases).toBe(1);
   });
 });
+
+describe("ownerInsights edge cases", () => {
+  test("topics keep the five largest of six or more", async () => {
+    const f = await fresh();
+    const names = ["food", "service", "wait", "cleanliness", "price", "atmosphere", "staff"];
+    for (const [i, name] of names.entries()) {
+      for (let k = 0; k < names.length - i; k++) {
+        await answer(f, f.chicago, ago(2), 4, { sentiment: "positive", topics: [name] });
+      }
+    }
+    const r = await run(f);
+    expect(r.topics).toHaveLength(5);
+    expect(r.topics.map((t) => t.topic)).toEqual([
+      "food",
+      "service",
+      "wait",
+      "cleanliness",
+      "price",
+    ]);
+  });
+
+  test("answers without a reading give no topics and read 0, the rating still works", async () => {
+    const f = await fresh();
+    await answersOf(f, f.chicago, 3, 2, 4);
+    const r = await run(f);
+    expect(r.topics).toEqual([]);
+    expect(r.read).toBe(0);
+    expect(r.rating.value).toBe(4);
+  });
+
+  test("ten against ten gives a change; ten against nine does not", async () => {
+    const f = await fresh();
+    await answersOf(f, f.chicago, 10, 2, 5);
+    await answersOf(f, f.chicago, 10, 35, 4);
+    const r = await run(f);
+    expect(r.rating.small).toBe(false);
+    expect(r.rating.change).toBe(1);
+    const g = await fresh();
+    await answersOf(g, g.chicago, 10, 2, 5);
+    await answersOf(g, g.chicago, 9, 35, 4);
+    const s = await run(g);
+    expect(s.rating.small).toBe(false);
+    expect(s.rating.change).toBeNull();
+  });
+
+  test("a single answer is small and leaves no NaN", async () => {
+    const f = await fresh();
+    await answer(f, f.chicago, ago(1), 5);
+    const r = await run(f);
+    expect(r.rating.small).toBe(true);
+    expect(JSON.stringify(r)).not.toContain("NaN");
+  });
+
+  test("each answer lands on its own place's local date", async () => {
+    const f = await fresh();
+    const tokyo = await admin.unsafe(
+      "insert into core.locations (client_id, name, time_zone, status) values ($1, 'Tokyo', 'Asia/Tokyo', 'active') returning id",
+      [f.clientId],
+    );
+    const tokyoId = (tokyo[0] as { id: string }).id;
+    // 2026-10-05T20:00Z is Oct 5 in Chicago (15:00) and Oct 6 in Tokyo (05:00).
+    const at = new Date("2026-10-05T20:00:00Z");
+    await answer(f, f.chicago, at, 5);
+    await answer(f, tokyoId, at, 3);
+    const r = await run(f);
+    expect(r.series).toHaveLength(RANGE_DAYS["30d"]);
+    expect(r.series.find((s) => s.date === "2026-10-05")).toMatchObject({ average: 5, count: 1 });
+    expect(r.series.find((s) => s.date === "2026-10-06")).toMatchObject({ average: 3, count: 1 });
+  });
+});

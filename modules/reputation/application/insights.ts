@@ -51,7 +51,7 @@ export type OwnerInsights = {
   host: { requestsSent: number; casesOpened: number; answersRead: number };
 };
 
-const TOPIC_LIMIT = 6;
+const TOPIC_LIMIT = 5;
 const DAY_MS = 86_400_000;
 
 /**
@@ -75,7 +75,7 @@ export async function ownerInsights(
     const w = windowDates(now, z.timeZone, days);
     windows.set(z.id, { current: new Set(w.current), previous: new Set(w.previous) });
   }
-  const where = (locationId: string, at: Date | null): "cur" | "prev" | null => {
+  const windowOf = (locationId: string, at: Date | null): "cur" | "prev" | null => {
     if (!at) return null;
     const w = windows.get(locationId);
     if (!w) return null;
@@ -137,8 +137,8 @@ export async function ownerInsights(
       );
   }
 
-  const cur = answers.filter((a) => where(a.locationId, a.createdAt) === "cur");
-  const prev = answers.filter((a) => where(a.locationId, a.createdAt) === "prev");
+  const cur = answers.filter((a) => windowOf(a.locationId, a.createdAt) === "cur");
+  const prev = answers.filter((a) => windowOf(a.locationId, a.createdAt) === "prev");
   const series = dailySeries(answers, zones, now, days);
 
   const rating = compareMean(
@@ -147,7 +147,7 @@ export async function ownerInsights(
   );
   const responses = compareCount(cur.length, prev.length);
 
-  const sentCur = sentRequests.filter((r) => where(r.locationId, r.sentAt) === "cur");
+  const sentCur = sentRequests.filter((r) => windowOf(r.locationId, r.sentAt) === "cur");
   const answeredInvitations = new Set(
     answers.map((a) => a.invitationId).filter((v): v is string => v !== null),
   );
@@ -155,8 +155,9 @@ export async function ownerInsights(
     (r) => r.invitationId !== null && answeredInvitations.has(r.invitationId),
   ).length;
 
+  const clickCount = cur.filter((a) => a.reviewClickedAt).length;
   const clicks = compareRate(
-    { num: cur.filter((a) => a.reviewClickedAt).length, den: cur.length },
+    { num: clickCount, den: cur.length },
     { num: prev.filter((a) => a.reviewClickedAt).length, den: prev.length },
   );
 
@@ -192,6 +193,7 @@ export async function ownerInsights(
     range,
     generatedAt: now.toISOString(),
     window: { from: series[0]?.date ?? "", to: series[series.length - 1]?.date ?? "" },
+    // value is kept when small (the UI shows "Too few answers" from `small`); places[].rating is nulled when small.
     rating: {
       value: rating.value,
       change: rating.change,
@@ -209,7 +211,7 @@ export async function ownerInsights(
       sent: sentCur.length,
     },
     reviewClicks: {
-      clicks: cur.filter((a) => a.reviewClickedAt).length,
+      clicks: clickCount,
       answers: cur.length,
       rate: clicks.value,
       change: clicks.change,
@@ -222,8 +224,8 @@ export async function ownerInsights(
     places,
     host: {
       requestsSent: sentCur.length,
-      casesOpened: cases.filter((c) => where(c.locationId, c.openedAt) === "cur").length,
-      answersRead: answers.filter((a) => where(a.locationId, a.readAt) === "cur").length,
+      casesOpened: cases.filter((c) => windowOf(c.locationId, c.openedAt) === "cur").length,
+      answersRead: answers.filter((a) => windowOf(a.locationId, a.readAt) === "cur").length,
     },
   };
 }
