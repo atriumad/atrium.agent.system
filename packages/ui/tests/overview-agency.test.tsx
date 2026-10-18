@@ -5,6 +5,14 @@ import { OverviewPage } from "../src/shell/overview";
 import { amMe, fakeFetch, agencyInsightsFixture as fx, restoreFetch } from "./fake-api";
 import { screen, setup, waitFor, within } from "./helpers";
 
+/** Each text node on its own, so adjacent cells do not run into one another. */
+const texts = (root: HTMLElement) => {
+  const out: string[] = [];
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) out.push(n.textContent ?? "");
+  return out;
+};
+
 afterEach(() => {
   restoreFetch();
   window.history.replaceState({}, "", "/");
@@ -44,7 +52,7 @@ describe("agency overview", () => {
     expect(rows[1]?.textContent).toContain("Case");
     expect(rows[2]?.textContent).toContain("Approval");
     const wash = screen.getByRole("heading", { name: "Needs a person now" }).closest("section");
-    expect(wash?.className).toContain("bg-lime-100");
+    expect(wash?.className).toContain("bg-lime-300");
   });
 
   test("the footer counts only what the queue does not show", async () => {
@@ -187,5 +195,49 @@ describe("agency overview", () => {
     fakeFetch(routes());
     inside();
     expect(await screen.findByText(/compared with the previous 30 days/)).toBeTruthy();
+  });
+});
+
+describe("agency overview numbers", () => {
+  test("ugly floats are rounded everywhere", async () => {
+    fakeFetch(
+      routes({
+        ...fx,
+        contact: {
+          ...fx.contact,
+          medianHours: 6.2333333,
+          change: -1.5432101,
+          insideTarget: 0.9412345,
+        },
+        portfolio: { ...fx.portfolio, change: 0.2516505187344591, value: 4.2345678 },
+        answerRate: { ...fx.answerRate, change: 3.035239646746124, value: 0.3812345 },
+        clients: fx.clients.map((c) => ({
+          ...c,
+          change: c.change === null ? null : 0.731782945736434,
+          rating: c.rating === null ? null : c.rating + 0.0123456789,
+          answerRate: c.answerRate === null ? null : c.answerRate + 0.0123456789,
+        })),
+      }),
+    );
+    const { container } = inside();
+    await screen.findByText("Median time to contact");
+    expect(texts(container).filter((t) => /\d\.\d{3,}/.test(t))).toEqual([]);
+    expect(container.textContent).toContain("0.3 pts");
+    expect(container.textContent).toContain("1.5h faster");
+  });
+
+  test("a time change that rounds to nothing says no change", async () => {
+    fakeFetch(routes({ ...fx, contact: { ...fx.contact, change: 0.04 } }));
+    inside();
+    const tile = (await screen.findByText("Median time to contact")).closest("a") as HTMLElement;
+    expect(tile.textContent).toContain("no change");
+    expect(tile.textContent).not.toContain("0h");
+  });
+
+  test("the contact figure is set in the sans face", async () => {
+    fakeFetch(routes());
+    const { container } = inside();
+    await screen.findByText("Median time to contact");
+    expect(container.querySelector("span.font-sans.font-medium")?.textContent).toBe("6h 12m");
   });
 });

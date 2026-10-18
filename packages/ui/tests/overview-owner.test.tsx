@@ -5,6 +5,14 @@ import { OverviewPage } from "../src/shell/overview";
 import { fakeFetch, ownerInsightsFixture, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup, waitFor, within } from "./helpers";
 
+/** Each text node on its own, so adjacent cells do not run into one another. */
+const texts = (root: HTMLElement) => {
+  const out: string[] = [];
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) out.push(n.textContent ?? "");
+  return out;
+};
+
 afterEach(() => {
   restoreFetch();
   window.history.replaceState({}, "", "/");
@@ -106,7 +114,7 @@ describe("owner overview", () => {
     inside();
     const tile = (await screen.findByText("Waiting on you")).closest("a") as HTMLElement;
     expect(tile.getAttribute("href")).toBe("/reputation/cases?status=overdue");
-    expect(tile.className).toContain("bg-lime-100");
+    expect(tile.className).toContain("bg-lime-300");
   });
 
   test("waiting on you links to all cases when none are overdue", async () => {
@@ -146,5 +154,39 @@ describe("owner overview", () => {
     fakeFetch(routes());
     inside();
     expect(await screen.findByText(/compared with the previous 30 days/)).toBeTruthy();
+  });
+});
+
+describe("owner overview numbers and wash", () => {
+  test("ugly floats are rounded in tiles and the places table", async () => {
+    const d = ownerInsightsFixture;
+    fakeFetch(
+      routes({
+        ...d,
+        rating: { ...d.rating, change: 0.2516505187344591, value: 4.3456789 },
+        responses: { ...d.responses, change: 1.834862385321101, answerRate: 0.3333333 },
+        reviewClicks: { ...d.reviewClicks, change: 3.035239646746124, rate: 0.5612345 },
+        places: d.places.map((p) => ({
+          ...p,
+          change: p.change === null ? null : 0.731782945736434,
+        })),
+      }),
+    );
+    const { container } = inside();
+    await screen.findByText("Average rating");
+    expect(texts(container).filter((t) => /\d\.\d{3,}/.test(t))).toEqual([]);
+    expect(container.textContent).toContain("0.3 pts");
+    expect(container.textContent).toContain("1.8%");
+    expect(container.textContent).toContain("0.7 pts");
+  });
+
+  test("Waiting on you is the only lime-washed tile", async () => {
+    fakeFetch(routes());
+    inside();
+    const waiting = (await screen.findByText("Waiting on you")).closest("a") as HTMLElement;
+    expect(waiting.className).toContain("bg-lime-300");
+    for (const t of ["Average rating", "Responses", "Review link clicks"]) {
+      expect((screen.getByText(t).closest("a") as HTMLElement).className).not.toContain("lime");
+    }
   });
 });

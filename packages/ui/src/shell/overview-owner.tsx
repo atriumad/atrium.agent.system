@@ -144,7 +144,7 @@ export function OwnerOverview() {
               value={data.waiting.open}
               state="ok"
               note={`${data.waiting.overdue} past the 24-hour target`}
-              className="bg-lime-100 dark:bg-charcoal-700"
+              tone="lime"
               href={
                 data.waiting.overdue > 0 ? "/reputation/cases?status=overdue" : "/reputation/cases"
               }
@@ -172,7 +172,7 @@ export function OwnerOverview() {
             </Block>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <Block title="Your places">
               <DataTable
                 label="Your places"
@@ -183,11 +183,12 @@ export function OwnerOverview() {
                   `/reputation/responses?range=${range}&place=${encodeURIComponent(p.locationId)}`
                 }
                 columns={[
-                  { key: "name", header: "Place", cell: (p) => p.name },
+                  { key: "name", header: "Place", nowrap: true, cell: (p) => p.name },
                   {
                     key: "rating",
                     header: "Rating",
                     numeric: true,
+                    nowrap: true,
                     cell: (p) =>
                       p.rating === null ? (
                         "—"
@@ -198,11 +199,18 @@ export function OwnerOverview() {
                         </span>
                       ),
                   },
-                  { key: "responses", header: "Answers", numeric: true, cell: (p) => p.responses },
+                  {
+                    key: "responses",
+                    header: "Answers",
+                    numeric: true,
+                    nowrap: true,
+                    cell: (p) => p.responses,
+                  },
                   {
                     key: "cases",
                     header: "Cases",
                     numeric: true,
+                    nowrap: true,
                     cell: (p) =>
                       p.overdueCases > 0
                         ? `${p.openCases} (${p.overdueCases} overdue)`

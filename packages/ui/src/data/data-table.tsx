@@ -13,6 +13,8 @@ export type Column<Row> = {
   cell: (row: Row) => ReactNode;
   /** Right-aligned with tabular figures. */
   numeric?: boolean;
+  /** Keep the cell on one line. */
+  nowrap?: boolean;
   /** A string or number to sort by. Without it the column does not sort. */
   sortValue?: (row: Row) => string | number;
 };
@@ -222,6 +224,7 @@ export function DataTable<Row>({
                         key={c.key}
                         numeric={c.numeric}
                         className={cx(
+                          c.nowrap && "whitespace-nowrap",
                           i === 0 &&
                             "max-md:sticky max-md:left-0 max-md:bg-surface-card max-md:group-hover:bg-surface-sunken max-md:group-aria-selected:bg-lime-100 dark:max-md:group-aria-selected:bg-charcoal-700",
                         )}

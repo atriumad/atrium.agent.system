@@ -17,8 +17,30 @@ export type KpiTileProps = {
   sparkLabel?: string;
   href?: string;
   state: KpiState;
+  /** `lime` washes the tile; use it on one tile per view. */
+  tone?: "default" | "lime";
+  /** `sans` is for durations such as `11h 43m`, where the serif 1 reads as an l. */
+  figureFont?: "serif" | "sans";
   className?: string;
 };
+
+/** `11h 43m` as medium sans digits with small muted units. Anything else is left as it is. */
+function Duration({ text }: { text: string }) {
+  const parts = text.split(/(\d+)([hm])/).filter(Boolean);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part === "h" || part === "m" ? (
+          <span key={i} className="text-lg text-fg-muted">
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
 
 /** A figure tile: caps label, serif figure, and either its change and trend or the reason there is none. */
 export function KpiTile({
@@ -33,19 +55,27 @@ export function KpiTile({
   sparkLabel,
   href,
   state,
+  tone = "default",
+  figureFont = "serif",
   className,
 }: KpiTileProps) {
   const ok = state === "ok";
   const cls = cx(
-    "flex flex-col gap-2 rounded-card border border-frame bg-surface-card p-5",
+    "flex flex-col gap-2 rounded-card border border-frame p-5",
+    tone === "lime" ? "bg-lime-300 dark:bg-charcoal-700" : "bg-surface-card",
     href && "no-underline transition-colors hover:border-line focus-visible:outline-2",
     className,
   );
   const body = (
     <>
       <span className="label-caps text-fg-muted">{label}</span>
-      <span className="flex items-baseline gap-2.5 font-serif text-5xl leading-[0.9] font-normal tracking-tight text-fg-strong tabular-nums dark:text-lime-500">
-        {value}
+      <span
+        className={cx(
+          "flex items-baseline gap-2.5 text-5xl leading-[0.9] tracking-tight text-fg-strong tabular-nums dark:text-lime-500",
+          figureFont === "sans" ? "font-sans font-medium" : "font-serif font-normal",
+        )}
+      >
+        {figureFont === "sans" && typeof value === "string" ? <Duration text={value} /> : value}
         {unit ? (
           <span className="font-sans text-sm tracking-normal text-fg-muted">{unit}</span>
         ) : null}

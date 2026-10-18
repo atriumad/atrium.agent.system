@@ -12,6 +12,12 @@ export type DeltaProps = ComponentProps<"span"> & {
   labels?: { up: string; down: string; flat: string };
 };
 
+/** `pts` to one decimal, `%` to a whole number from 10 up; a trailing `.0` is dropped. */
+export function formatDelta(value: number, unit: "%" | "pts"): number {
+  const abs = Math.abs(value);
+  return unit === "pts" || abs < 10 ? Math.round(abs * 10) / 10 : Math.round(abs);
+}
+
 /** The arrow shows direction; the color shows whether it is good (charcoal) or not (clay). Words carry it for a screen reader. */
 export function Delta({
   value,
@@ -21,7 +27,8 @@ export function Delta({
   className,
   ...rest
 }: DeltaProps) {
-  const dir = value === 0 ? "flat" : value > 0 ? "up" : "down";
+  const shown = formatDelta(value, unit);
+  const dir = shown === 0 ? "flat" : value > 0 ? "up" : "down";
   const good = dir === "flat" ? null : dir === goodWhen;
   const Glyph = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
   return (
@@ -38,9 +45,15 @@ export function Delta({
       {...rest}
     >
       <Glyph size={14} strokeWidth={1.5} aria-hidden="true" />
-      {Math.abs(value)}
-      {unit === "pts" ? " pts" : "%"}
-      <span className="sr-only"> {labels[dir]}</span>
+      {dir === "flat" ? (
+        labels.flat
+      ) : (
+        <>
+          {shown}
+          {unit === "pts" ? " pts" : "%"}
+          <span className="sr-only"> {labels[dir]}</span>
+        </>
+      )}
     </span>
   );
 }

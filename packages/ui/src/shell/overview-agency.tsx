@@ -31,8 +31,11 @@ function hoursAndMinutes(hours: number): string {
   return h === 0 ? `${m}m` : m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-const hoursChange = (h: number) =>
-  h === 0 ? "no change" : `${Math.abs(Math.round(h * 10) / 10)}h ${h < 0 ? "faster" : "slower"}`;
+/** A change of under 3 minutes rounds to nothing and is "no change". */
+const hoursChange = (h: number) => {
+  const r = Math.round(Math.abs(h) * 10) / 10;
+  return r === 0 ? "no change" : `${r}h ${h < 0 ? "faster" : "slower"}`;
+};
 
 const KIND: Record<QueueItem["kind"], { word: string; action: string }> = {
   case: { word: "Case", action: "Open case" },
@@ -83,7 +86,7 @@ function Queue({ data }: { data: AgencyData }) {
     (m) => m.left > 0,
   );
   return (
-    <section className="flex min-w-0 flex-col gap-3 rounded-card border border-frame bg-lime-100 p-5 dark:bg-charcoal-700">
+    <section className="flex min-w-0 flex-col gap-3 rounded-card border border-frame bg-lime-300 p-5 dark:bg-charcoal-700">
       <div>
         <h2 className="m-0 font-serif text-xl font-normal text-fg-strong">Needs a person now</h2>
         <p className="m-0 mt-1 text-sm text-fg-muted">Overdue first, then by due time.</p>
@@ -161,14 +164,17 @@ function Clients({ data }: { data: AgencyData }) {
         <p className="m-0 text-sm text-fg-muted">No clients yet</p>
       ) : (
         <TableWrap>
-          <Table aria-label="Your clients">
+          <Table
+            aria-label="Your clients"
+            className="[&_td]:px-3 [&_th]:px-3 [&_td]:whitespace-nowrap"
+          >
             <THead>
               <tr>
                 <Th>Client</Th>
                 <Th className="text-right">Rating</Th>
-                <Th>30-day trend</Th>
+                <Th>Trend</Th>
                 <Th className="text-right">Change</Th>
-                <Th className="text-right">Responses</Th>
+                <Th className="text-right">Answers</Th>
                 <Th className="text-right">Answer rate</Th>
                 <Th className="text-right">Overdue</Th>
                 <Th>Status</Th>
@@ -193,7 +199,7 @@ function Clients({ data }: { data: AgencyData }) {
                       ) : (
                         <Sparkline
                           values={c.spark}
-                          width={80}
+                          width={64}
                           height={20}
                           label={`${c.name} rating, last ${DAYS[data.range]} days`}
                         />
@@ -307,6 +313,7 @@ export function AgencyOverview() {
               ]
                 .filter(Boolean)
                 .join(" · ")}
+              figureFont="sans"
               href="/reputation/cases"
             />
             <KpiTile
