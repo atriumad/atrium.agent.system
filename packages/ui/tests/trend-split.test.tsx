@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import { render, within } from "@testing-library/react";
 import { humaniseTopic, SplitBars } from "../src/data/split-bars";
 import { TrendChart } from "../src/data/trend-chart";
@@ -36,7 +36,64 @@ describe("TrendChart", () => {
   });
 });
 
+describe("TrendChart marks", () => {
+  const mk = (avgs: (number | null)[]) =>
+    avgs.map((average, i) => ({
+      date: `2026-09-${10 + i}`,
+      average,
+      count: average === null ? 0 : 1,
+    }));
+
+  test("a contiguous series is one polyline and N circles", () => {
+    const { container } = render(<TrendChart points={mk([4, 4.5, 3.5, 4])} label="x" />);
+    expect(container.querySelectorAll("polyline")).toHaveLength(1);
+    expect(container.querySelectorAll("circle")).toHaveLength(4);
+  });
+
+  test("isolated days are circles, no line, and the gap is not drawn", () => {
+    const { container } = render(<TrendChart points={mk([4.2, null, 3.8])} label="x" />);
+    expect(container.querySelectorAll("polyline")).toHaveLength(0);
+    const cx = [...container.querySelectorAll("circle")].map((c) => Number(c.getAttribute("cx")));
+    expect(cx).toHaveLength(2);
+    const cy = [...container.querySelectorAll("circle")].map((c) => Number(c.getAttribute("cy")));
+    // the axis minimum (3.0) sits at the bottom of the plot; no mark may be there for the null day
+    expect(cy.every((v) => v < 190)).toBe(true);
+    expect(cx[0]).not.toBe(cx[1]);
+    const mid = (cx[0] as number) + ((cx[1] as number) - (cx[0] as number)) / 2;
+    expect(cx.some((v) => Math.abs(v - mid) < 1)).toBe(false);
+  });
+
+  test("min equal to max draws without NaN or warnings", () => {
+    const err = spyOn(console, "error");
+    const { container } = render(<TrendChart points={mk([4, 4])} label="x" min={4} max={4} />);
+    expect(container.innerHTML).not.toContain("NaN");
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  test("the slider carries the readout text and starts on the last day", () => {
+    render(<TrendChart points={mk([4, 3.5])} label="x" />);
+    const text = "2026-09-11: 3.5, 1 answers";
+    expect(screen.getByRole("slider").getAttribute("aria-valuetext")).toBe(text);
+    expect(screen.getByText(text)).toBeTruthy();
+  });
+});
+
 describe("SplitBars", () => {
+  test("parts summing to zero with a total render 0% without crashing", () => {
+    render(
+      <SplitBars
+        rows={[{ topic: "food", total: 4, positive: 0, neutral: 0, negative: 0 }]}
+        hint="h"
+        empty="e"
+      />,
+    );
+    expect(screen.getByText("0% positive")).toBeTruthy();
+    expect(screen.getByText("0% negative")).toBeTruthy();
+  });
+});
+
+describe("SplitBars rows", () => {
   const row = { topic: "wait-time", total: 29, positive: 5, neutral: 3, negative: 21 };
 
   test("humanises a slug", () => {

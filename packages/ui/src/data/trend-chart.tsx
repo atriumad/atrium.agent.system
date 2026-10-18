@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { cx } from "../lib/cx";
 
 export type TrendPoint = { date: string; average: number | null; count: number };
@@ -18,6 +18,7 @@ const PAD = { l: 34, r: 8, t: 10, b: 24 };
 /** A daily average line (broken where there is no average) over quiet volume bars. */
 export function TrendChart({ points, label, min = 3, max = 5, className }: TrendChartProps) {
   const [active, setActive] = useState<number | null>(null);
+  const slider = useRef<HTMLInputElement>(null);
   const valid = points.filter((p) => p.average !== null);
   if (valid.length < 2) {
     return <p className="text-sm text-fg-muted">Too few answers to draw a trend</p>;
@@ -39,14 +40,22 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
   points.forEach((p, i) => {
     if (p.average === null) {
       if (run.length) segments.push(run.join(" "));
+      // A run of one point has no line; its marker below is what draws it.
+      const lines = segments.filter((s) => s.includes(" "));
       run = [];
     } else run.push(`${x(i)},${y(p.average)}`);
   });
   if (run.length) segments.push(run.join(" "));
+  // A run of one point has no line; its marker below is what draws it.
+  const lines = segments.filter((s) => s.includes(" "));
 
   const ticks = [min, (min + max) / 2, max];
   const labelEvery = Math.max(1, Math.ceil(n / 6));
-  const shown = active === null ? null : points[active];
+  const shownIndex = active ?? n - 1;
+  const shown = points[shownIndex];
+  const readout = shown
+    ? `${shown.date}: ${shown.average === null ? "no average" : shown.average.toFixed(1)}, ${shown.count} answers`
+    : "";
 
   return (
     <div className={cx("flex flex-col gap-2", className)}>
@@ -62,10 +71,12 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
           const px = ((e.clientX - r.left) / r.width) * W;
           setActive(Math.min(n - 1, Math.max(0, Math.round(((px - PAD.l) / innerW) * (n - 1)))));
         }}
-        onPointerLeave={() => setActive(null)}
+        onPointerLeave={() => {
+          if (document.activeElement !== slider.current) setActive(null);
+        }}
       >
-        {ticks.map((t) => (
-          <g key={t}>
+        {ticks.map((t, ti) => (
+          <g key={ti}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--cream-400)" />
             <text
               x={PAD.l - 6}
@@ -90,7 +101,7 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
             />
           ) : null,
         )}
-        {segments.map((s) => (
+        {lines.map((s) => (
           <polyline
             key={s}
             points={s}
@@ -101,13 +112,13 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
           />
         ))}
         {points.map((p, i) =>
-          p.average !== null && i === active ? (
+          p.average !== null ? (
             <circle
               key={p.date}
               cx={x(i)}
               cy={y(p.average)}
-              r="4"
-              fill="var(--lime-500)"
+              r={i === active ? 5 : 3}
+              fill={i === active ? "var(--lime-500)" : "var(--charcoal-800)"}
               stroke="var(--charcoal-800)"
             />
           ) : null,
@@ -129,19 +140,19 @@ export function TrendChart({ points, label, min = 3, max = 5, className }: Trend
       </svg>
       <div className="flex items-center gap-3">
         <input
+          ref={slider}
           type="range"
           min={0}
           max={n - 1}
           value={active ?? n - 1}
           aria-label="Day"
+          aria-valuetext={readout}
           onChange={(e) => setActive(Number(e.target.value))}
           onBlur={() => setActive(null)}
           className="min-w-0 flex-1"
         />
         <output className="text-sm text-fg-muted tabular-nums" aria-live="polite">
-          {shown
-            ? `${shown.date}: ${shown.average === null ? "no average" : shown.average.toFixed(1)}, ${shown.count} answers`
-            : ""}
+          {readout}
         </output>
       </div>
       <table className="sr-only">

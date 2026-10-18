@@ -24,7 +24,11 @@ export function humaniseTopic(slug: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const pct = (part: number, whole: number) => Math.round((part / whole) * 100);
+/** Each share is rounded on its own, so the three can add to 99 or 101; the bar widths are exact. All 0 when the parts are empty. */
+function shares(parts: number[]): number[] {
+  const sum = parts.reduce((a, b) => a + b, 0);
+  return parts.map((p) => (sum > 0 ? Math.round((p / sum) * 100) : 0));
+}
 
 /** Topics as stacked bars: positive lime with an ink outline, neutral cream line, negative clay. The share is also written out. */
 export function SplitBars({ rows, hint, empty, href, className }: SplitBarsProps) {
@@ -36,6 +40,7 @@ export function SplitBars({ rows, hint, empty, href, className }: SplitBarsProps
         {shown.map((r) => {
           const sum = r.positive + r.neutral + r.negative || 1;
           const name = humaniseTopic(r.topic);
+          const [pp, pn, pg] = shares([r.positive, r.neutral, r.negative]);
           const body = (
             <>
               <span className="flex items-baseline justify-between gap-3">
@@ -57,9 +62,9 @@ export function SplitBars({ rows, hint, empty, href, className }: SplitBarsProps
                 />
               </span>
               <span className="flex flex-wrap gap-x-3 text-xs text-fg-muted tabular-nums">
-                <span>{pct(r.positive, sum)}% positive</span>
-                <span>{pct(r.neutral, sum)}% neutral</span>
-                <span>{pct(r.negative, sum)}% negative</span>
+                <span>{pp}% positive</span>
+                <span>{pn}% neutral</span>
+                <span>{pg}% negative</span>
               </span>
             </>
           );
