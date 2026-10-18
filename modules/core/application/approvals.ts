@@ -3,7 +3,7 @@ import { canDecideApproval, isValidItemType } from "../domain/approvals";
 import { type Actor } from "../domain/audit";
 import type { Scope } from "../domain/roles";
 import type { Tx } from "../infra/db";
-import { approvalRequests } from "../infra/schema";
+import { approvalRequests, clients, locations } from "../infra/schema";
 import { writeAudit } from "./audit";
 import type { GuestDeps } from "./guests";
 
@@ -176,4 +176,47 @@ export async function decideApproval(
     tx,
   );
   return decided;
+}
+
+export type PendingApproval = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  locationId: string | null;
+  locationName: string | null;
+  itemType: string;
+  summary: string;
+  createdAt: Date;
+};
+
+/**
+ * Every pending approval request the caller's transaction can see, oldest first, in one query.
+ * RLS does the scoping; `clientId` only narrows. The client is joined, so a client with no
+ * places still shows up.
+ */
+export function listAllPendingApprovals(
+  tx: Tx,
+  filter: { clientId?: string | undefined } = {},
+): Promise<PendingApproval[]> {
+  return tx
+    .select({
+      id: approvalRequests.id,
+      clientId: approvalRequests.clientId,
+      clientName: clients.name,
+      locationId: approvalRequests.locationId,
+      locationName: locations.name,
+      itemType: approvalRequests.itemType,
+      summary: approvalRequests.summary,
+      createdAt: approvalRequests.createdAt,
+    })
+    .from(approvalRequests)
+    .innerJoin(clients, eq(clients.id, approvalRequests.clientId))
+    .leftJoin(locations, eq(locations.id, approvalRequests.locationId))
+    .where(
+      and(
+        eq(approvalRequests.status, "pending"),
+        filter.clientId === undefined ? undefined : eq(approvalRequests.clientId, filter.clientId),
+      ),
+    )
+    .orderBy(asc(approvalRequests.createdAt));
 }

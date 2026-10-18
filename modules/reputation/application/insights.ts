@@ -285,6 +285,8 @@ export type AgencyInsights = {
     change: number | null;
     small: boolean;
   };
+  /** Open cases that are overdue or due within a day: the whole count, before `cases` is cut. */
+  needingCases: number;
   overdue: { value: number; previous: number };
   portfolio: Tile;
   answerRate: {
@@ -457,13 +459,13 @@ export async function agencyInsights(
     .sort((a, b) => b.overdue - a.overdue || a.name.localeCompare(b.name));
 
   // Cases that need a person: open and overdue, or due within the next 24 hours.
-  const needing = openCases
+  const needingAll = openCases
     .filter((c) => isOverdue(c) || c.dueAt.getTime() <= nowMs + 24 * HOUR_MS)
     .sort(
       (a, b) =>
         Number(isOverdue(b)) - Number(isOverdue(a)) || a.dueAt.getTime() - b.dueAt.getTime(),
-    )
-    .slice(0, CASE_LIMIT);
+    );
+  const needing = needingAll.slice(0, CASE_LIMIT);
   const answerOf = new Map<string, { comment: string | null; rating: number }>();
   if (needing.length > 0) {
     const rows = await tx
@@ -496,6 +498,7 @@ export async function agencyInsights(
           : medianCur - medianPrev,
       small: contactSmall,
     },
+    needingCases: needingAll.length,
     overdue: { value: openCases.filter(isOverdue).length, previous: overduePrevious },
     portfolio,
     answerRate: {

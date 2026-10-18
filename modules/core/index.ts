@@ -11,12 +11,13 @@ export {
   setOverride,
   setPackage,
 } from "./application/access";
-export type { ApprovalItem, ApprovalOutcome } from "./application/approvals";
+export type { ApprovalItem, ApprovalOutcome, PendingApproval } from "./application/approvals";
 export {
   ApprovalAlreadyDecidedError,
   ApprovalForbiddenError,
   ApprovalNotFoundError,
   decideApproval,
+  listAllPendingApprovals,
   listPendingApprovals,
   requestApproval,
 } from "./application/approvals";

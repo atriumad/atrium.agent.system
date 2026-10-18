@@ -227,6 +227,7 @@ describe("agencyInsights", () => {
     const r = await run({ clientId: one.clientId });
     expect(r.overdue.value).toBe(51);
     expect(r.cases).toHaveLength(50);
+    expect(r.needingCases).toBe(51);
   });
 
   test("contact time: median hours and the share inside target", async () => {

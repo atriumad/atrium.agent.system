@@ -236,7 +236,14 @@ describe("GET /api/insights/owner", () => {
     const body = (await res.json()) as { places: { locationId: string }[] };
     expect(body.places.map((p) => p.locationId)).toEqual([locA1]);
     expect(JSON.stringify(body)).not.toContain("Heights");
-    expect(locA2).not.toBe(locA1);
+  });
+
+  test("staff asking for a place outside their places gets 200 and nothing", async () => {
+    const res = await get("limited", `/api/insights/owner?place=${locA2}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { places: unknown[] };
+    expect(body.places).toEqual([]);
+    expect(JSON.stringify(body)).not.toContain("Heights");
   });
 
   test("an unknown range is 422 and a place that is not a uuid is 422", async () => {
@@ -304,6 +311,35 @@ describe("GET /api/insights/agency", () => {
     expect(kinds.indexOf("account")).toBeLessThan(kinds.indexOf("place"));
   });
 
+  test("approvals: a client with no places counts, other clients stay hidden, ?client= narrows", async () => {
+    let bareId = "";
+    await withAgency(db, async (tx) => {
+      bareId = (
+        await createClientWithOrganization(tx, { name: "Sin Sitios", slug: `ins-bare-${suffix}` })
+      ).client.id;
+    });
+    await admin.unsafe(
+      `insert into core.approval_requests (client_id, requested_by_type, requested_by_id, item_type, item_ref, summary)
+       values ($1, 'user', $2, 'location.change', $3, 'Bare approval'),
+              ($4, 'user', $2, 'location.change', $5, 'Norte approval')`,
+      [bareId, `seed-${suffix}`, `bare-${suffix}`, clientB, `norte-${suffix}`],
+    );
+    const all = (await (await get("admin", "/api/insights/agency")).json()) as Agency;
+    expect(all.queue.find((q) => q.client === "Sin Sitios")?.kind).toBe("approval");
+    expect(all.queueCounts.approvals).toBeGreaterThanOrEqual(3);
+    const am = (await (await get("am", "/api/insights/agency")).json()) as Agency;
+    expect(am.queueCounts.approvals).toBe(1);
+    expect(JSON.stringify(am)).not.toContain("Norte approval");
+    expect(JSON.stringify(am)).not.toContain("Sin Sitios");
+    const one = (await (
+      await get("admin", `/api/insights/agency?client=${bareId}`)
+    ).json()) as Agency;
+    expect(one.queueCounts.approvals).toBe(1);
+    expect(one.queue.filter((q) => q.kind === "approval").map((q) => q.client)).toEqual([
+      "Sin Sitios",
+    ]);
+  });
+
   test("a role without location:manage gets no account items", async () => {
     const res = await get("staff", "/api/insights/agency");
     expect(res.status).toBe(200);
@@ -313,10 +349,20 @@ describe("GET /api/insights/agency", () => {
   });
 
   test("the queue is capped at 8 while the counts carry the totals", async () => {
-    for (let i = 0; i < 10; i++) await caseFor(clientA, locA2, `Late order ${i}`);
+    // More than the 50 cases the list holds: the count must come from the uncut total.
+    await admin.unsafe(
+      `with r as (
+         insert into reputation.survey_responses (client_id, location_id, rating, created_at)
+         select $1::uuid, $2::uuid, 1, $3::timestamptz from generate_series(1, 60) returning id
+       )
+       insert into reputation.recovery_cases
+         (client_id, location_id, response_id, severity, status, opened_at, due_at)
+       select $1::uuid, $2::uuid, id, 'high', 'open', $3::timestamptz, $4::timestamptz from r`,
+      [clientA, locA2, new Date(NOW.getTime() - 7_200_000), new Date(NOW.getTime() + 3_600_000)],
+    );
     const body = (await (await get("am", "/api/insights/agency")).json()) as Agency;
     expect(body.queue.length).toBe(8);
-    expect(body.queueCounts.cases).toBe(11);
+    expect(body.queueCounts.cases).toBe(61);
     expect(body.queueCounts.approvals).toBe(1);
   });
 });

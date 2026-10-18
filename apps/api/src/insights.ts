@@ -1,8 +1,8 @@
 import {
   can,
+  listAllPendingApprovals,
   listLocationLabels,
   listOnboardingRequests,
-  listPendingApprovals,
   type Scope,
   withScope,
 } from "@atrium/core";
@@ -65,8 +65,6 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
     const found = await withScope(deps.db, scope, async (tx) => {
       const insights = await agencyInsights(tx, { range: q.range, clientId: client, now });
       const labels = await listLocationLabels(tx);
-      const place = new Map(labels.map((l) => [l.id, l.locationName]));
-      const clientName = new Map(labels.map((l) => [l.clientId, l.clientName]));
 
       const cases: QueueItem[] = insights.cases.map((k) => ({
         kind: "case",
@@ -80,22 +78,20 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
         href: `/reputation/cases?case=${k.id}`,
       }));
 
-      const approvals: QueueItem[] = [];
-      for (const row of insights.clients) {
-        for (const a of await listPendingApprovals(tx, row.clientId)) {
-          approvals.push({
-            kind: "approval",
-            id: a.id,
-            client: row.name,
-            place: a.locationId ? (place.get(a.locationId) ?? null) : null,
-            detail: a.summary,
-            severity: null,
-            dueAt: null,
-            overdue: false,
-            href: "/approvals/places",
-          });
-        }
-      }
+      // Every approval links to /approvals/places: it is the only approvals target the Manager has for them today.
+      const approvals: QueueItem[] = (await listAllPendingApprovals(tx, { clientId: client })).map(
+        (a) => ({
+          kind: "approval",
+          id: a.id,
+          client: a.clientName,
+          place: a.locationName,
+          detail: a.summary,
+          severity: null,
+          dueAt: null,
+          overdue: false,
+          href: "/approvals/places",
+        }),
+      );
 
       // Account requests belong to no client yet, so a client filter leaves them out.
       const accounts: QueueItem[] =
@@ -120,7 +116,7 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
         .map((l) => ({
           kind: "place",
           id: l.id,
-          client: clientName.get(l.clientId) ?? l.clientName,
+          client: l.clientName,
           place: l.locationName,
           detail: "Waiting for approval",
           severity: null,
@@ -133,7 +129,7 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
         ...insights,
         queue: [...cases, ...approvals, ...accounts, ...places].slice(0, QUEUE_LIMIT),
         queueCounts: {
-          cases: cases.length,
+          cases: insights.needingCases,
           approvals: approvals.length,
           accounts: accounts.length,
           places: places.length,
