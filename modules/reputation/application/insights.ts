@@ -57,7 +57,7 @@ export type OwnerInsights = {
 const TOPIC_LIMIT = 5;
 const DAY_MS = 86_400_000;
 
-type InsightCase = {
+export type InsightCase = {
   id: string;
   locationId: string;
   responseId: string;
@@ -73,7 +73,7 @@ type InsightCase = {
  * The bounded selects both Overviews read (answers, cases, sent requests of the given places) and
  * the window classifier in each place's own time zone. Row-level security decides what is visible.
  */
-async function loadInsightData(
+export async function loadInsightData(
   tx: Tx,
   labels: { id: string; timeZone: string }[],
   days: number,
@@ -159,6 +159,46 @@ async function loadInsightData(
       );
   }
   return { zones, windowOf, answers, cases, sentRequests };
+}
+
+/**
+ * Time to contact for the cases opened in the window: the median of `contacted_at - opened_at`
+ * and the share contacted inside the target. A case not yet contacted counts as outside the
+ * target only once past `due_at`.
+ */
+export function contactFigures(
+  cases: InsightCase[],
+  windowOf: (locationId: string, at: Date | null) => "cur" | "prev" | null,
+  nowMs: number,
+) {
+  const opened = (w: "cur" | "prev") =>
+    cases.filter((c) => windowOf(c.locationId, c.openedAt) === w);
+  const hoursOf = (rows: InsightCase[]) =>
+    rows
+      .filter((c) => c.contactedAt !== null)
+      .map((c) => ((c.contactedAt as Date).getTime() - c.openedAt.getTime()) / HOUR_MS);
+  const openedCur = opened("cur");
+  const openedPrev = opened("prev");
+  const medianCur = median(hoursOf(openedCur));
+  const medianPrev = median(hoursOf(openedPrev));
+  const contactSmall = openedCur.length < MIN_SAMPLE;
+  const inside = openedCur.filter(
+    (c) => c.contactedAt !== null && c.contactedAt.getTime() <= c.dueAt.getTime(),
+  ).length;
+  const outside = openedCur.filter((c) =>
+    c.contactedAt !== null
+      ? c.contactedAt.getTime() > c.dueAt.getTime()
+      : c.dueAt.getTime() < nowMs,
+  ).length;
+  return {
+    openedCur,
+    openedPrev,
+    medianCur,
+    medianPrev,
+    contactSmall,
+    inside,
+    judged: inside + outside,
+  };
 }
 
 /**
@@ -379,27 +419,8 @@ export async function agencyInsights(
     spark: series.map((s) => s.average).filter((v): v is number => v !== null),
   };
 
-  // Time to contact: cases opened in the window.
-  const opened = (w: "cur" | "prev") =>
-    cases.filter((c) => windowOf(c.locationId, c.openedAt) === w);
-  const hoursOf = (rows: typeof cases) =>
-    rows
-      .filter((c) => c.contactedAt !== null)
-      .map((c) => ((c.contactedAt as Date).getTime() - c.openedAt.getTime()) / HOUR_MS);
-  const openedCur = opened("cur");
-  const openedPrev = opened("prev");
-  const medianCur = median(hoursOf(openedCur));
-  const medianPrev = median(hoursOf(openedPrev));
-  const contactSmall = openedCur.length < MIN_SAMPLE;
-  const inside = openedCur.filter(
-    (c) => c.contactedAt !== null && c.contactedAt.getTime() <= c.dueAt.getTime(),
-  ).length;
-  const outside = openedCur.filter((c) =>
-    c.contactedAt !== null
-      ? c.contactedAt.getTime() > c.dueAt.getTime()
-      : c.dueAt.getTime() < nowMs,
-  ).length;
-  const judged = inside + outside;
+  const { openedCur, openedPrev, medianCur, medianPrev, contactSmall, inside, judged } =
+    contactFigures(cases, windowOf, nowMs);
 
   // Overdue now, and as it stood one window ago. There is no status history, so "was open at the
   // cutoff" is read from the timestamps: not yet contacted and not yet resolved at that instant.

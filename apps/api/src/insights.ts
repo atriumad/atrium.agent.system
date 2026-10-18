@@ -4,10 +4,18 @@ import {
   listLocationLabels,
   listOnboardingRequests,
   type Scope,
+  type Tx,
   withScope,
 } from "@atrium/core";
-import { agencyInsights, ownerInsights, parseRange } from "@atrium/reputation";
-import type { Hono } from "hono";
+import {
+  agencyInsights,
+  casesBand,
+  ownerInsights,
+  parseRange,
+  type Range,
+  responsesBand,
+} from "@atrium/reputation";
+import type { Context, Hono } from "hono";
 import type { AppDeps } from "./app";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,6 +60,28 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
     );
     return c.json(found);
   });
+
+  // The bands above the Cases and Responses tables: every role reads them, and row-level security
+  // shapes the rows, so there is no role check here. A place outside the session finds nothing.
+  const band =
+    <T>(
+      run: (
+        tx: Tx,
+        input: { range: Range; locationId: string | undefined; now: Date },
+      ) => Promise<T>,
+    ) =>
+    async (c: Context<Env>) => {
+      const place = c.req.query("place");
+      const q = query({ range: c.req.query("range"), id: place });
+      if ("error" in q) return c.json({ error: q.error }, 422);
+      const now = deps.now?.() ?? new Date();
+      const found = await withScope(deps.db, c.get("scope"), (tx) =>
+        run(tx, { range: q.range, locationId: place, now }),
+      );
+      return c.json(found);
+    };
+  api.get("/insights/responses", band(responsesBand));
+  api.get("/insights/cases", band(casesBand));
 
   api.get("/insights/agency", async (c) => {
     const scope = c.get("scope");

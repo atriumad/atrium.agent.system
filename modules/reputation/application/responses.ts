@@ -6,10 +6,25 @@ import {
   type Tx,
 } from "@atrium/core";
 import { type AnyColumn, and, asc, desc, eq, inArray, type SQL, sql } from "drizzle-orm";
-import { RANGE_DAYS, type Range, windowDates } from "../domain/insights";
-import { escapeLike, type ResponseSort, type SortDir } from "../domain/tables";
+import {
+  compareCount,
+  compareMean,
+  compareRate,
+  dailySeries,
+  RANGE_DAYS,
+  type Range,
+  windowDates,
+} from "../domain/insights";
+import {
+  escapeLike,
+  negativeCompare,
+  type ResponseSort,
+  ratingDistribution,
+  type SortDir,
+} from "../domain/tables";
 import { recoveryCases, surveyResponses } from "../infra/schema";
 import { assertCan, type SurveyResponseRow } from "./admin";
+import { loadInsightData, type Tile } from "./insights";
 
 export type ResponseQuery = {
   range: Range;
@@ -196,4 +211,91 @@ export async function listResponsesPage(
     safety: r.safety,
   }));
   return result;
+}
+
+export type ResponsesBand = {
+  range: Range;
+  generatedAt: string;
+  window: { from: string; to: string };
+  responses: Tile;
+  rating: Tile;
+  negativeShare: { value: number | null; change: number | null; read: number; small: boolean };
+  reviewClicks: {
+    clicks: number;
+    answers: number;
+    rate: number | null;
+    change: number | null;
+    small: boolean;
+  };
+  distribution: [number, number, number, number, number];
+};
+
+/**
+ * The figures above the Responses table, for the window and place only (never the table's
+ * filters). Reuses the Overview's selects and definitions; RLS (the passed Tx) picks the clients.
+ * An answer counts as read when `readAt` is set and a sentiment is present.
+ */
+export async function responsesBand(
+  tx: Tx,
+  input: { range: Range; locationId?: string | undefined; now: Date },
+): Promise<ResponsesBand> {
+  const { range, now } = input;
+  const days = RANGE_DAYS[range];
+  const labels = (await listLocationLabels(tx)).filter(
+    (l) => input.locationId === undefined || l.id === input.locationId,
+  );
+  const { zones, windowOf, answers: loaded } = await loadInsightData(tx, labels, days, now);
+  const answers = loaded.filter((a) => a.createdAt.getTime() <= now.getTime());
+  const cur = answers.filter((a) => windowOf(a.locationId, a.createdAt) === "cur");
+  const prev = answers.filter((a) => windowOf(a.locationId, a.createdAt) === "prev");
+  const series = dailySeries(answers, zones, now, days);
+  const spark = (values: (number | null)[]) => values.filter((v): v is number => v !== null);
+
+  const rating = compareMean(
+    cur.map((a) => a.rating),
+    prev.map((a) => a.rating),
+  );
+  const count = compareCount(cur.length, prev.length);
+  const sentimentOf = (a: { readAt: Date | null; sentiment: string | null }) =>
+    a.readAt !== null ? a.sentiment : null;
+  const negative = negativeCompare(cur.map(sentimentOf), prev.map(sentimentOf));
+  const clickCount = cur.filter((a) => a.reviewClickedAt).length;
+  const clicks = compareRate(
+    { num: clickCount, den: cur.length },
+    { num: prev.filter((a) => a.reviewClickedAt).length, den: prev.length },
+  );
+
+  return {
+    range,
+    generatedAt: now.toISOString(),
+    window: { from: series[0]?.date ?? "", to: series[series.length - 1]?.date ?? "" },
+    responses: {
+      value: count.value,
+      change: count.change,
+      n: count.n,
+      small: count.small,
+      spark: series.map((s) => s.count),
+    },
+    rating: {
+      value: rating.value,
+      change: rating.change,
+      n: rating.n,
+      small: rating.small,
+      spark: spark(series.map((s) => s.average)),
+    },
+    negativeShare: {
+      value: negative.value,
+      change: negative.change,
+      read: negative.n,
+      small: negative.small,
+    },
+    reviewClicks: {
+      clicks: clickCount,
+      answers: cur.length,
+      rate: clicks.value,
+      change: clicks.change,
+      small: clicks.small,
+    },
+    distribution: ratingDistribution(cur.map((a) => a.rating)),
+  };
 }

@@ -3,7 +3,7 @@
  * Pure helpers for the Cases and Responses tables. No database.
  * No NaN leaves these functions: a zero denominator gives null.
  */
-import { type Compared, compareRate } from "./insights";
+import { type Compared, compareRate, localDate, type PlaceZone, windowDates } from "./insights";
 
 /** Escapes `\`, `%` and `_` so user text matches literally inside a LIKE pattern. */
 export function escapeLike(input: string): string {
@@ -71,3 +71,35 @@ export function negativeCompare(current: (string | null)[], previous: (string | 
 export const RESPONSE_SORTS = ["date", "rating", "place", "sentiment"] as const;
 export type ResponseSort = (typeof RESPONSE_SORTS)[number];
 export type SortDir = "asc" | "desc";
+
+/**
+ * One entry per local date of the current window (the latest "today" among the places ends it),
+ * counting the items that fall on that date in their own place's zone and not after `now`.
+ */
+export function dailyCounts(
+  items: { locationId: string; at: Date }[],
+  zones: PlaceZone[],
+  now: Date,
+  days: number,
+): { date: string; count: number }[] {
+  const zoneOf = new Map(zones.map((z) => [z.id, z.timeZone]));
+  const latest = zones.reduce(
+    (best, z) => (localDate(now, z.timeZone) > localDate(now, best) ? z.timeZone : best),
+    zones[0]?.timeZone ?? "UTC",
+  );
+  const dates = windowDates(now, latest, days).current;
+  const counts = new Map<string, number>(dates.map((d) => [d, 0]));
+  const own = new Map<string, Set<string>>();
+  for (const item of items) {
+    if (item.at.getTime() > now.getTime()) continue;
+    const zone = zoneOf.get(item.locationId) ?? "UTC";
+    let window = own.get(zone);
+    if (!window) {
+      window = new Set(windowDates(now, zone, days).current);
+      own.set(zone, window);
+    }
+    const date = localDate(item.at, zone);
+    if (window.has(date) && counts.has(date)) counts.set(date, (counts.get(date) ?? 0) + 1);
+  }
+  return dates.map((date) => ({ date, count: counts.get(date) ?? 0 }));
+}

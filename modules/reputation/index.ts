@@ -16,7 +16,13 @@ export {
   SurveyNotFoundError,
   SurveyStateError,
 } from "./application/admin";
-export { type CasesTable, type CaseTableRow, listCasesTable } from "./application/cases-table";
+export {
+  type CasesBand,
+  type CasesTable,
+  type CaseTableRow,
+  casesBand,
+  listCasesTable,
+} from "./application/cases-table";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
 export type {
   ResponseCard,
@@ -61,10 +67,11 @@ export {
 } from "./application/requests";
 export type {
   ResponseQuery,
+  ResponsesBand,
   ResponsesPage,
   ResponseTableRow,
 } from "./application/responses";
-export { listResponsesPage } from "./application/responses";
+export { listResponsesPage, responsesBand } from "./application/responses";
 export type { ReaderInput, ReadOutcome, ResponseReader } from "./application/sentiment";
 export { ReadingInvalidError, readResponse } from "./application/sentiment";
 export type { LocationSettings } from "./application/settings";

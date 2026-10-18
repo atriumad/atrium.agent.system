@@ -1,9 +1,10 @@
-import type { Tx } from "@atrium/core";
+import { listLocationLabels, type Tx } from "@atrium/core";
 import { and, eq, gte, inArray, lte, or } from "drizzle-orm";
-import { RANGE_DAYS, type Range } from "../domain/insights";
+import { compareCount, MIN_SAMPLE, RANGE_DAYS, type Range } from "../domain/insights";
 import type { CaseStatus } from "../domain/recovery";
-import { type CaseTab, caseCounts } from "../domain/tables";
+import { type CaseTab, caseCounts, dailyCounts, severitySplit } from "../domain/tables";
 import { recoveryCases } from "../infra/schema";
+import { contactFigures, loadInsightData } from "./insights";
 import { type CaseSummary, selectCaseRows } from "./recovery";
 
 const PAGE = 200;
@@ -61,4 +62,110 @@ export async function listCasesTable(
     };
   });
   return { cases, counts, truncated: found.length > PAGE };
+}
+
+export type CasesBand = {
+  range: Range;
+  generatedAt: string;
+  window: { from: string; to: string };
+  open: number;
+  overdue: { value: number; previous: number };
+  contact: {
+    medianHours: number | null;
+    insideTarget: number | null;
+    cases: number;
+    change: number | null;
+    small: boolean;
+  };
+  resolved: { value: number; change: number | null; small: boolean };
+  openedPerDay: { date: string; count: number }[];
+  bySeverity: { high: number; medium: number; low: number };
+};
+
+/**
+ * The figures above the Cases table. `open` is the Active tab's count (open plus contacted cases,
+ * "now", not windowed) and `overdue.value` its overdue subset (open, past due); both use the same
+ * rows as `listCasesTable`'s counts. The rest follows the Overview's definitions over the window.
+ */
+export async function casesBand(
+  tx: Tx,
+  input: { range: Range; locationId?: string | undefined; now: Date },
+): Promise<CasesBand> {
+  const { range, now } = input;
+  const days = RANGE_DAYS[range];
+  const nowMs = now.getTime();
+  const labels = (await listLocationLabels(tx)).filter(
+    (l) => input.locationId === undefined || l.id === input.locationId,
+  );
+  const ids = labels.map((l) => l.id);
+  const { zones, windowOf, cases: loaded } = await loadInsightData(tx, labels, days, now);
+  // Nothing opened after now; the Overview's select is bounded by age, not by `now`.
+  const cases = loaded.filter((c) => c.openedAt.getTime() <= nowMs);
+
+  // Active cases whenever they were opened (the loaded set only keeps recent contacted ones).
+  const active =
+    ids.length === 0
+      ? []
+      : await tx
+          .select({ status: recoveryCases.status, dueAt: recoveryCases.dueAt })
+          .from(recoveryCases)
+          .where(
+            and(
+              inArray(recoveryCases.locationId, ids),
+              lte(recoveryCases.openedAt, now),
+              inArray(recoveryCases.status, ["open", "contacted"]),
+            ),
+          );
+  const overdueNow = active.filter((c) => c.status === "open" && c.dueAt.getTime() < nowMs).length;
+
+  const { openedCur, openedPrev, medianCur, medianPrev, contactSmall, inside, judged } =
+    contactFigures(cases, windowOf, nowMs);
+
+  // Overdue as it stood one window ago: no status history, so read it from the timestamps.
+  const then = nowMs - days * DAY_MS;
+  const overduePrevious = cases.filter(
+    (c) =>
+      c.openedAt.getTime() <= then &&
+      c.dueAt.getTime() < then &&
+      (c.contactedAt === null || c.contactedAt.getTime() > then) &&
+      (c.resolvedAt === null || c.resolvedAt.getTime() > then),
+  ).length;
+
+  const resolvedAt = (w: "cur" | "prev") =>
+    cases.filter(
+      (c) =>
+        c.status === "resolved" &&
+        c.resolvedAt !== null &&
+        c.resolvedAt.getTime() <= nowMs &&
+        windowOf(c.locationId, c.resolvedAt) === w,
+    ).length;
+  const resolved = compareCount(resolvedAt("cur"), resolvedAt("prev"));
+
+  const perDay = dailyCounts(
+    cases.map((c) => ({ locationId: c.locationId, at: c.openedAt })),
+    zones,
+    now,
+    days,
+  );
+
+  return {
+    range,
+    generatedAt: now.toISOString(),
+    window: { from: perDay[0]?.date ?? "", to: perDay[perDay.length - 1]?.date ?? "" },
+    open: active.length,
+    overdue: { value: overdueNow, previous: overduePrevious },
+    contact: {
+      medianHours: medianCur,
+      insideTarget: judged > 0 ? inside / judged : null,
+      cases: openedCur.length,
+      change:
+        medianCur === null || medianPrev === null || contactSmall || openedPrev.length < MIN_SAMPLE
+          ? null
+          : medianCur - medianPrev,
+      small: contactSmall,
+    },
+    resolved: { value: resolved.value ?? 0, change: resolved.change, small: resolved.small },
+    openedPerDay: perDay,
+    bySeverity: severitySplit(openedCur.map((c) => c.severity)),
+  };
 }
