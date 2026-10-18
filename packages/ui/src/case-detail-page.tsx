@@ -28,7 +28,6 @@ export function listHref(surface: Surface, backParam: string | null): string {
     typeof backParam === "string" &&
     backParam.startsWith("?") &&
     backParam.length <= 500 &&
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: rejecting control characters is the point
     !/[\u0000-\u001f\u007f#]/.test(backParam);
   return ok ? `${LIST[surface]}${backParam}` : LIST[surface];
 }
