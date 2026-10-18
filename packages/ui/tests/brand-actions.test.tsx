@@ -73,23 +73,26 @@ describe("Button", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  test("variants map to the system: primary is charcoal, lime is the signal, clay is clay-600", () => {
+  test("variants map to the system: primary is the lime highlighter with an ink edge, ink is charcoal, clay is clay-600", () => {
     setup(
       <>
         <Button>P</Button>
         <Button variant="lime">L</Button>
+        <Button variant="ink">I</Button>
         <Button variant="clay">C</Button>
       </>,
     );
-    expect(screen.getByText("P").className).toContain("bg-charcoal-800");
+    expect(screen.getByText("P").className).toContain("bg-lime-500");
+    expect(screen.getByText("P").className).toContain("border-charcoal-800");
     expect(screen.getByText("L").className).toContain("bg-lime-500");
+    expect(screen.getByText("I").className).toContain("bg-charcoal-800");
     expect(screen.getByText("C").className).toContain("bg-clay-600");
   });
 
-  test("is squared: never a pill", () => {
+  test("is a pill", () => {
     setup(<Button>Go</Button>);
-    expect(screen.getByRole("button").className).toContain("rounded-control");
-    expect(screen.getByRole("button").className).not.toContain("rounded-full");
+    expect(screen.getByRole("button").className).toContain("rounded-full");
+    expect(screen.getByRole("button").className).not.toContain("rounded-control");
   });
 
   test("disabled does not fire", async () => {

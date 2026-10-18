@@ -6,7 +6,7 @@ export function TableWrap({ className, ...rest }: ComponentProps<"div">) {
   return (
     <div
       className={cx(
-        "overflow-x-auto rounded-card border border-line bg-surface-card [&_tr:last-child>td]:border-b-0",
+        "overflow-x-auto rounded-card border border-frame bg-surface-card [&_tr:last-child>td]:border-b-0",
         className,
       )}
       {...rest}

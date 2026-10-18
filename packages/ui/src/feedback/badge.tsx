@@ -29,11 +29,11 @@ export function Badge({ variant, className, ...rest }: BadgeProps) {
 export type Status = "positive" | "warning" | "danger" | "info" | "neutral";
 
 const STATUS: Record<Status, string> = {
-  positive: "bg-status-positive-bg text-status-positive-fg",
-  warning: "bg-status-warning-bg text-status-warning-fg",
-  danger: "bg-status-danger-bg text-status-danger-fg",
-  info: "bg-status-info-bg text-status-info-fg",
-  neutral: "bg-status-neutral-bg text-status-neutral-fg",
+  positive: "border-status-positive-line bg-status-positive-bg text-status-positive-fg",
+  warning: "border-status-warning-line bg-status-warning-bg text-status-warning-fg",
+  danger: "border-status-danger-line bg-status-danger-bg text-status-danger-fg",
+  info: "border-status-info-line bg-status-info-bg text-status-info-fg",
+  neutral: "border-status-neutral-line bg-status-neutral-bg text-status-neutral-fg",
 };
 export const STATUS_ICON = {
   positive: CheckCircle2,
@@ -52,7 +52,10 @@ export type StatusBadgeProps = ComponentProps<"span"> & { status: Status; dot?: 
 export function StatusBadge({ status, dot, className, children, ...rest }: StatusBadgeProps) {
   const Glyph = STATUS_ICON[status];
   return (
-    <span className={cx(BADGE_BASE, "rounded-full px-2.5", STATUS[status], className)} {...rest}>
+    <span
+      className={cx(BADGE_BASE, "rounded-full border px-2.5", STATUS[status], className)}
+      {...rest}
+    >
       {dot ? (
         <span className="size-[7px] shrink-0 rounded-full bg-current" aria-hidden="true" />
       ) : (

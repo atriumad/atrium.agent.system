@@ -15,7 +15,7 @@ export function EmptyState({ icon, title, action, className, children, ...rest }
   return (
     <div
       className={cx(
-        "flex flex-col items-center gap-2 rounded-card border border-dashed border-charcoal-400 px-6 py-10 text-center",
+        "flex flex-col items-center gap-2 rounded-card border border-dashed border-frame px-6 py-10 text-center",
         className,
       )}
       {...rest}

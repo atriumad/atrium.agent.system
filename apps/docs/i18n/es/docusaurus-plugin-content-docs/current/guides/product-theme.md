@@ -6,28 +6,30 @@ description: "Cómo se diferencia la interfaz del producto de la marca, y las re
 
 # Tema del *producto*
 
-El Manager y la Platform usan la marca Atrium sobre una interfaz de papel y tarjetas pensada para datos densos. La marca (el sitio y el sistema de diseño de `atrium-docs`) no cambia. La capa del producto vive en `packages/ui/src/tokens-product.css` y se carga después de `tokens.css`, así que solo sobrescribe valores.
+El Manager y la Platform usan la marca Atrium como tinta sobre papel: un solo crema para la página y las tarjetas, tarjetas dibujadas con un contorno de 1px en vez de relleno o sombra, y el lima como única muestra de resaltador. El estilo toma su disciplina de Pirsch Analytics (plano, con contorno, un solo acento) y conserva lo propio de Atrium: lima, clay, charcoal, Inter Tight, Instrument Serif, etiquetas en versalitas espaciadas y el resaltado de marcador. La marca (el sitio y el sistema de diseño de `atrium-docs`) no cambia. La capa del producto vive en `packages/ui/src/tokens-product.css` y se carga después de `tokens.css`, así que solo sobrescribe valores.
 
 ## Qué cambia el producto
 
 | Token | Marca | Producto |
 | --- | --- | --- |
-| `--surface-page` | `#f4eee2` | `#f6f5f4` |
-| `--surface-card` | `#fbf8f1` | `#ffffff` |
-| `--surface-sunken` | `#e9e1d1` | `#f1efec` |
-| `--border-light` | `#d4cab6` | `rgba(0, 0, 0, 0.08)` |
-| Radio de tarjeta (`rounded-card`) | 6px | 12px |
-| Radio de control (`rounded-control`) | 4px | 8px |
+| `--surface-page` | `#f4eee2` | `#f8f5ed` |
+| `--surface-card` | `#fbf8f1` | `#f8f5ed` (igual que la página) |
+| `--surface-sunken` | `#e9e1d1` | `#efe9dc` |
+| `--border-frame` (nuevo, `border-frame`) | ninguno | `#242726`, el contorno de tarjetas, tablas y fichas |
+| Radio de tarjeta (`rounded-card`) | 6px | 16px |
+| Radio de control (`rounded-control`): campos, fichas pequeñas | 4px | 6px |
+| Botones | 4px | píldora (`rounded-full`) |
 
-Las insignias de estado son píldoras con una palabra y una marca. Cada color de texto de estado sobre su fondo da al menos 4,5:1, y una prueba lo exige. Las tablas se enmarcan como tarjetas, sin regla de tinta arriba.
+El botón primario es lima con borde de tinta: el lima sobre crema da 1,4:1, así que el borde es lo que muestra el botón. Las insignias de estado son píldoras con contorno, una palabra y una marca, con los colores de estado de la marca. Cada color de texto de estado sobre su fondo da al menos 4,5:1, y una prueba lo exige. Las tablas se enmarcan como tarjetas, sin regla de tinta arriba. Una tarjeta interactiva se ilumina con un lavado de lima al pasar el cursor; no se eleva ni proyecta sombra.
 
-Sin cambios: lima, clay, charcoal, Inter Tight, la barra lateral oscura, el tema oscuro y el movimiento. El tema oscuro no se sobrescribe: la capa del producto se aplica a una raíz que no sea `data-atr-theme="dark"`.
+Sin cambios: lima, clay, charcoal, Inter Tight, la barra lateral oscura, el tema oscuro y el movimiento. El tema oscuro conserva sus valores: la capa del producto se aplica a una raíz que no sea `data-atr-theme="dark"`, y una región oscura cambia el contorno de tinta por la línea fina oscura.
 
 ## Reglas para las pantallas del producto
 
-- Una sola acción primaria oscura por pantalla.
+- Una sola acción primaria lima por pantalla. Los botones con contorno son la secundaria.
 - Sin sombra en el contenido. La sombra es para popovers y menús.
-- El blanco es una superficie de tarjeta, nunca el fondo de la página.
+- Nada de blanco. El crema es la página y la tarjeta.
+- El lima es una señal, no un relleno de áreas grandes. El clay es para errores y foco, nunca un botón en una pantalla de datos.
 - Un estado nunca se indica solo con color.
 
 ## La página de datos

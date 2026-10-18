@@ -37,31 +37,39 @@ describe("the product theme", () => {
     expect(productAt).toBeGreaterThan(brandAt);
   });
 
-  test("sets the paper, card, sunken and line values", () => {
-    expect(tokenIn(product, "surface-page")).toBe("#f6f5f4");
-    expect(tokenIn(product, "surface-card")).toBe("#ffffff");
-    expect(tokenIn(product, "surface-sunken")).toBe("#f1efec");
-    expect(tokenIn(product, "border-light")).toBe("rgba(0, 0, 0, 0.08)");
+  test("the page and the card are one cream, and the card is drawn by an ink outline", () => {
+    expect(tokenIn(product, "surface-page")).toBe("#f8f5ed");
+    expect(tokenIn(product, "surface-card")).toBe(tokenIn(product, "surface-page"));
+    expect(tokenIn(product, "surface-sunken")).toBe("#efe9dc");
+    expect(tokenIn(product, "border-light")).toBe("#d4cab6");
+    expect(product).toContain("--border-frame: var(--charcoal-800)");
+  });
+
+  test("there is no white surface and no shadow in the layer", () => {
+    const rules = product.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(rules).not.toMatch(/#fff(fff)?\b/i);
+    expect(rules).not.toContain("shadow");
   });
 
   test("defines the card and control radii as Tailwind theme tokens", () => {
-    expect(theme).toContain("--radius-card: 12px");
-    expect(theme).toContain("--radius-control: 8px");
+    expect(theme).toContain("--radius-card: 16px");
+    expect(theme).toContain("--radius-control: 6px");
     // The old radii other components rely on are untouched.
     expect(theme).toContain("--radius-md: 6px");
     expect(theme).toContain("--radius-sm: 4px");
   });
 
-  test("leaves the dark theme alone", () => {
+  test("leaves the dark theme alone, except the frame, which a dark region must not draw in ink", () => {
     expect(product).toContain(':root:not([data-atr-theme="dark"])');
-    expect(product).not.toMatch(/^\[data-atr-theme/m);
+    const dark = product.match(/^\[data-atr-theme="dark"\]\s*\{([^}]*)\}/m)?.[1] ?? "";
+    expect(dark.match(/--[\w-]+(?=:)/g)).toEqual(["--border-frame"]);
   });
 
   test("every status pair is at least 4.5:1", () => {
     for (const status of ["positive", "warning", "danger", "info", "neutral"]) {
       const ratio = contrast(
-        tokenIn(product, `status-${status}-fg`),
-        tokenIn(product, `status-${status}-bg`),
+        tokenIn(brand, `status-${status}-fg`),
+        tokenIn(brand, `status-${status}-bg`),
       );
       expect([status, ratio >= 4.5]).toEqual([status, true]);
     }
@@ -69,7 +77,7 @@ describe("the product theme", () => {
 
   test("muted text clears 4.5:1 on the page and on a card", () => {
     const muted = tokenIn(brand, "charcoal-500");
-    for (const surface of ["surface-page", "surface-card"]) {
+    for (const surface of ["surface-page", "surface-card", "surface-sunken"]) {
       expect([surface, contrast(muted, tokenIn(product, surface)) >= 4.5]).toEqual([surface, true]);
     }
   });

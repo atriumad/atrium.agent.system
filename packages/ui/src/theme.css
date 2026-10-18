@@ -54,6 +54,7 @@
   --color-fg-on-clay: var(--text-on-clay);
   --color-line: var(--border-light);
   --color-line-strong: var(--border-strong);
+  --color-frame: var(--border-frame);
   --color-line-dark: var(--border-on-dark);
   --color-rule: var(--rule);
   --color-field: var(--field-border);
@@ -88,9 +89,9 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
-  /* The product's shapes: cards and tables, and controls. */
-  --radius-card: 12px;
-  --radius-control: 8px;
+  /* The product's shapes: cards and tables, fields and small tiles. Buttons are pills (rounded-full). */
+  --radius-card: 16px;
+  --radius-control: 6px;
 
   --shadow-card: 0 1px 0 rgba(36, 39, 38, 0.06);
   --shadow-raised: 0 2px 0 var(--charcoal-800);

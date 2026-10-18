@@ -1,7 +1,7 @@
 # UI foundations: a product theme, a data page and a new bell
 
 Date: 2026-10-16
-Status: draft for review
+Status: draft for review. Revised 2026-10-17: the style reference moved from Notion to Pirsch Analytics (see "Revision" below).
 Delivery 1 of 4 in the UI redesign. Later deliveries: Cases, Overview, Responses/Help/Places.
 
 ## Goal
@@ -16,7 +16,7 @@ Asked: the notification panel should open the case or action that triggered a no
 
 Decided in this design session:
 - **Both apps, one system.** Manager (the agency's team) and Platform (the owner) share the components. Manager gets the work queue first because it has the most real data.
-- **Hybrid style.** Take the surface hierarchy and density from the Notion reference; keep Atrium's lime, clay, charcoal, Inter Tight and the dark sidebar. Chosen from three mockups (A current, B hybrid with a charcoal action, C hybrid with a blue action). B won.
+- **Hybrid style.** Originally Notion's surface hierarchy and density with Atrium's colours. Replaced on 2026-10-17, see "Revision".
 - **Overview** is a summary with a table per block and "View all →" links (layout 1 of three).
 - **Full data views** are a full-width table with the detail on its own page (option B of two). The recommendation was a side panel; the choice was the page. Consequence: cases get a route, and the bell links change from `?case=<id>` to `/reputation/cases/<id>` in delivery 2.
 - **Tokens live in a product-only layer** in this repo. `atrium-docs/src/design/tokens.ts` and the brand do not change.
@@ -25,6 +25,15 @@ Assumptions to confirm:
 - The reference is a marketing page. Only its surfaces, density, status pills and table patterns apply; heroes, decorative marks and coloured feature cards do not.
 - No CSV export in this delivery (see Out of scope).
 - **Table frame.** Mockup B shows a table framed like a card (12px radius, hairline, no rule). Today `TableWrap` has a 3px ink rule on top. I told the user in the design session that this rule stays; the chosen mockup contradicts that. This spec follows the mockup and drops the rule from tables. The 3px rule stays elsewhere (section rules). To confirm in review.
+
+## Revision (2026-10-17): Pirsch instead of Notion
+
+The user dropped Notion as the reference and asked for the Pirsch Analytics rules (a cream notebook page, 1px ink outlines, no shadows, one highlighter accent), balanced against Atrium's own identity. The mix, decided by the assistant:
+
+- **From Pirsch:** a cream canvas where cards are the same cream as the page and are drawn by a 1px ink outline; no shadows; large radii (cards 16px, buttons pill, fields 6px); one accent fill per view; outlined status pills.
+- **From Atrium:** lime plays the highlighter, so the primary button is lime with an ink edge (lime on cream is 1.4:1); clay stays for errors and focus; charcoal sidebar, Inter Tight, Instrument Serif, caps labels and the marker highlight stay. No colour is added: Pirsch's mint is not used, lime is already the positive signal.
+- **Not taken:** DM Sans (Inter Tight stays), the 64px marketing display type, the no-sidebar layout.
+- **Supersedes** the table above and the radii in sections 1 and 2: page `#f8f5ed`, card `#f8f5ed`, sunken `#efe9dc`, divider `#d4cab6`, new `--border-frame` (ink), card radius 16px, control radius 6px, buttons pill. The status values return to the brand's. The rule "one dark primary action" becomes "one lime primary action". The table keeps its card frame, now in ink.
 
 ## Where things are today
 

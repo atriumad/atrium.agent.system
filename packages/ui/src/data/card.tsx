@@ -3,11 +3,11 @@ import type { ComponentProps, ReactNode } from "react";
 import { cx } from "../lib/cx";
 
 export const cardStyles = cva(
-  "relative rounded-card border transition-[transform,box-shadow,border-color] duration-(--dur-base) ease-out",
+  "relative rounded-card border transition-[background-color,box-shadow] duration-(--dur-base) ease-out",
   {
     variants: {
       tone: {
-        paper: "border-line bg-surface-card text-fg-body",
+        paper: "border-frame bg-surface-card text-fg-body",
         ruled: "border-charcoal-800 bg-surface-card text-fg-body dark:border-cream-300",
         sunken: "border-transparent bg-surface-sunken text-fg-body",
         dark: "border-charcoal-800 bg-surface-dark text-fg-on-dark",
@@ -17,7 +17,7 @@ export const cardStyles = cva(
       elevation: { flat: "", card: "shadow-card", offset: "shadow-raised", pop: "shadow-pop" },
       padding: { none: "p-0", sm: "p-4", md: "p-6", lg: "p-8" },
       interactive: {
-        true: "cursor-pointer hover:-translate-y-0.5 hover:border-charcoal-800 hover:shadow-raised",
+        true: "cursor-pointer hover:bg-lime-100 dark:hover:bg-charcoal-700",
         false: "",
       },
     },
@@ -28,7 +28,7 @@ export const cardStyles = cva(
 export type CardProps = Omit<ComponentProps<"div">, "title"> &
   VariantProps<typeof cardStyles> & { title?: ReactNode; description?: ReactNode };
 
-/** A drawn container: cream-100, a 6px radius, a 1px hairline, no shadow. One lime or clay card per region. */
+/** A drawn container: the page cream, a 16px radius, a 1px ink outline, no shadow. One lime or clay card per region. */
 export function Card({
   tone,
   elevation,

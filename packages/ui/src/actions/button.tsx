@@ -8,7 +8,7 @@ import { cx } from "../lib/cx";
 
 export const buttonStyles = cva(
   [
-    "inline-flex items-center justify-center rounded-control border font-medium leading-none tracking-[0.01em] whitespace-nowrap no-underline select-none",
+    "inline-flex items-center justify-center rounded-full border font-medium leading-none tracking-[0.01em] whitespace-nowrap no-underline select-none",
     "cursor-pointer transition-[background-color,color,transform] duration-(--dur-base) ease-out",
     "active:translate-y-(--press-shift)",
     "data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:active:translate-y-0",
@@ -16,9 +16,11 @@ export const buttonStyles = cva(
   {
     variants: {
       variant: {
+        // The highlighter: lime with an ink edge, since lime on cream is 1.4:1 and a button must show its shape.
         primary:
-          "border-charcoal-800 bg-charcoal-800 text-cream-200 hover:bg-charcoal-900 dark:border-lime-500 dark:bg-lime-500 dark:text-charcoal-900 dark:hover:bg-lime-600",
-        lime: "border-lime-500 bg-lime-500 text-charcoal-900 hover:border-lime-600 hover:bg-lime-600",
+          "border-charcoal-800 bg-lime-500 text-charcoal-900 hover:bg-lime-600 dark:border-lime-500 dark:hover:border-lime-600",
+        lime: "border-charcoal-800 bg-lime-500 text-charcoal-900 hover:bg-lime-600 dark:border-lime-500 dark:hover:border-lime-600",
+        ink: "border-charcoal-800 bg-charcoal-800 text-cream-200 hover:bg-charcoal-900 dark:border-cream-300 dark:bg-cream-200 dark:text-charcoal-900 dark:hover:bg-cream-300",
         // The clay fill is clay-600, not the system's clay-500: cream on clay-500 is 3.8:1, on clay-600 5.2:1.
         clay: "border-clay-600 bg-clay-600 text-cream-100 hover:border-clay-700 hover:bg-clay-700",
         outline:
@@ -55,8 +57,8 @@ export type ButtonProps = Omit<BaseButton.Props, "children"> &
   };
 
 /**
- * The only button in the system: squared, flat fills, a 1px stroke, the press nudges down.
- * One primary action per view; one lime per view. Never round it into a pill: chips are the pill.
+ * The only button in the system: a pill, flat fills, a 1px ink stroke, the press nudges down.
+ * One primary action per view, and it is the one lime of the view. Outline is the secondary.
  * For a link that looks like a button, pass `render={<a href="..." />}` and `nativeButton={false}`.
  */
 export function Button({

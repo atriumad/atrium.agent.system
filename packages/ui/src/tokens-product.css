@@ -1,31 +1,26 @@
 /*
- * The product theme: the Atrium brand on a paper-and-card interface. It only overrides values from
- * tokens.css; it adds no colours. The brand (atrium-docs) does not change.
+ * The product theme: the Atrium brand as ink on paper. It only overrides values from tokens.css;
+ * it adds no colours. The brand (atrium-docs) does not change.
+ *
+ * The look is a notebook page: one cream for the page and for cards, cards drawn by a 1px ink
+ * outline instead of a fill or a shadow, and lime as the single highlighter swatch (it plays the
+ * part Pirsch gives its yellow). Rules of the product: one lime action per view; no shadow on
+ * content; white is never a surface.
  *
  * Scoped to a root that is not dark, so a root with data-atr-theme="dark" keeps the dark values
- * from tokens.css. Rules of the product: one dark primary action per screen; no shadow on content;
- * white is a card surface, never a page background.
+ * from tokens.css. The frame token also has a dark value, because a dark region can sit inside a
+ * light page and must not inherit an ink outline.
  */
 :root:not([data-atr-theme="dark"]) {
-  --surface-page: #f6f5f4;
-  --surface-card: #ffffff;
-  --surface-sunken: #f1efec;
-  --border-light: rgba(0, 0, 0, 0.08);
+  --surface-page: #f8f5ed;
+  --surface-card: #f8f5ed;
+  --surface-sunken: #efe9dc;
+  /* Dividers inside a card or a table. */
+  --border-light: #d4cab6;
+  /* The outline of a card, a table and a tile. */
+  --border-frame: var(--charcoal-800);
+}
 
-  /* Status pairs, each at least 4.5:1. The tightest is danger, 4.52. */
-  --status-positive-fg: #3d5200;
-  --status-positive-bg: #eefbc9;
-  --status-positive-line: #aedc33;
-  --status-warning-fg: #1c1f1d;
-  --status-warning-bg: #fdf0d5;
-  --status-warning-line: #d9542b;
-  --status-danger-fg: #b8421f;
-  --status-danger-bg: #fde4df;
-  --status-danger-line: #d9542b;
-  --status-info-fg: #615d59;
-  --status-info-bg: #f1efec;
-  --status-info-line: #d4cab6;
-  --status-neutral-fg: #615d59;
-  --status-neutral-bg: #f6f5f4;
-  --status-neutral-line: #d4cab6;
+[data-atr-theme="dark"] {
+  --border-frame: var(--border-on-dark);
 }

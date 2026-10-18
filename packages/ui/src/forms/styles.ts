@@ -8,7 +8,7 @@ export const controlBase =
 
 /** The popup surface without padding, for a panel that sets its own. */
 export const popupSurface =
-  "rounded-md border border-line bg-surface-card text-sm text-fg-body shadow-pop outline-none " +
+  "rounded-xl border border-frame bg-surface-card text-sm text-fg-body shadow-pop outline-none " +
   "transition-[opacity,transform] duration-(--dur-fast) ease-out data-starting-style:opacity-0 data-ending-style:opacity-0";
 
 export const popupBase = `${popupSurface} p-1.5`;
