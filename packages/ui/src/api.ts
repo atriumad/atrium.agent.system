@@ -167,6 +167,107 @@ export type CaseDetail = CaseSummary & {
   contact: { email: string | null; phone: string | null } | null;
 };
 
+export type RangeKey = "7d" | "30d" | "90d";
+
+export type Tile = {
+  value: number | null;
+  change: number | null;
+  n: number;
+  small: boolean;
+  spark: number[];
+};
+
+export type OwnerInsights = {
+  range: RangeKey;
+  generatedAt: string;
+  window: { from: string; to: string };
+  rating: Tile;
+  responses: Tile & { answerRate: number | null; sent: number };
+  reviewClicks: {
+    clicks: number;
+    answers: number;
+    rate: number | null;
+    change: number | null;
+    small: boolean;
+  };
+  waiting: { open: number; overdue: number };
+  series: { date: string; average: number | null; count: number }[];
+  topics: { topic: string; total: number; positive: number; neutral: number; negative: number }[];
+  read: number;
+  places: {
+    locationId: string;
+    name: string;
+    rating: number | null;
+    change: number | null;
+    responses: number;
+    openCases: number;
+    overdueCases: number;
+  }[];
+  host: { requestsSent: number; casesOpened: number; answersRead: number };
+};
+
+export type AgencyInsights = {
+  range: RangeKey;
+  generatedAt: string;
+  window: { from: string; to: string };
+  contact: {
+    medianHours: number | null;
+    insideTarget: number | null;
+    cases: number;
+    change: number | null;
+    small: boolean;
+  };
+  needingCases: number;
+  overdue: { value: number; previous: number };
+  portfolio: Tile;
+  answerRate: {
+    value: number | null;
+    change: number | null;
+    sent: number;
+    answered: number;
+    small: boolean;
+  };
+  clients: {
+    clientId: string;
+    name: string;
+    places: number;
+    rating: number | null;
+    change: number | null;
+    spark: number[];
+    responses: number;
+    answerRate: number | null;
+    overdue: number;
+    pendingPlaces: number;
+  }[];
+  cases: {
+    id: string;
+    clientId: string;
+    clientName: string;
+    locationName: string;
+    severity: string;
+    summary: string;
+    dueAt: string;
+    overdue: boolean;
+  }[];
+};
+
+export type QueueItem = {
+  kind: "case" | "approval" | "account" | "place";
+  id: string;
+  client: string;
+  place: string | null;
+  detail: string;
+  severity: string | null;
+  dueAt: string | null;
+  overdue: boolean;
+  href: string;
+};
+
+export type AgencyOverview = AgencyInsights & {
+  queue: QueueItem[];
+  queueCounts: { cases: number; approvals: number; accounts: number; places: number };
+};
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -189,6 +290,14 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   me: () => call<Me>("/api/me"),
   cases: () => call<{ cases: CaseSummary[] }>("/api/cases").then((r) => r.cases),
+  insightsOwner: (range: RangeKey, place?: string) =>
+    call<OwnerInsights>(
+      `/api/insights/owner?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,
+    ),
+  insightsAgency: (range: RangeKey, client?: string) =>
+    call<AgencyOverview>(
+      `/api/insights/agency?${new URLSearchParams({ range, ...(client ? { client } : {}) })}`,
+    ),
   detail: (id: string) => call<{ case: CaseDetail }>(`/api/cases/${id}`).then((r) => r.case),
   advance: (id: string, to: "contacted" | "resolved", note: string) =>
     call<{ case: CaseDetail }>(`/api/cases/${id}/advance`, {
