@@ -177,6 +177,95 @@ export type Tile = {
   spark: number[];
 };
 
+/** One row of the Responses table; the server's `ResponseTableRow` with dates as strings. */
+export type ResponseTableRow = SurveyResponse & {
+  clientId: string;
+  severity: string | null;
+  /** Null while the answer is unread (no reading yet): sentiment, topics, concern and safety. */
+  sentiment: string | null;
+  topics: string[] | null;
+  concern: string | null;
+  safety: boolean | null;
+};
+
+export type ResponsesPage = {
+  rows: ResponseTableRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  unread: number;
+  counts: { all: number; lowRating: number; wantsContact: number; hasCase: number; safety: number };
+};
+
+export type ResponseSort = "date" | "rating" | "place" | "sentiment";
+
+export type ResponsesQuery = {
+  range: RangeKey;
+  place?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: ResponseSort;
+  dir?: "asc" | "desc";
+  q?: string;
+  maxRating?: number;
+  rating?: number;
+  sentiment?: "positive" | "neutral" | "negative";
+  topic?: string;
+  wantsContact?: boolean;
+  hasCase?: boolean;
+  safety?: boolean;
+};
+
+export type CaseTab = "active" | "open" | "contacted" | "resolved" | "all";
+
+export type CaseTableRow = CaseSummary & {
+  comment: string | null;
+  topics: string[] | null;
+  sentiment: string | null;
+  safety: boolean | null;
+};
+
+export type CasesTable = {
+  cases: CaseTableRow[];
+  counts: Record<CaseTab, number>;
+  truncated: boolean;
+};
+
+export type ResponsesBand = {
+  range: RangeKey;
+  generatedAt: string;
+  window: { from: string; to: string };
+  responses: Tile;
+  rating: Tile;
+  negativeShare: { value: number | null; change: number | null; read: number; small: boolean };
+  reviewClicks: {
+    clicks: number;
+    answers: number;
+    rate: number | null;
+    change: number | null;
+    small: boolean;
+  };
+  distribution: [number, number, number, number, number];
+};
+
+export type CasesBand = {
+  range: RangeKey;
+  generatedAt: string;
+  window: { from: string; to: string };
+  open: number;
+  overdue: { value: number; previous: number };
+  contact: {
+    medianHours: number | null;
+    insideTarget: number | null;
+    cases: number;
+    change: number | null;
+    small: boolean;
+  };
+  resolved: { value: number; change: number | null; small: boolean };
+  openedPerDay: { date: string; count: number }[];
+  bySeverity: { high: number; medium: number; low: number };
+};
+
 export type OwnerInsights = {
   range: RangeKey;
   generatedAt: string;
@@ -290,6 +379,37 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   me: () => call<Me>("/api/me"),
   cases: () => call<{ cases: CaseSummary[] }>("/api/cases").then((r) => r.cases),
+  casesTable: (range: RangeKey) => call<CasesTable>(`/api/cases?${new URLSearchParams({ range })}`),
+  casesBand: (range: RangeKey, place?: string) =>
+    call<CasesBand>(
+      `/api/insights/cases?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,
+    ),
+  responsesBand: (range: RangeKey, place?: string) =>
+    call<ResponsesBand>(
+      `/api/insights/responses?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,
+    ),
+  responsesPage: (query: ResponsesQuery) => {
+    const params = new URLSearchParams();
+    const put = (key: string, value: string | number | boolean | undefined) => {
+      if (value === undefined || value === "" || value === false) return;
+      params.set(key, value === true ? "1" : String(value));
+    };
+    put("range", query.range);
+    put("place", query.place);
+    put("page", query.page ?? 1);
+    put("pageSize", query.pageSize);
+    put("sort", query.sort);
+    put("dir", query.dir);
+    put("q", query.q);
+    put("maxRating", query.maxRating);
+    put("rating", query.rating);
+    put("sentiment", query.sentiment);
+    put("topic", query.topic);
+    put("wantsContact", query.wantsContact);
+    put("hasCase", query.hasCase);
+    put("safety", query.safety);
+    return call<ResponsesPage>(`/api/surveys/responses?${params}`);
+  },
   insightsOwner: (range: RangeKey, place?: string) =>
     call<OwnerInsights>(
       `/api/insights/owner?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,
