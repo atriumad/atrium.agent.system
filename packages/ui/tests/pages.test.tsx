@@ -6,7 +6,7 @@ import { MeProvider } from "../src/shell/me-context";
 import { OverviewPage } from "../src/shell/overview";
 import { ModulePage } from "../src/shell/teaser";
 import { FormsPage, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/surveys-app";
-import { amMe, fakeFetch, meOf, ownerMe, restoreFetch } from "./fake-api";
+import { amMe, fakeFetch, meOf, ownerInsightsFixture, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup } from "./helpers";
 
 afterEach(() => {
@@ -256,19 +256,15 @@ describe("module pages", () => {
 });
 
 describe("overview", () => {
-  test("a client sees what needs attention and where to go", async () => {
+  test("a client sees how the business is doing and what is waiting on them", async () => {
     fakeFetch({
-      "/api/cases": {
-        cases: [aCase("a"), aCase("b"), aCase("c", { dueAt: hours(-5) })],
-      },
-      "/api/surveys/responses": { responses: [] },
+      "/api/locations": { locations: [] },
+      "/api/insights/owner?range=30d": ownerInsightsFixture,
     });
     inside(ownerMe, <OverviewPage surface="platform" />);
-    const open = await screen.findByRole("link", { name: /Open cases/ });
-    expect(open.textContent).toContain("3");
-    expect(open.getAttribute("href")).toBe("/reputation/feedback");
-    const late = screen.getByRole("link", { name: /Past the 24-hour target/ });
-    expect(late.textContent).toContain("1");
+    expect(await screen.findByText("Average rating")).toBeTruthy();
+    const waiting = screen.getByText("Waiting on you").closest("a");
+    expect(waiting?.getAttribute("href")).toBe("/reputation/cases?status=overdue");
   });
 
   test("the agency sees accounts and places waiting", async () => {

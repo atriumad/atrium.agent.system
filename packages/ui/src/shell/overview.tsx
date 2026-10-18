@@ -7,6 +7,7 @@ import { Skeleton } from "../data/misc";
 import { dueLabel } from "../format";
 import { PageHeader } from "../layout/layout";
 import { useMe } from "./me-context";
+import { OwnerOverview } from "./overview-owner";
 
 function Stat({ href, value, label }: { href: string; value: number | null; label: string }) {
   return (
@@ -27,6 +28,10 @@ const WEEK = 7 * 24 * 3_600_000;
  * the page it links to. Phase 2 grows this with trends and what Host did.
  */
 export function OverviewPage({ surface }: { surface: Surface }) {
+  return surface === "platform" ? <OwnerOverview /> : <LegacyOverview surface={surface} />;
+}
+
+function LegacyOverview({ surface }: { surface: Surface }) {
   const me = useMe();
   const [cases, setCases] = useState<CaseSummary[] | null>(null);
   const [answers, setAnswers] = useState<number | null>(null);
