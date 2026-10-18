@@ -58,6 +58,12 @@ export {
   sendReviewRequest,
   skipReviewRequest,
 } from "./application/requests";
+export type {
+  ResponseQuery,
+  ResponsesPage,
+  ResponseTableRow,
+} from "./application/responses";
+export { listResponsesPage } from "./application/responses";
 export type { ReaderInput, ReadOutcome, ResponseReader } from "./application/sentiment";
 export { ReadingInvalidError, readResponse } from "./application/sentiment";
 export type { LocationSettings } from "./application/settings";

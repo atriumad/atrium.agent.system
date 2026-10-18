@@ -1,4 +1,4 @@
-import { HelpCloseInput, HelpMessageInput, HelpRequestInput } from "@atrium/contracts";
+import { HelpCloseInput, HelpMessageInput, HelpRequestInput, TOPICS } from "@atrium/contracts";
 import { can, describeLocations, listLocationLabels, type Scope, withScope } from "@atrium/core";
 import {
   closeRequest,
@@ -7,9 +7,11 @@ import {
   getThread,
   HelpAttachmentError,
   listPickableResponses,
+  listResponsesPage,
   listSurveyForms,
   listSurveyRequests,
   listSurveyResponses,
+  parseRange,
   postMessage,
   rotateQr,
   SurveyForbiddenError,
@@ -21,6 +23,67 @@ import type { Hono } from "hono";
 import type { AppDeps } from "./app";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const SORTS = ["date", "rating", "place", "sentiment"] as const;
+const SENTIMENTS = ["positive", "neutral", "negative"] as const;
+const WHOLE = /^\d+$/;
+
+/** Everything from the query string is checked here, before the database. Unknowns are 422. */
+function parseResponsesQuery(
+  get: (key: string) => string | undefined,
+):
+  | { error: "invalid_range" | "invalid_id" | "invalid_query" }
+  | Omit<Parameters<typeof listResponsesPage>[2], "now"> {
+  const range = parseRange(get("range"));
+  if (!range) return { error: "invalid_range" };
+  const place = get("place");
+  if (place !== undefined && !UUID.test(place)) return { error: "invalid_id" };
+  const sort = get("sort") ?? "date";
+  const dir = get("dir") ?? "desc";
+  if (!(SORTS as readonly string[]).includes(sort) || (dir !== "asc" && dir !== "desc")) {
+    return { error: "invalid_query" };
+  }
+  const whole = (value: string | undefined, fallback: number) =>
+    value === undefined ? fallback : WHOLE.test(value) ? Number(value) : Number.NaN;
+  const page = whole(get("page"), 1);
+  const pageSize = whole(get("pageSize"), 25);
+  if (!(page >= 1) || !(pageSize >= 1) || !Number.isSafeInteger(page)) {
+    return { error: "invalid_query" };
+  }
+  const rating = get("rating");
+  const maxRating = get("maxRating");
+  for (const v of [rating, maxRating]) {
+    if (v !== undefined && !(WHOLE.test(v) && Number(v) >= 1 && Number(v) <= 5)) {
+      return { error: "invalid_query" };
+    }
+  }
+  const sentiment = get("sentiment");
+  if (sentiment !== undefined && !(SENTIMENTS as readonly string[]).includes(sentiment)) {
+    return { error: "invalid_query" };
+  }
+  const topic = get("topic");
+  if (topic !== undefined && !(TOPICS as readonly string[]).includes(topic)) {
+    return { error: "invalid_query" };
+  }
+  const flag = (v: string | undefined) => v === "1" || v === "true";
+  const q = get("q")?.slice(0, 200);
+  return {
+    range,
+    sort: sort as (typeof SORTS)[number],
+    dir,
+    page,
+    pageSize: Math.min(pageSize, 100),
+    ...(place ? { locationId: place } : {}),
+    ...(q ? { q } : {}),
+    ...(rating ? { rating: Number(rating) } : {}),
+    ...(maxRating ? { maxRating: Number(maxRating) } : {}),
+    ...(sentiment ? { sentiment: sentiment as (typeof SENTIMENTS)[number] } : {}),
+    ...(topic ? { topic } : {}),
+    ...(flag(get("wantsContact")) ? { wantsContact: true } : {}),
+    ...(flag(get("hasCase")) ? { hasCase: true } : {}),
+    ...(flag(get("safety")) ? { safety: true } : {}),
+  };
+}
 
 type Env = { Variables: { scope: Scope; userName: string } };
 
@@ -96,6 +159,20 @@ export function mountSurveyAdmin(api: Hono<Env>, deps: AppDeps, config: SurveyAd
 
   api.get("/surveys/responses", (c) =>
     guard(c, async () => {
+      if (c.req.query("page") !== undefined) {
+        const parsed = parseResponsesQuery((k) => c.req.query(k));
+        if ("error" in parsed) return c.json({ error: parsed.error }, 422);
+        const page = await withScope(deps.db, c.get("scope"), (tx) =>
+          listResponsesPage(tx, c.get("scope"), {
+            ...parsed,
+            now: deps.now ? deps.now() : new Date(),
+          }),
+        );
+        return c.json({
+          ...page,
+          rows: page.rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+        });
+      }
       const locationId = c.req.query("locationId");
       const max = Number(c.req.query("maxRating") ?? 0);
       if (locationId !== undefined && !UUID.test(locationId)) {
