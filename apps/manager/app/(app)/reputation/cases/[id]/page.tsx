@@ -1,6 +1,10 @@
-import { CaseDetailPage } from "@atrium/ui";
+"use client";
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return <CaseDetailPage surface="manager" id={id} />;
+import { CaseDetailPage } from "@atrium/ui";
+import Link from "next/link";
+import { use } from "react";
+
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return <CaseDetailPage surface="manager" id={id} linkAs={Link} />;
 }

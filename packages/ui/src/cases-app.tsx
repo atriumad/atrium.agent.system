@@ -280,8 +280,8 @@ export function Detail(props: {
   id: string;
   me: Me;
   now: Date;
-  onChanged: () => void;
-  onClose: () => void;
+  onChanged?: () => void;
+  onClose?: () => void;
   /** Called when the case could not be loaded, so a page can say why (for example, not found). */
   onLoadError?: (error: unknown) => void;
   /** Hides the Close button, for a page where the case is not in a panel. */
@@ -309,7 +309,7 @@ export function Detail(props: {
     try {
       setItem(await api.advance(props.id, to, note));
       setNote("");
-      props.onChanged();
+      props.onChanged?.();
     } catch (e) {
       setError(
         e instanceof ApiError && e.status === 409
