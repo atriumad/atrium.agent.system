@@ -245,4 +245,14 @@ describe("weightedMean", () => {
     ).toBe(4);
     expect(weightedMean([])).toBeNull();
   });
+
+  test("the portfolio is the mean of all answers, not of the client means", () => {
+    // client A: 4.0 over 10 answers, client B: 5.0 over 30 answers
+    const value = weightedMean([
+      { sum: 40, n: 10 },
+      { sum: 150, n: 30 },
+    ]);
+    expect(value).toBeCloseTo(4.75, 10);
+    expect(value).not.toBeCloseTo(4.5, 5);
+  });
 });

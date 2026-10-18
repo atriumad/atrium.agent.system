@@ -399,7 +399,8 @@ export async function agencyInsights(
   ).length;
   const judged = inside + outside;
 
-  // Overdue now, and as it stood one window ago.
+  // Overdue now, and as it stood one window ago. There is no status history, so "was open at the
+  // cutoff" is read from the timestamps: not yet contacted and not yet resolved at that instant.
   const openCases = cases.filter((c) => c.status === "open");
   const isOverdue = (c: { dueAt: Date }) => c.dueAt.getTime() < nowMs;
   const then = nowMs - days * DAY_MS;
@@ -515,7 +516,11 @@ export async function agencyInsights(
         clientName: label?.clientName ?? "",
         locationName: label?.locationName ?? "",
         severity: c.severity,
-        summary: comment ? comment.slice(0, SUMMARY_LENGTH) : `${a?.rating ?? 0}-star answer`,
+        summary: comment
+          ? comment.slice(0, SUMMARY_LENGTH)
+          : a
+            ? `${a.rating}-star answer`
+            : "Answer unavailable",
         dueAt: c.dueAt.toISOString(),
         overdue: isOverdue(c),
       };
