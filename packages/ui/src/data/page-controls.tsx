@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { RangeKey } from "../api";
 import { Select } from "../forms/select";
 import { cx } from "../lib/cx";
@@ -32,14 +33,39 @@ export function PageControls({
   allLabel,
   scopeLabel,
 }: PageControlsProps) {
+  const group = useRef<HTMLDivElement>(null);
+  // Arrow keys move and select, wrapping at the ends; Home and End go to the first and last.
+  const onKey = (e: React.KeyboardEvent, at: number) => {
+    const last = RANGES.length - 1;
+    const to =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? at === last
+          ? 0
+          : at + 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? at === 0
+            ? last
+            : at - 1
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? last
+              : null;
+    const next = to === null ? undefined : RANGES[to];
+    if (!next) return;
+    e.preventDefault();
+    onRange(next.key);
+    group.current?.querySelectorAll<HTMLElement>("[role=radio]")[to ?? 0]?.focus();
+  };
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div
+        ref={group}
         role="radiogroup"
         aria-label="Range"
         className="inline-flex rounded-card border border-frame bg-surface-card p-0.5"
       >
-        {RANGES.map((r) => {
+        {RANGES.map((r, idx) => {
           const on = r.key === range;
           return (
             <button
@@ -47,9 +73,11 @@ export function PageControls({
               type="button"
               role="radio"
               aria-checked={on}
+              tabIndex={on ? 0 : -1}
+              onKeyDown={(e) => onKey(e, idx)}
               onClick={() => onRange(r.key)}
               className={cx(
-                "min-h-9 min-w-11 cursor-pointer rounded-[inherit] px-3 text-sm font-medium tabular-nums",
+                "min-h-9 min-w-11 cursor-pointer focus-visible:outline-2 focus-visible:outline-focus rounded-[inherit] px-3 text-sm font-medium tabular-nums",
                 on ? "bg-lime-100 text-fg-strong" : "text-fg-muted hover:text-fg-strong",
               )}
             >
