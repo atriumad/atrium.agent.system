@@ -1,3 +1,5 @@
+"use client";
+
 import type { RangeKey } from "../api";
 import { Select } from "../forms/select";
 import { cx } from "../lib/cx";

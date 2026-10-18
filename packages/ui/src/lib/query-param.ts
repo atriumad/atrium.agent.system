@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 
 /** One value from the address bar, or null on the server and when it is absent or empty. */
