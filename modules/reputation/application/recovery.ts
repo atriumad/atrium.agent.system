@@ -10,7 +10,7 @@ import {
   type Tx,
   writeAudit,
 } from "@atrium/core";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, type SQL } from "drizzle-orm";
 import { type CaseStatus, canTransition, caseDueAt, type Severity } from "../domain/recovery";
 import { escalatedSeverity, shouldOpenWithReading, storedReading } from "../domain/sentiment";
 import { recoveryCases, surveyResponses } from "../infra/schema";
@@ -331,37 +331,54 @@ export type CaseSummary = {
 };
 
 /**
- * The cases the scope can see, most urgent first: unresolved by due date, then the resolved ones
- * newest first. There is no client filter on purpose: RLS decides what each role sees.
+ * The shared read of cases with the answer each came from, newest first, with names from Core.
+ * One place for the join: the list and the table both build on it. There is no client filter on
+ * purpose: RLS (the passed Tx) decides what each role sees.
  */
-export async function listCaseSummaries(tx: Tx, status?: CaseStatus): Promise<CaseSummary[]> {
+export async function selectCaseRows(
+  tx: Tx,
+  filter: SQL | undefined,
+  limit: number,
+): Promise<{ summary: CaseSummary; response: typeof surveyResponses.$inferSelect }[]> {
   const rows = await tx
     .select({ c: recoveryCases, r: surveyResponses })
     .from(recoveryCases)
     .innerJoin(surveyResponses, eq(surveyResponses.id, recoveryCases.responseId))
-    .where(status ? eq(recoveryCases.status, status) : undefined)
-    .orderBy(desc(recoveryCases.openedAt))
-    .limit(200);
+    .where(filter)
+    .orderBy(desc(recoveryCases.openedAt), desc(recoveryCases.id))
+    .limit(limit);
   const labels = await describeLocations(
     tx,
     rows.map(({ c }) => c.locationId),
   );
-  const summaries = rows.map(({ c, r }) => {
+  return rows.map(({ c, r }) => {
     const label = labels.get(c.locationId);
     return {
-      id: c.id,
-      clientId: c.clientId,
-      clientName: label?.clientName ?? "",
-      locationId: c.locationId,
-      locationName: label?.locationName ?? "",
-      severity: c.severity as Severity,
-      status: c.status as CaseStatus,
-      openedAt: c.openedAt,
-      dueAt: c.dueAt,
-      rating: r.rating,
-      wantsContact: r.wantsContact,
+      response: r,
+      summary: {
+        id: c.id,
+        clientId: c.clientId,
+        clientName: label?.clientName ?? "",
+        locationId: c.locationId,
+        locationName: label?.locationName ?? "",
+        severity: c.severity as Severity,
+        status: c.status as CaseStatus,
+        openedAt: c.openedAt,
+        dueAt: c.dueAt,
+        rating: r.rating,
+        wantsContact: r.wantsContact,
+      },
     };
   });
+}
+
+/**
+ * The cases the scope can see, most urgent first: unresolved by due date, then the resolved ones
+ * newest first.
+ */
+export async function listCaseSummaries(tx: Tx, status?: CaseStatus): Promise<CaseSummary[]> {
+  const rows = await selectCaseRows(tx, status ? eq(recoveryCases.status, status) : undefined, 200);
+  const summaries = rows.map(({ summary }) => summary);
   const open = summaries
     .filter((s) => s.status !== "resolved")
     .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());

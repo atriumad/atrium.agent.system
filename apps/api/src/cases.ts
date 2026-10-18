@@ -14,7 +14,8 @@ import {
   CaseNotFoundError,
   CaseTransitionError,
   getCaseDetail,
-  listCaseSummaries,
+  listCasesTable,
+  parseRange,
 } from "@atrium/reputation";
 import { Hono } from "hono";
 import type { AppDeps } from "./app";
@@ -106,10 +107,17 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
     if (status !== undefined && !(STATUSES as readonly string[]).includes(status)) {
       return c.json({ error: "invalid_status" }, 422);
     }
-    const cases = await withScope(deps.db, c.get("scope"), (tx) =>
-      listCaseSummaries(tx, status as (typeof STATUSES)[number] | undefined),
+    const range = parseRange(c.req.query("range"));
+    if (!range) return c.json({ error: "invalid_range" }, 422);
+    const now = deps.now?.() ?? new Date();
+    const table = await withScope(deps.db, c.get("scope"), (tx) =>
+      listCasesTable(tx, {
+        range,
+        now,
+        ...(status ? { status: status as (typeof STATUSES)[number] } : {}),
+      }),
     );
-    return c.json({ cases });
+    return c.json(table);
   });
 
   api.get("/cases/:id", async (c) => {

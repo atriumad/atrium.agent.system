@@ -16,6 +16,7 @@ export {
   SurveyNotFoundError,
   SurveyStateError,
 } from "./application/admin";
+export { type CasesTable, type CaseTableRow, listCasesTable } from "./application/cases-table";
 export { erasureConsumer, scrubErasedGuest } from "./application/erasure";
 export type {
   ResponseCard,
