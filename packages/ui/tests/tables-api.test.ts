@@ -40,7 +40,6 @@ describe("table pages client", () => {
       range: "7d",
       place: "p1",
       q: "",
-      topic: "",
       wantsContact: true,
       hasCase: false,
       safety: true,
