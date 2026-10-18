@@ -7,6 +7,8 @@ export type DeltaProps = ComponentProps<"span"> & {
   value: number;
   /** Which direction is good. Fewer open cases is `down`. */
   goodWhen?: "up" | "down" | undefined;
+  /** What the number is in. `pts` for a change in percentage points. */
+  unit?: "%" | "pts" | undefined;
   labels?: { up: string; down: string; flat: string };
 };
 
@@ -14,6 +16,7 @@ export type DeltaProps = ComponentProps<"span"> & {
 export function Delta({
   value,
   goodWhen = "up",
+  unit = "%",
   labels = { up: "up", down: "down", flat: "no change" },
   className,
   ...rest
@@ -35,7 +38,9 @@ export function Delta({
       {...rest}
     >
       <Glyph size={14} strokeWidth={1.5} aria-hidden="true" />
-      {Math.abs(value)}%<span className="sr-only"> {labels[dir]}</span>
+      {Math.abs(value)}
+      {unit === "pts" ? " pts" : "%"}
+      <span className="sr-only"> {labels[dir]}</span>
     </span>
   );
 }
