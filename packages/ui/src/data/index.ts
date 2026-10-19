@@ -7,6 +7,7 @@ export * from "./filter-bar";
 export * from "./kpi-tile";
 export * from "./misc";
 export * from "./page-controls";
+export * from "./rating-bars";
 export * from "./section-page";
 export * from "./split-bars";
 export * from "./stat-tile";

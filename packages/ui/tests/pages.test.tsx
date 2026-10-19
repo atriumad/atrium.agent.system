@@ -14,6 +14,8 @@ import {
   meOf,
   ownerInsightsFixture,
   ownerMe,
+  responsesBandFixture,
+  responsesPageFixture,
   restoreFetch,
 } from "./fake-api";
 import { screen, setup } from "./helpers";
@@ -73,27 +75,14 @@ describe("pages carry no navigation chrome of their own", () => {
 
   test("the responses page loads the answers", async () => {
     fakeFetch({
-      "/api/surveys/responses": {
-        responses: [
-          {
-            id: "r1",
-            clientName: "Casa Olivo",
-            locationName: "Bellaire",
-            rating: 5,
-            bestPart: "food",
-            improve: null,
-            comment: "Lovely evening",
-            wantsContact: false,
-            source: "qr",
-            reviewClicked: false,
-            caseId: null,
-            createdAt: hours(-3),
-          },
-        ],
-      },
+      "/api/locations": { locations: [] },
+      "/api/surveys/responses?range=30d&page=1&pageSize=25&sort=date&dir=desc":
+        responsesPageFixture,
+      "/api/insights/responses?range=30d": responsesBandFixture,
     });
     inside(ownerMe, <ResponsesPage />);
-    expect(await screen.findByText("Lovely evening")).toBeTruthy();
+    expect(await screen.findByText("Lovely, thank you.")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Responses summary" })).toBeTruthy();
   });
 
   test("the forms page gives an owner generate-link but not rotate", async () => {

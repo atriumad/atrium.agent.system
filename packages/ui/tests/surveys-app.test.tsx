@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { MeProvider } from "../src/shell/me-context";
-import { FormCard, HelpPage, HelpRequestsPage, ResponsesPage } from "../src/surveys-app";
+import { FormCard, HelpPage, HelpRequestsPage } from "../src/surveys-app";
 import { amMe, fakeFetch, meOf, ownerMe, restoreFetch } from "./fake-api";
 import { screen, setup, waitFor } from "./helpers";
 
@@ -65,21 +65,6 @@ const aRequest = {
   lastAuthorSide: "client",
   lastPreview: "Change the link",
   awaiting: "agency",
-};
-const aResponse = {
-  id: RESP_ID,
-  clientName: "Casa Olivo",
-  locationId: "l1",
-  locationName: "Bellaire",
-  rating: 2,
-  bestPart: null,
-  improve: null,
-  comment: "Slow service",
-  wantsContact: false,
-  source: "qr",
-  reviewClicked: false,
-  caseId: null,
-  createdAt: new Date().toISOString(),
 };
 const places = {
   "/api/surveys/locations": {
@@ -349,23 +334,5 @@ describe("HelpPage", () => {
     } finally {
       restore();
     }
-  });
-});
-
-describe("ResponsesPage ask for help", () => {
-  test("an owner gets a link to the help page with the response", async () => {
-    fakeFetch({ "/api/surveys/responses": { responses: [aResponse] } });
-    asMe(ownerMe, <ResponsesPage />);
-    // The Button contract for links renders an <a href> carrying role="button".
-    const link = await screen.findByRole("button", { name: "Ask for help about this" });
-    expect(link.tagName).toBe("A");
-    expect(link.getAttribute("href")).toBe(`/help?response=${RESP_ID}&location=l1`);
-  });
-
-  test("agency roles do not get it", async () => {
-    fakeFetch({ "/api/surveys/responses": { responses: [aResponse] } });
-    asMe(amMe, <ResponsesPage />);
-    expect(await screen.findByText("Slow service")).toBeTruthy();
-    expect(screen.queryByText("Ask for help about this")).toBeNull();
   });
 });

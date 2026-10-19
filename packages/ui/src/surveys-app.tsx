@@ -69,89 +69,6 @@ function CopyButton({ value, label = "Copy link" }: { value: string; label?: str
   );
 }
 
-/* ------------------------------- responses ------------------------------- */
-
-function Responses() {
-  const [low, setLow] = useState(false);
-  const load = useCallback(() => api.surveyResponses(low ? 3 : undefined), [low]);
-  const { data, failed, reload } = useLoad(load);
-  const now = new Date();
-
-  return (
-    <div className="flex flex-col gap-4">
-      <ChipGroup
-        aria-label="Filter responses"
-        value={[low ? "low" : "all"]}
-        onValueChange={(v: string[]) => setLow(v[0] === "low")}
-        options={[
-          { value: "all", label: "All" },
-          { value: "low", label: "3 stars or fewer" },
-        ]}
-      />
-      {failed ? <ErrorState title="Could not load responses" onRetry={reload} /> : null}
-      {data === null && !failed ? (
-        <Skeleton className="h-24 w-full" />
-      ) : data?.length === 0 ? (
-        <EmptyState title="No responses yet">
-          Answers appear here as soon as a guest finishes the survey.
-        </EmptyState>
-      ) : (
-        <ListPanel aria-label="Survey responses">
-          {data?.map((r) => (
-            <ResponseCard key={r.id} r={r} now={now} />
-          ))}
-        </ListPanel>
-      )}
-    </div>
-  );
-}
-
-function ResponseCard({ r, now }: { r: SurveyResponse; now: Date }) {
-  const me = useMe();
-  return (
-    <li className={ROW_PAD}>
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span
-            className="inline-flex items-center gap-1 font-serif text-2xl leading-none tabular-nums"
-            role="img"
-            aria-label={`${r.rating} out of 5`}
-          >
-            {r.rating}
-            <Star size={16} strokeWidth={1.5} aria-hidden="true" />
-          </span>
-          <span className="min-w-0 flex-1 text-sm">
-            <strong className="font-medium">{r.clientName}</strong>
-            <span className="text-fg-muted"> · {r.locationName}</span>
-          </span>
-          <span className="text-xs text-fg-muted">{ago(r.createdAt, now)}</span>
-        </div>
-        {r.comment ? <p className="mt-3 mb-0 text-sm">{r.comment}</p> : null}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {r.bestPart ? <Badge variant="quiet">Best: {r.bestPart}</Badge> : null}
-          {r.improve ? <Badge variant="quiet">Improve: {r.improve}</Badge> : null}
-          <Badge variant="quiet">{r.source === "qr" ? "QR" : "Link"}</Badge>
-          {r.wantsContact ? <Badge variant="ink">Wants contact</Badge> : null}
-          {r.reviewClicked ? <StatusBadge status="positive">Went to Google</StatusBadge> : null}
-          {r.caseId ? <StatusBadge status="warning">Recovery case</StatusBadge> : null}
-        </div>
-        {me.canRequestSurveys ? (
-          <div className="mt-3">
-            <Button
-              size="sm"
-              variant="outline"
-              nativeButton={false}
-              render={<a href={`/help?response=${r.id}&location=${r.locationId}`} />}
-            >
-              Ask for help about this
-            </Button>
-          </div>
-        ) : null}
-      </div>
-    </li>
-  );
-}
-
 /* --------------------------------- forms --------------------------------- */
 
 export function FormCard({
@@ -332,15 +249,7 @@ function Forms({ canManage, canOperate }: { canManage: boolean; canOperate: bool
 
 /* ---------------------------------- pages ---------------------------------- */
 
-export function ResponsesPage() {
-  const me = useMe();
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader compact title="Responses" description="What guests answered after their visit." />
-      {me.canReadSurveys ? <Responses /> : <NotAvailable />}
-    </div>
-  );
-}
+export { ResponsesPage } from "./responses-page";
 
 export function FormsPage() {
   const me = useMe();

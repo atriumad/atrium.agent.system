@@ -60,6 +60,11 @@ export type DataTableProps<Row> = {
   dense?: boolean;
   /** The header stays in view while the table scrolls. On by default when `dense`. */
   stickyHeader?: boolean;
+  /**
+   * Server paging: the rows are already one page, in the server's order. The table then shows this
+   * total, does not sort or slice the rows, and `page`/`pageSize` are the server's.
+   */
+  totalRows?: number;
   /** Dense tables only: said in the footer after the count, e.g. "sorted by date". */
   footerNote?: ReactNode;
   className?: string;
@@ -100,6 +105,7 @@ export function DataTable<Row>({
   dense,
   stickyHeader = dense,
   footerNote,
+  totalRows,
 }: DataTableProps<Row>) {
   const [innerSort, setInnerSort] = useState<Sort | null>(null);
   const sort = sortProp !== undefined ? sortProp : innerSort;
@@ -116,6 +122,7 @@ export function DataTable<Row>({
   };
 
   const sorted = useMemo(() => {
+    if (totalRows !== undefined) return rows;
     const col = columns.find((c) => c.key === sort?.key);
     if (!sort || !col?.sortValue) return rows;
     const get = col.sortValue;
@@ -128,16 +135,18 @@ export function DataTable<Row>({
           : String(x).localeCompare(String(y), undefined, { numeric: true });
       return sort.dir === "asc" ? r : -r;
     });
-  }, [rows, sort, columns]);
+  }, [rows, sort, columns, totalRows]);
 
   const size = Math.max(1, Math.floor(pageSize) || 1);
-  const pages = Math.max(1, Math.ceil(sorted.length / size));
+  const total = totalRows ?? sorted.length;
+  const pages = Math.max(1, Math.ceil(total / size));
   const current = Math.min(Math.max(1, pageProp ?? innerPage), pages);
   const goTo = (next: number) => {
     if (pageProp === undefined) setInnerPage(next);
     onPageChange?.(next);
   };
-  const visible = sorted.slice((current - 1) * size, current * size);
+  const visible =
+    totalRows !== undefined ? sorted : sorted.slice((current - 1) * size, current * size);
   const keys = visible.map(rowKey);
   const all = keys.length > 0 && keys.every((k) => chosen.includes(k));
   const some = keys.some((k) => chosen.includes(k));
@@ -299,8 +308,8 @@ export function DataTable<Row>({
     </Table>
   );
 
-  const from = sorted.length === 0 ? 0 : (current - 1) * size + 1;
-  const to = Math.min(current * size, sorted.length);
+  const from = total === 0 || visible.length === 0 ? 0 : (current - 1) * size + 1;
+  const to = totalRows !== undefined ? from + visible.length - 1 : Math.min(current * size, total);
 
   const pager =
     pages > 1 ? (
@@ -352,7 +361,7 @@ export function DataTable<Row>({
             className="flex flex-wrap items-center justify-between gap-3 border-t border-charcoal-800 px-3.5 py-2 text-xs text-fg-muted dark:border-cream-300"
           >
             <span className="tabular-nums">
-              Showing {from}–{to} of {sorted.length}
+              Showing {from}–{to} of {total}
               {footerNote ? <> · {footerNote}</> : null}
             </span>
             {pager}
