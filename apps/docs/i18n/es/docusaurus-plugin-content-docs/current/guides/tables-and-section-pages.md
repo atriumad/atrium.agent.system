@@ -49,7 +49,7 @@ El contenido usa todo el ancho de la ventana. Por debajo de unos **1536px** (`2x
 El rango y el lugar de arriba mueven tanto la banda como la tabla:
 
 - El **rango** fija la ventana: los últimos 7, 30 o 90 días. Los días son los días locales de cada lugar, como en [Leer el Overview](./reading-the-overview#rango-y-lugar).
-- El **lugar** se aplica en el servidor, para las filas y para los conteos de las pestañas, así que una página de un solo lugar no es la lista entera recortada en el navegador. El filtro `Place` de la barra es el mismo control que el del encabezado.
+- El **lugar** se aplica en el servidor, para las filas y para los conteos de las pestañas, así que una página de un solo lugar no es la lista entera recortada en el navegador. En Cases, el filtro `Place` de la barra es el mismo control que el del encabezado; Responses no tiene filtro `Place` en la barra, solo el del encabezado.
 - **Las pestañas, los chips, la búsqueda y los filtros de columna acotan solo la tabla.** La banda no cambia mientras alguien busca. Cambiar el rango o el lugar vuelve a la página 1.
 
 ## Cases

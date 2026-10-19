@@ -49,7 +49,7 @@ The content uses the full width of the window. Below about **1536px** (`2xl`) th
 The range and the place at the top drive both the band and the table:
 
 - The **range** sets the window: the last 7, 30 or 90 days. Days are each place's own local days, as in [Reading the Overview](./reading-the-overview#range-and-place).
-- The **place** is applied on the server, for the rows and for the tab counts, so a page for one place is not the whole list narrowed in the browser. The `Place` filter in the bar is the same control as the one in the header.
+- The **place** is applied on the server, for the rows and for the tab counts, so a page for one place is not the whole list narrowed in the browser. On Cases, the `Place` filter in the bar is the same control as the one in the header; Responses has no `Place` filter in the bar, only the header's.
 - **Tabs, chips, search and column filters narrow only the table.** The band does not change while someone searches. Changing the range or the place goes back to page 1.
 
 ## Cases
