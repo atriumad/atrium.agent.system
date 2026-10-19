@@ -4,7 +4,7 @@ import { AlertTriangle, Bell, MapPin, MessageCircle } from "lucide-react";
 import { type ElementType, useCallback, useEffect, useState } from "react";
 import { Button } from "../actions/button";
 import { type AppNotification, api } from "../api";
-import { caseHref } from "../case-detail-page";
+import { caseHref } from "../case-links";
 import type { Surface } from "../cases-app";
 import { type Column, DataTable } from "../data/data-table";
 import { FilterBar } from "../data/filter-bar";

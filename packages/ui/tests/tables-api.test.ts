@@ -77,10 +77,6 @@ describe("table pages client", () => {
     await api.casesTable("7d", "p1");
     expect(url()).toBe("/api/cases?range=7d&place=p1");
   });
-  test("cases still returns the list", async () => {
-    stub(casesTableFixture);
-    expect(await api.cases()).toEqual(casesTableFixture.cases);
-  });
   test("casesBand with a place", async () => {
     const url = stub(casesBandFixture);
     await api.casesBand("90d", "p1");

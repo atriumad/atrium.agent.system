@@ -389,7 +389,6 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   me: () => call<Me>("/api/me"),
-  cases: () => call<{ cases: CaseSummary[] }>("/api/cases").then((r) => r.cases),
   casesTable: (range: RangeKey, place?: string) =>
     call<CasesTable>(`/api/cases?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`),
   casesBand: (range: RangeKey, place?: string) =>
@@ -436,10 +435,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ to, note: note.trim() || null }),
     }).then((r) => r.case),
-  surveyResponses: (maxRating?: number) =>
-    call<{ responses: SurveyResponse[] }>(
-      `/api/surveys/responses${maxRating ? `?maxRating=${maxRating}` : ""}`,
-    ).then((r) => r.responses),
   surveyForms: () => call<{ forms: SurveyForm[] }>("/api/surveys/forms").then((r) => r.forms),
   surveyLocations: () =>
     call<{ locations: PlaceOption[] }>("/api/surveys/locations").then((r) => r.locations),
