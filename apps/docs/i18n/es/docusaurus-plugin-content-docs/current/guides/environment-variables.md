@@ -70,7 +70,7 @@ Los agentes de Host corren en su propio servicio ([ADR 0020](../adr/0020-agents-
 
 | Variable | Qué es | Por defecto | Quién la lee |
 | --- | --- | --- | --- |
-| `LOYALTY_SECRET` | Firma los tokens del QR de registro impreso y hashea la cookie del dispositivo. Una cadena aleatoria de 32 caracteres o más. Sin ella las rutas `/v1/loyalty` y `/api/loyalty` no se montan. | ninguno | API |
+| `LOYALTY_SECRET` | Firma los tokens del QR de registro impreso y hashea la cookie del dispositivo. Una cadena aleatoria de 32 caracteres o más. Sin ella, o con una más corta, las rutas `/v1/loyalty` y `/api/loyalty` no se montan. | ninguno | API |
 | `TRUST_PROXY` | Poner `1` solo cuando un proxy que controlas pone `X-Forwarded-For`; entonces el primer salto es la dirección del cliente. Si no, se usa la dirección del socket. | sin poner | API |
 | `QR_CARD_URL` | Origen público de la app de la tarjeta; el QR de registro imprimible apunta a `<QR_CARD_URL>/j/<token>`. También hace `Secure` la cookie del dispositivo cuando empieza con `https://`. | `http://localhost:3006` en `.env.example` | API |
 

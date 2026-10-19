@@ -70,7 +70,7 @@ Host's agents run in their own service ([ADR 0020](../adr/0020-agents-in-their-o
 
 | Variable | What it is | Default | Who reads it |
 | --- | --- | --- | --- |
-| `LOYALTY_SECRET` | Signs the printed join QR tokens and hashes the device cookie. A random string of 32 characters or more. Without it the `/v1/loyalty` and `/api/loyalty` routes are not mounted. | none | API |
+| `LOYALTY_SECRET` | Signs the printed join QR tokens and hashes the device cookie. A random string of 32 characters or more. Without it, or with a shorter one, the `/v1/loyalty` and `/api/loyalty` routes are not mounted. | none | API |
 | `TRUST_PROXY` | Set to `1` only when a proxy you control sets `X-Forwarded-For`; then the first hop is the client address. Otherwise the socket address is used. | not set | API |
 | `QR_CARD_URL` | Public origin of the card app; the printable join QR points to `<QR_CARD_URL>/j/<token>`. Also makes the device cookie `Secure` when it starts with `https://`. | `http://localhost:3006` in `.env.example` | API |
 

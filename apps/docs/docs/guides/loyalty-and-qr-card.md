@@ -31,7 +31,7 @@ One program per location. The fields and their limits:
 | Accent | One of `lime`, `clay`, `charcoal`, `sage` (no logo upload yet) |
 | Active | A paused program still answers, with `state: "paused"`, and cannot be stamped |
 
-Setting the program up needs the `loyalty:manage` permission: the agency admin and the account manager (they set it up, they are not at the venue) and the client owner. The whole feature is the `retention` feature of the package: a client where it is locked gets `403 feature_locked` on every loyalty route.
+Setting the program up needs the `loyalty:manage` permission: the agency admin and the account manager (they set it up, they are not at the venue) and the client owner. The whole feature is the `retention` feature of the package: a client where it is locked gets `403 feature_locked` on every staff route (`/api/loyalty/*` and `/api/insights/loyalty`). The public join and card routes stay open.
 
 | Route | Purpose |
 | --- | --- |
@@ -79,6 +79,8 @@ The public routes need no session, and the card token in the path is the only se
 | `GET /v1/loyalty/cards/:token` | The card: brand, reward, stamps, `rewardReady`, `state`. Supports `ETag` and `If-None-Match` (a 304 has no body). |
 | `POST /v1/loyalty/cards/:token/email` | The optional opt-in: `{ email, consent: true }`. Answers 204. |
 
+Join errors: `410 invalid` for a bad, rotated or foreign token and `410 paused` for a paused program, `409 device_limit` when the device already has a card, and `429` with `Retry-After` over a limit.
+
 A paused program, a suspended location or a closed card answers 200 with `state: "paused"` or `"closed"`. An unknown or malformed token is 404. Cookies are `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when the request is https, when a trusted proxy says it was, when `QR_CARD_URL` starts with `https://`, or in production.
 
 ## The limits
@@ -91,7 +93,10 @@ Counters live in Postgres and a limit answers `429` with `Retry-After`.
 | Cards per device per program | 1 per rolling 24 hours |
 | New cards per program, whoever joins | 200 per hour |
 | Reads per card token | 120 per minute |
-| Stamp and redeem attempts per staff user | 10 per minute |
+| Stamp attempts per staff user | 10 per minute |
+| Redeem attempts per staff user | 10 per minute, a separate bucket from stamps |
+| Email opt-in per card token | 120 per minute |
+| Email opt-in per IP address | 20 per hour |
 
 Two consequences to know before a launch: a venue's shared WiFi shares the 20 joins per IP per hour, and the 200 cards per program per hour can be used up by someone abusing the poster QR. The device limit is anti-abuse, not integrity: two joins at the same instant can race past it.
 
@@ -99,7 +104,7 @@ Two consequences to know before a launch: a venue's shared WiFi shares the 20 jo
 
 | Variable | Effect |
 | --- | --- |
-| `LOYALTY_SECRET` | Signs the join tokens and hashes the device cookie. Without it the loyalty routes are not mounted. |
+| `LOYALTY_SECRET` | Signs the join tokens and hashes the device cookie. At least 32 characters. Without it, or with a shorter one, the loyalty routes are not mounted. |
 | `TRUST_PROXY` | Set to `1` only when a proxy you control sets `X-Forwarded-For`. Then the first hop is the client address; otherwise the socket address is. |
 | `QR_CARD_URL` | Public origin of the card app, used in the printable join URL. Default in development: `http://localhost:3006`. |
 

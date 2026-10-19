@@ -34,6 +34,10 @@ Los clientes necesitan una tarjeta de sellos digital al estilo de Rondafy: el gu
 - **Redes compartidas.** El NAT de un local comparte las 20 altas por IP por hora. Las 200 tarjetas nuevas por programa por hora las puede agotar un abuso del QR del póster; la especificación lo aceptó.
 - **El límite por dispositivo es antiabuso, no de integridad.** Es un conteo móvil de 24 horas de tarjetas emitidas por dispositivo y programa, y registros concurrentes pueden saltárselo.
 - **IP del cliente.** El código toma el primer salto de `X-Forwarded-For` solo cuando `TRUST_PROXY` está puesta. La app de la tarjeta llega a la API por un rewrite de Next, así que el proxy de la entrega B debe sobrescribir `X-Forwarded-For`, y la semántica de saltos de `TRUST_PROXY` debe definirse entonces. Hasta entonces la variable debe quedar sin poner detrás del rewrite.
+- **Clave IPv6.** Los límites se calculan sobre la dirección completa. Un cliente con un /64 de IPv6 puede rotar por todo un prefijo de direcciones, así que los límites por IP no lo contienen; calcular sobre el /64 es un pendiente.
+- **El poller debe enviar `If-None-Match` por su cuenta.** Las rutas públicas responden `Cache-Control: no-store`, así que el navegador no hará peticiones condicionales solo. La página de la tarjeta de la entrega B guarda el último cuerpo y el `ETag` y envía `If-None-Match`.
+- **Un void no escribe un evento propio para los consumidores.** Los consumidores de sellos no pueden descontar los voids; el pendiente de Retention debe resolverlo.
+- **Las bases locales que aplicaron un `crm/0001` anterior** durante esta rama necesitan `drop schema crm cascade; delete from public.schema_migrations where module='crm'` y luego `bun run db:migrate`.
 - **La cookie no está firmada.** Un UUID hasheado con el secreto, no un valor firmado. Aceptado.
 - **Un sello que completa informa `stampsInCycle` igual a los sellos requeridos**, mientras la vista de la tarjeta muestra 0 y `rewardReady`. Los clientes de la API deben leer ambos.
 - **Un void no puede cancelar un sello que ganó un premio** en esta versión.

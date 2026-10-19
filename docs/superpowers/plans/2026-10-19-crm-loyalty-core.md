@@ -35,7 +35,7 @@
 3. A replayed idempotency key returns the original result with no second event, even after the card changed (Task 5).
 4. Staff of location A cannot stamp, redeem or read a card of location B, and a location outside the caller's scope answers the same "not found" as an unknown code (Task 5, Task 8).
 5. A survey QR token or an invitation token can never act as a join token and the reverse; a rotated `join_qr_version` rejects old tokens (Task 2, Task 4).
-6. Attaching an email that already belongs to another guest leaves the card untouched and reveals nothing about the other guest (Task 6).
+6. Attaching an email that already belongs to another guest links the existing guest and answers identically; it reveals nothing about whether the address was on file (Task 6).
 
 ## File Structure
 

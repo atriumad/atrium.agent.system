@@ -31,7 +31,7 @@ Un programa por local. Los campos y sus límites:
 | Acento | Uno de `lime`, `clay`, `charcoal`, `sage` (todavía sin subir logo) |
 | Activo | Un programa en pausa sigue respondiendo, con `state: "paused"`, y no se puede sellar |
 
-Configurar el programa requiere el permiso `loyalty:manage`: el admin de la agencia y el account manager (lo configuran, no están en el local) y el dueño del cliente. Toda la función es la función `retention` del paquete: un cliente donde está bloqueada recibe `403 feature_locked` en cada ruta de lealtad.
+Configurar el programa requiere el permiso `loyalty:manage`: el admin de la agencia y el account manager (lo configuran, no están en el local) y el dueño del cliente. Toda la función es la función `retention` del paquete: un cliente donde está bloqueada recibe `403 feature_locked` en cada ruta del personal (`/api/loyalty/*` y `/api/insights/loyalty`). Las rutas públicas de registro y de la tarjeta siguen abiertas.
 
 | Ruta | Propósito |
 | --- | --- |
@@ -79,6 +79,8 @@ Las rutas públicas no necesitan sesión, y el token de la tarjeta en la ruta es
 | `GET /v1/loyalty/cards/:token` | La tarjeta: marca, premio, sellos, `rewardReady`, `state`. Soporta `ETag` e `If-None-Match` (un 304 no lleva cuerpo). |
 | `POST /v1/loyalty/cards/:token/email` | El opt-in opcional: `{ email, consent: true }`. Responde 204. |
 
+Errores de registro: `410 invalid` para un token malo, rotado o ajeno y `410 paused` para un programa en pausa, `409 device_limit` cuando el dispositivo ya tiene una tarjeta, y `429` con `Retry-After` al pasar un límite.
+
 Un programa en pausa, un local suspendido o una tarjeta cerrada responde 200 con `state: "paused"` o `"closed"`. Un token desconocido o mal formado es 404. Las cookies son `HttpOnly`, `SameSite=Lax`, `Path=/`, y `Secure` cuando la petición es https, cuando un proxy de confianza dice que lo fue, cuando `QR_CARD_URL` empieza con `https://`, o en producción.
 
 ## Los límites
@@ -91,7 +93,10 @@ Los contadores viven en Postgres y un límite responde `429` con `Retry-After`.
 | Tarjetas por dispositivo y programa | 1 por 24 horas móviles |
 | Tarjetas nuevas por programa, quien sea que se registre | 200 por hora |
 | Lecturas por token de tarjeta | 120 por minuto |
-| Intentos de sellar y canjear por usuario del personal | 10 por minuto |
+| Intentos de sellar por usuario del personal | 10 por minuto |
+| Intentos de canjear por usuario del personal | 10 por minuto, un cupo aparte del de sellar |
+| Opt-in de email por token de tarjeta | 120 por minuto |
+| Opt-in de email por dirección IP | 20 por hora |
 
 Dos consecuencias a conocer antes de un lanzamiento: el WiFi compartido de un local comparte las 20 altas por IP por hora, y las 200 tarjetas por programa por hora las puede agotar alguien que abuse del QR del póster. El límite por dispositivo es antiabuso, no de integridad: dos registros en el mismo instante pueden saltárselo.
 
@@ -99,7 +104,7 @@ Dos consecuencias a conocer antes de un lanzamiento: el WiFi compartido de un lo
 
 | Variable | Efecto |
 | --- | --- |
-| `LOYALTY_SECRET` | Firma los tokens de registro y hashea la cookie del dispositivo. Sin ella las rutas de lealtad no se montan. |
+| `LOYALTY_SECRET` | Firma los tokens de registro y hashea la cookie del dispositivo. Al menos 32 caracteres. Sin ella, o con una más corta, las rutas de lealtad no se montan. |
 | `TRUST_PROXY` | Poner `1` solo cuando un proxy que controlas pone `X-Forwarded-For`. Entonces el primer salto es la dirección del cliente; si no, lo es la dirección del socket. |
 | `QR_CARD_URL` | Origen público de la app de la tarjeta, usado en la URL de registro imprimible. Por defecto en desarrollo: `http://localhost:3006`. |
 

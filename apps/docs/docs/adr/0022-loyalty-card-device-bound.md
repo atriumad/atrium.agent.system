@@ -34,6 +34,10 @@ Clients need a digital stamp card in the style of Rondafy: the guest scans a QR 
 - **Shared networks.** A venue's NAT shares the 20 joins per IP per hour. The 200 new cards per program per hour can be used up by abuse of the poster QR; the spec accepted that.
 - **The device limit is anti-abuse, not integrity.** It is a rolling 24-hour count of issued cards per device and program, and concurrent joins may race past it.
 - **Client IP.** The code takes the first hop of `X-Forwarded-For` only when `TRUST_PROXY` is set. The card app reaches the API through a Next rewrite, so delivery B's proxy must overwrite `X-Forwarded-For`, and the hop semantics of `TRUST_PROXY` must be settled then. Until then the variable should stay unset behind the rewrite.
+- **IPv6 keying.** Rate limits key on the full address. A client with an IPv6 /64 can rotate through a whole prefix of addresses, so the per-IP limits do not hold against it; keying on the /64 is a follow-up.
+- **The poller must send `If-None-Match` itself.** The public routes answer `Cache-Control: no-store`, so the browser will not do conditional requests alone. Delivery B's card page keeps the last body and the `ETag` and sends `If-None-Match`.
+- **A void writes no event of its own for consumers.** Stamp consumers cannot net out voids; the Retention follow-up must handle it.
+- **Local databases that applied an earlier `crm/0001`** during this branch need `drop schema crm cascade; delete from public.schema_migrations where module='crm'` and then `bun run db:migrate`.
 - **The cookie is unsigned.** A UUID hashed with the secret, not a signed value. Accepted.
 - **A completing stamp reports `stampsInCycle` equal to the stamps required**, while the card view shows 0 and `rewardReady`. Clients of the API must read both.
 - **A void cannot cancel a stamp that earned a reward** in this version.
