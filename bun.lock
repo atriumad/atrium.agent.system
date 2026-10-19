@@ -140,6 +140,16 @@
         "drizzle-kit": "^0.31.11",
       },
     },
+    "modules/crm": {
+      "name": "@atrium/crm",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/contracts": "workspace:*",
+        "@atrium/core": "workspace:*",
+        "drizzle-orm": "^0.45.3",
+        "zod": "^4.6.5",
+      },
+    },
     "modules/reputation": {
       "name": "@atrium/reputation",
       "version": "0.0.0",
@@ -281,6 +291,8 @@
     "@atrium/contracts": ["@atrium/contracts@workspace:packages/contracts"],
 
     "@atrium/core": ["@atrium/core@workspace:modules/core"],
+
+    "@atrium/crm": ["@atrium/crm@workspace:modules/crm"],
 
     "@atrium/docs": ["@atrium/docs@workspace:apps/docs"],
 
