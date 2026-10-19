@@ -63,6 +63,21 @@ describe("AppFrame", () => {
     expect(screen.getByText(ownerMe.name)).toBeTruthy();
   });
 
+  test("the content column uses all the width: no max-width cap, only the gutter", async () => {
+    setup(
+      <AppFrame surface="manager" pathname="/reputation/cases" client={client()}>
+        <p>wide page</p>
+      </AppFrame>,
+    );
+    const wrapper = (await screen.findByText("wide page")).parentElement as HTMLElement;
+    expect(wrapper.className).toContain("w-full");
+    expect(wrapper.className).not.toContain("max-w-[1200px]");
+    expect(wrapper.className).not.toMatch(/max-w-/);
+    const main = wrapper.closest("main") as HTMLElement;
+    expect(main.className).toContain("px-4");
+    expect(main.className).toContain("lg:px-8");
+  });
+
   test("children read the person through useMe", async () => {
     const Who = () => <p>{useMe().role}</p>;
     setup(

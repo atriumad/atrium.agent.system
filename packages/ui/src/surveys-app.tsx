@@ -161,7 +161,7 @@ export function FormCard({
           )}
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex max-w-2xl flex-col gap-4">
           <TextField
             label="Google review link"
             type="url"
@@ -226,7 +226,7 @@ export function FormCard({
 function Forms({ canManage, canOperate }: { canManage: boolean; canOperate: boolean }) {
   const { data, failed, reload } = useLoad(api.surveyForms);
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid gap-4 min-[1800px]:grid-cols-2">
       {failed ? <ErrorState title="Could not load forms" onRetry={reload} /> : null}
       {data === null && !failed ? <Skeleton className="h-40 w-full" /> : null}
       {data?.length === 0 ? (
@@ -364,7 +364,7 @@ function HelpPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card padding="md" title="Ask for help">
+      <Card padding="md" title="Ask for help" className="max-w-2xl">
         <div className="mt-4 flex flex-col gap-4">
           <Field label="Place">
             <Select

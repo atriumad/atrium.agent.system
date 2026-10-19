@@ -77,7 +77,7 @@ export function PlacesPanel({ client = api }: { client?: PlacesClient }) {
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
       <div className="flex flex-col gap-3">
         <h2 className="m-0 text-xl font-normal">Your places</h2>
         {failed ? <ErrorState title="Could not load your places" onRetry={load} /> : null}

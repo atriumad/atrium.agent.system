@@ -274,7 +274,7 @@ export function AppFrame({
               id="main"
               className={`min-w-0 flex-1 px-4 lg:px-8 ${surface === "manager" ? "py-6" : "py-10"}`}
             >
-              <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+              <div className="w-full min-w-0">{children}</div>
             </main>
           </div>
         </div>

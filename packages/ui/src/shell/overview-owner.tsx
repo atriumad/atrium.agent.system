@@ -176,7 +176,7 @@ export function OwnerOverview() {
             </Block>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <Block title="Your places">
               <DataTable
                 label="Your places"

@@ -36,7 +36,7 @@ export function ModulePage({ feature }: { feature: string }) {
         title={teaser.title}
         description={teaser.locked ? "Not in your plan yet." : "Coming soon."}
       />
-      <Card padding="md">
+      <Card padding="md" className="max-w-3xl">
         <div className="flex items-start gap-3">
           {teaser.locked ? (
             <Lock size={20} strokeWidth={1.5} aria-hidden className="mt-0.5" />

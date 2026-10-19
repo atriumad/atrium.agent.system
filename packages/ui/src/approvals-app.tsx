@@ -120,14 +120,14 @@ function AccountRow({
           {request.ownerName} · {request.ownerEmail} · first place {request.firstLocationName} (
           {request.firstLocationTimeZone})
         </p>
-        {request.note ? <p className="mt-2 mb-0 text-sm">{request.note}</p> : null}
+        {request.note ? <p className="mt-2 mb-0 max-w-[68ch] text-sm">{request.note}</p> : null}
         {error ? (
           <div className="mt-3">
             <Banner status="danger">{error}</Banner>
           </div>
         ) : null}
         {link ? (
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="mt-4 flex max-w-2xl flex-col gap-2">
             <Banner status="positive" title="Account created">
               Give this link to {request.ownerName}. It is shown once, works once and expires in 7
               days.
@@ -138,7 +138,7 @@ function AccountRow({
             </div>
           </div>
         ) : rejecting ? (
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mt-4 flex max-w-2xl flex-col gap-3">
             <TextareaField
               label="Reason"
               rows={2}
@@ -289,7 +289,7 @@ function PlaceRow({
           ) : null}
         </div>
         {rejecting ? (
-          <div className="mt-3 flex flex-col gap-3">
+          <div className="mt-3 flex max-w-2xl flex-col gap-3">
             <TextareaField
               label="Reason"
               rows={2}

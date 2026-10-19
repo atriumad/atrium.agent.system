@@ -253,6 +253,8 @@ describe("layout", () => {
     );
     expect(screen.getByRole("heading", { level: 1, name: "Recovery cases" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Export" })).toBeTruthy();
+    // Prose keeps a readable measure even when the page is full width.
+    expect(screen.getByText("Reach out within 24 hours.").className).toContain("max-w-[68ch]");
   });
 
   test("Section sits under the 3px rule and has an h2", () => {

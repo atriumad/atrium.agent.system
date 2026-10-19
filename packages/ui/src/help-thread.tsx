@@ -744,7 +744,7 @@ export function HelpThreads({
                   />
                 ))}
           </ListPanel>
-          <div className="lg:sticky lg:top-6">
+          <div className="max-w-4xl lg:sticky lg:top-6">
             {selected ? (
               <Conversation
                 key={selected}
