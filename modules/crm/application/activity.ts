@@ -1,4 +1,11 @@
-import { can, listLocationLabels, locationVisible, type Scope, type Tx } from "@atrium/core";
+import {
+  can,
+  listLocationLabels,
+  locationVisible,
+  type Scope,
+  type Tx,
+  userDisplayNames,
+} from "@atrium/core";
 import { type AnyColumn, and, asc, count, desc, eq, gt, lte, type SQL, sql } from "drizzle-orm";
 import { progress } from "../domain/loyalty";
 import {
@@ -11,7 +18,7 @@ import {
 import { formatShortCode, normalizeShortCode } from "../domain/tokens";
 import { listCardEvents } from "../infra/repository";
 import { loyaltyCards, loyaltyEvents, loyaltyPrograms, loyaltyRewards } from "../infra/schema";
-import { CardNotFoundError, LoyaltyForbiddenError } from "./shared";
+import { CardNotFoundError, InvalidStampInputError, LoyaltyForbiddenError } from "./shared";
 
 export type ActivityKind = "stamp" | "reward_earned" | "reward_redeemed" | "void";
 
@@ -32,8 +39,11 @@ const MAX_PAGE_SIZE = 100;
 const KINDS: readonly string[] = ["stamp", "reward_earned", "reward_redeemed", "void"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function requireRead(scope: Scope) {
+function requireRead(scope: Scope, range: unknown) {
   if (!can(scope.role, "loyalty", "read")) throw new LoyaltyForbiddenError("read");
+  if (typeof range !== "string" || !Object.hasOwn(SUMMARY_DAYS, range)) {
+    throw new InvalidStampInputError("range: 7d, 30d or 90d");
+  }
 }
 
 /** Row-level security decides which events are visible; a named place is only a narrowing. */
@@ -58,7 +68,7 @@ export async function listActivity(
     now: Date;
   },
 ): Promise<{ rows: ActivityRow[]; total: number; page: number; pageSize: number }> {
-  requireRead(scope);
+  requireRead(scope, input.range);
   const pageSize =
     Number.isFinite(input.pageSize) && input.pageSize >= 1
       ? Math.min(Math.floor(input.pageSize), MAX_PAGE_SIZE)
@@ -98,17 +108,7 @@ export async function listActivity(
 
   const places = new Map((await listLocationLabels(tx)).map((l) => [l.id, l.locationName]));
   const actorIds = [...new Set(events.flatMap((e) => (e.actorId ? [e.actorId] : [])))];
-  const names = new Map<string, string>();
-  if (actorIds.length > 0) {
-    // only the display name of a person who acted on these events, and nothing else of the user
-    const users = await tx.execute<{ id: string; name: string | null }>(
-      sql`select id, name from core.users where id in (${sql.join(
-        actorIds.map((id) => sql`${id}`),
-        sql`, `,
-      )})`,
-    );
-    for (const u of users) if (u.name) names.set(u.id, u.name);
-  }
+  const names = await userDisplayNames(tx, actorIds);
 
   return {
     rows: events.map((e) => ({
@@ -141,7 +141,7 @@ export async function loyaltySummary(
   scope: Scope,
   input: { range: SummaryRange; locationId?: string; now: Date },
 ): Promise<LoyaltySummary> {
-  requireRead(scope);
+  requireRead(scope, input.range);
   const windows = summaryWindows(input.now, SUMMARY_DAYS[input.range]);
   const zero = compareCounts(0, 0);
   const none: LoyaltySummary = {
@@ -233,7 +233,7 @@ export type LoyaltyCardProgress = {
   locationName: string;
   programName: string;
   rewardLabel: string;
-  state: "active" | "closed";
+  state: "active" | "paused" | "closed";
   stampsRequired: number;
   stampsInCycle: number;
   rewardReady: boolean;
@@ -276,13 +276,14 @@ export async function getLoyaltyCard(
     .from(loyaltyRewards)
     .where(and(eq(loyaltyRewards.cardId, card.id), sql`${loyaltyRewards.redeemedAt} is null`));
   const place = (await listLocationLabels(tx)).find((l) => l.id === card.locationId);
+  const status = place?.status ?? null;
   return {
     shortCode: formatShortCode(card.shortCode),
     locationId: card.locationId,
     locationName: place?.locationName ?? "",
     programName: program.name,
     rewardLabel: program.rewardLabel,
-    state: card.closedAt ? "closed" : "active",
+    state: !program.active || status !== "active" ? "paused" : card.closedAt ? "closed" : "active",
     stampsRequired: program.stampsRequired,
     stampsInCycle,
     rewardReady,

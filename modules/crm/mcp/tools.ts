@@ -19,7 +19,7 @@ export function crmTools(): Tool<never, unknown, Tx>[] {
       locationName: z.string(),
       programName: z.string(),
       rewardLabel: z.string(),
-      state: z.enum(["active", "closed"]),
+      state: z.enum(["active", "paused", "closed"]),
       stampsRequired: z.number().int(),
       stampsInCycle: z.number().int(),
       rewardReady: z.boolean(),

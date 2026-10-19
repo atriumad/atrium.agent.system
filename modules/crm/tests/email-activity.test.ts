@@ -6,6 +6,7 @@ import {
   createDatabase,
   createLocation,
   eraseGuest,
+  recordOptOut,
   type Scope,
   withAgency,
   withScope,
@@ -22,6 +23,8 @@ import {
   crmErasureConsumer,
   crmTools,
   eraseGuestCards,
+  getCardByToken,
+  InvalidStampInputError,
   issueCard,
   joinToken,
   listActivity,
@@ -277,28 +280,60 @@ describe("attachEmail", () => {
     expect(card.guest_id).toBeNull();
   });
 
-  test("an email of another guest answers exactly like an unknown token and changes nothing", async () => {
+  test("an address already on file links the same guest and answers like a new one", async () => {
     const a = await fixture();
     const b = await fixture();
     const email = emailFor("shared");
-    expect(await attach(a.token, email)).toEqual({ ok: true });
+    const first = await attach(a.token, email);
     const [ga] = await admin.unsafe("select guest_id from crm.loyalty_cards where id = $1", [
       a.cardId,
     ]);
     const before = published.length;
-    const taken = await attach(b.token, email);
-    const unknown = await attach("x".repeat(43), emailFor("nobody"));
-    expect(taken).toEqual({ ok: false, reason: "unavailable" });
-    expect(JSON.stringify(taken)).toBe(JSON.stringify(unknown));
-    expect(published.length).toBe(before);
+    const second = await attach(b.token, email);
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+    expect(second).toEqual({ ok: true });
     const [gb] = await admin.unsafe("select guest_id from crm.loyalty_cards where id = $1", [
       b.cardId,
     ]);
-    expect(gb.guest_id).toBeNull();
+    expect(gb.guest_id).toBe(ga.guest_id);
+    // the consent already recorded is not recorded twice
     const consents = await admin.unsafe("select 1 from core.consents where guest_id = $1", [
       ga.guest_id,
     ]);
     expect(consents).toHaveLength(1);
+    const captured = published.slice(before).filter((e) => e.type === "contact.captured");
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.data).toEqual({ guestId: ga.guest_id, source: "loyalty_card" });
+    expect(JSON.stringify(published.slice(before))).not.toContain(email);
+  });
+
+  test("a withdrawn marketing consent is not overturned by a new card", async () => {
+    const a = await fixture();
+    const b = await fixture();
+    const email = emailFor("optout");
+    expect(await attach(a.token, email)).toEqual({ ok: true });
+    const [ga] = await admin.unsafe("select guest_id from crm.loyalty_cards where id = $1", [
+      a.cardId,
+    ]);
+    await withTenant(db, clientId, (tx) =>
+      recordOptOut(tx, ga.guest_id, "email", "email_unsubscribe"),
+    );
+    const log = () =>
+      admin.unsafe(
+        "select granted from core.consents where guest_id = $1 and channel = 'email' and purpose = 'marketing' order by seq",
+        [ga.guest_id],
+      );
+    const before = await log();
+    expect(before.at(-1)?.granted).toBe(false);
+
+    expect(await attach(b.token, email)).toEqual({ ok: true });
+    const [gb] = await admin.unsafe("select guest_id from crm.loyalty_cards where id = $1", [
+      b.cardId,
+    ]);
+    expect(gb.guest_id).toBe(ga.guest_id);
+    const after = await log();
+    expect(after).toHaveLength(before.length);
+    expect(after.at(-1)?.granted).toBe(false);
   });
 
   test("unknown, malformed and closed cards are unavailable", async () => {
@@ -335,11 +370,8 @@ describe("erasure", () => {
       f.cardId,
     ]);
     expect(after.guest_id).toBeNull();
-    const [events] = await admin.unsafe(
-      "select count(*)::int as n from crm.loyalty_events where card_id = $1",
-      [f.cardId],
-    );
-    expect(events.n).toBe(1);
+    const view = await getCardByToken(db, f.token, deps);
+    expect(view).toMatchObject({ stampsInCycle: 1, rewardReady: false, state: "active" });
     expect(await withTenant(db, clientId, (tx) => eraseGuestCards(tx, card.guest_id))).toBe(0);
   });
 });
@@ -453,6 +485,27 @@ describe("listActivity", () => {
     const scoped = await list(staffAt(mine.locationId), { pageSize: 100 });
     expect(scoped.rows.every((r) => r.locationId === mine.locationId)).toBe(true);
     expect(scoped.rows.length).toBeGreaterThan(0);
+  });
+});
+
+describe("range guard", () => {
+  test("an unknown range is a clean error", async () => {
+    const bad = "1y" as never;
+    await expect(
+      withScope(db, owner(), (tx) =>
+        listActivity(tx, owner(), {
+          range: bad,
+          page: 1,
+          pageSize: 25,
+          sort: "date",
+          dir: "asc",
+          now: later,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(InvalidStampInputError);
+    await expect(
+      withScope(db, owner(), (tx) => loyaltySummary(tx, owner(), { range: bad, now: later })),
+    ).rejects.toBeInstanceOf(InvalidStampInputError);
   });
 });
 
@@ -580,6 +633,18 @@ describe("crm.get_loyalty_card", () => {
     expect(text).not.toContain("guest");
     expect(text).not.toContain(emailFor("tool"));
     expect(() => tool().output.parse(out)).not.toThrow();
+  });
+
+  test("reports paused like the public card view", async () => {
+    const f = await fixture();
+    await admin.unsafe("update crm.loyalty_programs set active = false where id = $1", [
+      f.programId,
+    ]);
+    const out = (await withTenant(db, clientId, (tx) =>
+      tool().handler({ locationId: f.locationId, shortCode: f.code } as never, context(), tx),
+    )) as { state: string };
+    expect(out.state).toBe("paused");
+    expect((await getCardByToken(db, f.token, deps))?.state).toBe("paused");
   });
 
   test("refuses a location outside the scope", async () => {

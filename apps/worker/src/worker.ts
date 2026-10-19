@@ -6,6 +6,7 @@ import {
   type EventBus,
   type JobDefinition,
 } from "@atrium/core";
+import { crmErasureConsumer } from "@atrium/crm";
 import { erasureConsumer as reputationErasure } from "@atrium/reputation";
 import { ensureFuturePartitions, signalsConsumers, signalsJobs } from "@atrium/signals";
 import { agentConsumers } from "./agents";
@@ -26,7 +27,7 @@ export function registry(
 ): { consumers: ConsumerDefinition[]; jobs: JobDefinition[] } {
   const host = agentConsumers(config.agents);
   return {
-    consumers: [...signalsConsumers, reputationErasure, ...host.consumers],
+    consumers: [...signalsConsumers, reputationErasure, crmErasureConsumer, ...host.consumers],
     jobs: [...coreJobs(db), ...signalsJobs(db), ...host.jobs],
   };
 }

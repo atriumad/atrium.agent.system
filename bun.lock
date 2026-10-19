@@ -120,6 +120,7 @@
       "dependencies": {
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
+        "@atrium/crm": "workspace:*",
         "@atrium/reputation": "workspace:*",
         "@atrium/signals": "workspace:*",
       },

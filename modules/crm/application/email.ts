@@ -1,4 +1,5 @@
 import {
+  contactFor,
   type Database,
   IdentityConflictError,
   InvalidContactError,
@@ -17,14 +18,12 @@ export type AttachEmailResult =
 
 const UNAVAILABLE = { ok: false, reason: "unavailable" } as const;
 
-/** Thrown to roll the transaction back when the address already belongs to a guest. */
-class AddressTaken extends Error {}
-
 /**
  * Links an anonymous card to a guest who left an email and agreed to marketing. The guest comes
  * from Core's `resolveGuest` and the consent from `recordConsent`; the address is never stored
- * or published here. An address that already belongs to a guest, an unknown token and a closed
- * card all answer `unavailable`, so the answer says nothing about who else is on file.
+ * or published here. An address already on file links the card to that guest and answers exactly
+ * like a new one, so the answer says nothing about who is on file. An unknown token, a closed card
+ * and an identity conflict answer `unavailable`.
  */
 export async function attachEmail(
   db: Database,
@@ -50,15 +49,14 @@ export async function attachEmail(
       if (card.guestId) return { ok: true };
 
       const now = clock(deps);
-      let created = false;
-      const publish = async (...args: Parameters<NonNullable<CrmDeps["publish"]>>) => {
-        if (args[0].type === "guest.identified") created = true;
-        await deps.publish?.(...args);
-      };
-      const guestId = await resolveGuest(tx, card.clientId, { email: input.email }, { publish });
-      // an existing guest means the address is on file already: reveal nothing, link nothing
-      if (!created) throw new AddressTaken();
-      await recordConsent(tx, guestId, "email", "marketing", "loyalty_card", { publish });
+      const guestDeps = deps.publish ? { publish: deps.publish } : {};
+      // the guest behind this address, new or already on file: the answer is the same either way
+      const guestId = await resolveGuest(tx, card.clientId, { email: input.email }, guestDeps);
+      // an explicit withdrawal is never overturned by a card: link it, leave the decision alone
+      const standing = await contactFor(tx, guestId, "email", "marketing");
+      if (standing.allowed || standing.reason !== "opted_out") {
+        await recordConsent(tx, guestId, "email", "marketing", "loyalty_card", guestDeps);
+      }
       await tx.update(loyaltyCards).set({ guestId }).where(eq(loyaltyCards.id, card.id));
       await deps.publish?.(
         {
@@ -73,7 +71,7 @@ export async function attachEmail(
     });
   } catch (error) {
     if (error instanceof InvalidContactError) return { ok: false, reason: "invalid_email" };
-    if (error instanceof IdentityConflictError || error instanceof AddressTaken) return UNAVAILABLE;
+    if (error instanceof IdentityConflictError) return UNAVAILABLE;
     throw error;
   }
 }

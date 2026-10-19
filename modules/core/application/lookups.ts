@@ -94,3 +94,18 @@ export async function listLocationLabels(tx: Tx): Promise<(LocationLabel & { id:
     .orderBy(clients.name, locations.name);
   return rows.map((r) => ({ ...r, status: r.status as LocationStatus }));
 }
+
+/** Display names for user ids, and nothing else of the user. Unknown ids and unnamed users are absent. */
+export async function userDisplayNames(tx: Tx, ids: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids)];
+  const names = new Map<string, string>();
+  if (unique.length === 0) return names;
+  const rows = await tx.execute<{ id: string; name: string | null }>(
+    sql`select id, name from core.users where id in (${sql.join(
+      unique.map((id) => sql`${id}`),
+      sql`, `,
+    )})`,
+  );
+  for (const row of rows) if (row.name) names.set(row.id, row.name);
+  return names;
+}

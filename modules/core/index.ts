@@ -62,6 +62,7 @@ export {
   describeLocations,
   listLocationLabels,
   locationStatusFor,
+  userDisplayNames,
 } from "./application/lookups";
 export {
   coreJobs,
