@@ -30,6 +30,7 @@ const rows = (r: unknown) => r as Record<string, unknown>[];
 type Place = { clientId: string; locA: string; locB: string };
 let one: Place;
 let two: Place;
+let cx: Place;
 let amId = "";
 let codeSeq = 2;
 const cards: Record<string, { id: string; hash: string; programId: string }> = {};
@@ -76,6 +77,7 @@ beforeAll(async () => {
     for (const [key, name] of [
       ["one", "One"],
       ["two", "Two"],
+      ["cx", "Constraints"],
     ] as const) {
       const c = await createClientWithOrganization(tx, { name, slug: `crm-${key}-${suffix}` });
       const clientId = c.client.id;
@@ -85,11 +87,13 @@ beforeAll(async () => {
         .id;
       const place = { clientId, locA, locB };
       if (key === "one") one = place;
-      else two = place;
+      else if (key === "two") two = place;
+      else cx = place;
     }
     await seedPlace(tx, one.clientId, one.locA, "1A");
     await seedPlace(tx, one.clientId, one.locB, "1B");
     await seedPlace(tx, two.clientId, two.locA, "2A");
+    await seedPlace(tx, cx.clientId, cx.locA, "XA");
   });
   amId = `crm-am-${suffix}`;
   await admin.unsafe("insert into core.users (id, name, email) values ($1, $1, $2)", [
@@ -254,6 +258,8 @@ describe("rate counters", () => {
     await fails(hit("x".repeat(201), w, 5), /rate key/i);
     await fails(hit("k", w, 0), /limit/i);
     await fails(hit("k", w, 100001), /limit/i);
+    await fails(hit("k", new Date(Date.now() + 2 * 86_400_000), 5), /window/i);
+    await fails(hit("k", new Date(Date.now() - 2 * 86_400_000), 5), /window/i);
   });
 
   test("atrium_app cannot read or write the counters directly", async () => {
@@ -281,7 +287,7 @@ describe("constraints", () => {
     withAgency(db, (tx) =>
       tx.execute(sql`insert into crm.loyalty_programs
         (client_id, location_id, name, reward_label, stamps_required, cooldown_minutes, accent)
-        values (${two.clientId}, ${two.locB}, 'n', 'r', ${stamps}, ${cooldown}, ${accent})`),
+        values (${cx.clientId}, ${cx.locB}, 'n', 'r', ${stamps}, ${cooldown}, ${accent})`),
     );
 
   test("program rules are checked", async () => {
@@ -292,17 +298,17 @@ describe("constraints", () => {
   });
 
   test("one program per location", async () => {
-    // two.locB is free, so a first insert works; a second one is the duplicate.
+    // cx.locB is free, so a first insert works; a second one is the duplicate.
     await insertProgram(8, 240);
     await fails(insertProgram(8, 240), /unique|duplicate/i);
   });
 
   test("a duplicate (card_id, idempotency_key) fails", async () => {
-    const c = cards["1A"] as { id: string };
+    const c = cards["XA"] as { id: string };
     await fails(
       withAgency(db, (tx) =>
         tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key)
-          values (${one.clientId}, ${one.locA}, ${c.id}, 'stamp', 'k-1A')`),
+          values (${cx.clientId}, ${cx.locA}, ${c.id}, 'stamp', 'k-XA')`),
       ),
       /unique|duplicate/i,
     );
@@ -320,12 +326,12 @@ describe("constraints", () => {
   });
 
   test("seq increases, also for two events with the same created_at", async () => {
-    const c = cards["2A"] as { id: string };
+    const c = cards["XA"] as { id: string };
     const at = new Date("2026-10-19T09:00:00Z");
     const got = await withAgency(db, async (tx) => {
       for (const k of ["s1", "s2", "s3"])
         await tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key, created_at)
-          values (${two.clientId}, ${two.locA}, ${c.id}, 'stamp', ${k}, ${at})`);
+          values (${cx.clientId}, ${cx.locA}, ${c.id}, 'stamp', ${k}, ${at})`);
       return rows(
         await tx.execute(sql`select idempotency_key as k, seq::text as seq from crm.loyalty_events
           where card_id = ${c.id} and created_at = ${at} order by created_at, seq`),
@@ -337,11 +343,77 @@ describe("constraints", () => {
     expect(seqs[1]).toBeLessThan(seqs[2] as number);
   });
 
+  test("a child cannot point at a parent of another client or location", async () => {
+    const a1 = cards["1A"] as { id: string; programId: string };
+    const x = cards["XA"] as { id: string; programId: string };
+    await fails(
+      withAgency(db, (tx) =>
+        tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key)
+          values (${two.clientId}, ${two.locA}, ${a1.id}, 'stamp', 'cross')`),
+      ),
+      /foreign key/i,
+    );
+    await fails(
+      withAgency(db, (tx) =>
+        tx.execute(sql`insert into crm.loyalty_rewards (client_id, location_id, card_id)
+          values (${two.clientId}, ${two.locA}, ${a1.id})`),
+      ),
+      /foreign key/i,
+    );
+    // same client, other location
+    await fails(
+      withAgency(db, (tx) =>
+        tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key)
+          values (${cx.clientId}, ${cx.locB}, ${x.id}, 'stamp', 'cross2')`),
+      ),
+      /foreign key/i,
+    );
+    await fails(
+      withAgency(db, (tx) =>
+        tx.execute(sql`insert into crm.loyalty_cards (client_id, location_id, program_id, token_hash, short_code)
+          values (${two.clientId}, ${two.locA}, ${a1.programId}, ${hashOf("cross-card")}, 'AAAAAAAA')`),
+      ),
+      /foreign key/i,
+    );
+  });
+
+  test("a void must point at an event of the same card", async () => {
+    const x = cards["XA"] as { id: string; programId: string };
+    await withAgency(db, async (tx) => {
+      const otherCard = crypto.randomUUID();
+      await tx.execute(sql`insert into crm.loyalty_cards (id, client_id, location_id, program_id, token_hash, short_code)
+        values (${otherCard}, ${cx.clientId}, ${cx.locA}, ${x.programId}, ${hashOf("void-other")}, 'AAAAAAA9')`);
+      const [foreign] = rows(
+        await tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key)
+          values (${cx.clientId}, ${cx.locA}, ${otherCard}, 'stamp', 'v-foreign') returning id`),
+      );
+      const [own] = rows(
+        await tx.execute(
+          sql`select id from crm.loyalty_events where card_id = ${x.id} and idempotency_key = 'k-XA'`,
+        ),
+      );
+      const foreignId = (foreign as { id: string }).id;
+      const ownId = (own as { id: string }).id;
+      await tx.execute(sql`savepoint v`);
+      let failed = false;
+      try {
+        await tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key, voids_id)
+          values (${cx.clientId}, ${cx.locA}, ${x.id}, 'void', 'v-bad', ${foreignId})`);
+      } catch {
+        failed = true;
+      }
+      expect(failed).toBe(true);
+      await tx.execute(sql`rollback to savepoint v`);
+      await tx.execute(sql`insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key, voids_id)
+        values (${cx.clientId}, ${cx.locA}, ${x.id}, 'void', 'v-ok', ${ownId})`);
+    });
+  });
+
   test("a bad token hash is rejected", async () => {
     await fails(
       withAgency(db, (tx) =>
         tx.execute(sql`insert into crm.loyalty_cards (client_id, location_id, program_id, token_hash, short_code)
-          values (${one.clientId}, ${one.locA}, ${(cards["1A"] as { programId: string }).programId}, 'abc', 'ZZZZZZZZ')`),
+          values (${cx.clientId}, ${cx.locA}, ${(cards["XA"] as { programId: string }).programId}, 'abc', 'AAAAAAA8')`),
       ),
       /check/i,
     );
@@ -350,9 +422,9 @@ describe("constraints", () => {
   test("deleting the location cascades", async () => {
     const id = await withAgency(db, async (tx) => {
       const loc = (
-        await createLocation(tx, two.clientId, { name: "Tmp", timeZone: "America/Chicago" })
+        await createLocation(tx, cx.clientId, { name: "Tmp", timeZone: "America/Chicago" })
       ).id;
-      await seedPlace(tx, two.clientId, loc, "TMP");
+      await seedPlace(tx, cx.clientId, loc, "TMP");
       return loc;
     });
     await admin.unsafe("delete from core.locations where id = $1", [id]);

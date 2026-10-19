@@ -9,6 +9,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+// The migration also holds the composite keys that keep a child in its parent's client and
+// location (cards -> programs, events and rewards -> cards, a void -> an event of its own card),
+// the unique keys they target and the checks. Drizzle is only used to read and write here.
 const crm = pgSchema("crm");
 const at = (name: string) => timestamp(name, { withTimezone: true });
 

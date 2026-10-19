@@ -22,6 +22,8 @@ create table crm.loyalty_programs (
   -- an accent from the product's closed palette; there is no logo in v1
   accent text not null default 'lime' check (accent in ('lime', 'clay', 'charcoal', 'sage')),
   updated_at timestamptz not null default now(),
+  -- the target of the composite keys below: a child cannot name a parent of another client
+  unique (id, client_id, location_id),
   foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
 );
 create index loyalty_programs_client_idx on crm.loyalty_programs (client_id);
@@ -30,7 +32,7 @@ create table crm.loyalty_cards (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null,
   location_id uuid not null,
-  program_id uuid not null references crm.loyalty_programs (id) on delete cascade,
+  program_id uuid not null,
   -- sha-256 hex of a random 128-bit token; the plaintext is never stored
   token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
   short_code text not null check (short_code ~ '^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$'),
@@ -40,6 +42,10 @@ create table crm.loyalty_cards (
   last_stamp_at timestamptz,
   closed_at timestamptz,
   unique (location_id, short_code),
+  unique (id, client_id, location_id),
+  -- foreign-key checks bypass row-level security, so the tenant columns are part of the key
+  foreign key (program_id, client_id, location_id)
+    references crm.loyalty_programs (id, client_id, location_id) on delete cascade,
   foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
 );
 create index loyalty_cards_program_idx on crm.loyalty_cards (program_id, created_at desc);
@@ -56,16 +62,21 @@ create table crm.loyalty_events (
   seq bigint generated always as identity,
   client_id uuid not null,
   location_id uuid not null,
-  card_id uuid not null references crm.loyalty_cards (id) on delete cascade,
+  card_id uuid not null,
   kind text not null check (kind in ('stamp', 'reward_earned', 'reward_redeemed', 'void')),
   -- the staff user; null for the system
   actor_id text,
   idempotency_key text not null check (length(idempotency_key) between 1 and 200),
   -- a void points at the stamp it cancels
-  voids_id uuid references crm.loyalty_events (id),
+  voids_id uuid,
   note text check (length(note) <= 500),
   created_at timestamptz not null default now(),
   unique (card_id, idempotency_key),
+  unique (id, card_id),
+  foreign key (card_id, client_id, location_id)
+    references crm.loyalty_cards (id, client_id, location_id) on delete cascade,
+  -- a void can only cancel an event of its own card
+  foreign key (voids_id, card_id) references crm.loyalty_events (id, card_id),
   foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
 );
 create index loyalty_events_card_idx on crm.loyalty_events (card_id, created_at, seq);
@@ -75,11 +86,13 @@ create table crm.loyalty_rewards (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null,
   location_id uuid not null,
-  card_id uuid not null references crm.loyalty_cards (id) on delete cascade,
+  card_id uuid not null,
   earned_at timestamptz not null default now(),
   redeemed_at timestamptz,
   redeemed_by text,
   check (redeemed_by is null or redeemed_at is not null),
+  foreign key (card_id, client_id, location_id)
+    references crm.loyalty_cards (id, client_id, location_id) on delete cascade,
   foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
 );
 create index loyalty_rewards_card_idx on crm.loyalty_rewards (card_id, earned_at);
@@ -101,7 +114,7 @@ create function crm.card_scope(hash text)
   returns table (card_id uuid, client_id uuid, location_id uuid, program_id uuid)
   language sql stable security definer set search_path = crm, pg_temp as $$
   select c.id, c.client_id, c.location_id, c.program_id
-    from crm.loyalty_cards c where c.token_hash = hash $$;
+    from crm.loyalty_cards c where c.token_hash = card_scope.hash $$;
 revoke all on function crm.card_scope(text) from public;
 grant execute on function crm.card_scope(text) to atrium_app;
 
@@ -109,7 +122,7 @@ create function crm.program_scope(program uuid)
   returns table (client_id uuid, location_id uuid, active boolean, join_qr_version integer)
   language sql stable security definer set search_path = crm, pg_temp as $$
   select p.client_id, p.location_id, p.active, p.join_qr_version
-    from crm.loyalty_programs p where p.id = program $$;
+    from crm.loyalty_programs p where p.id = program_scope.program $$;
 revoke all on function crm.program_scope(uuid) from public;
 grant execute on function crm.program_scope(uuid) to atrium_app;
 
@@ -126,6 +139,10 @@ begin
   end if;
   if window_start is null then
     raise exception 'hit_rate: the window start is required';
+  end if;
+  -- a client-chosen far-off window would plant counters the purge never reaches in time
+  if abs(extract(epoch from (window_start - now()))) > 86400 then
+    raise exception 'hit_rate: the window start must be within a day of now';
   end if;
   if lim is null or lim < 1 or lim > 100000 then
     raise exception 'hit_rate: the limit must be between 1 and 100000';
