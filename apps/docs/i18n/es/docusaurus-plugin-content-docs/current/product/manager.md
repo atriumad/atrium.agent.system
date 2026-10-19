@@ -25,7 +25,7 @@ El Manager es donde Atrium corre su entrega. La misma vista puede verse **como**
 | **Daily entry** | El registro manual de lo que se entregó, con sello de hora |
 | **Team** | Personas, clients, MRR administrado, tareas abiertas, capacidad |
 
-El Overview responde "¿qué hay en mi cartera que necesita a una persona ahora?" con una cola primero y las cifras después; cada definición está en [Leer el Overview](../guides/reading-the-overview).
+El Overview responde "¿qué hay en mi cartera que necesita a una persona ahora?" con una cola primero y las cifras después; cada definición está en [Leer el Overview](../guides/reading-the-overview). Cases y Responses son tablas con una banda de resumen arriba; ver [Tablas y páginas de sección](../guides/tables-and-section-pages).
 
 ## Roles
 

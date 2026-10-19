@@ -123,6 +123,19 @@ My calls, made here:
 - **Negative share** is the share of *read* answers (those with a `sentiment`) in the window that are negative; its change is null unless at least 10 answers were read in both windows. The Safety tab shows 0 when nothing is flagged or nothing has been read. The tile's note says "of N answers that were read".
 - **Delivery 4 bands, trimmed to what the data can give:** Help requests: Open, Waiting on you (or on the client), Waiting longest (age of the oldest request that waits), Closed in the window (no "median first reply": there is no first-reply timestamp). Forms & QR: Active forms, Missing review link, Pending places (no "manual links created": there is no source). Places: Active, Pending, Suspended, Average rating; the Manager's Places table needs per-place rating, change, responses and open cases, so delivery 4's plan adds a `places` array to `agencyInsights` (the owner's `ownerInsights.places` already has it).
 
+## Implementation notes (delivery 3)
+
+Where the build differs from the design above. The guide `apps/docs/docs/guides/tables-and-section-pages.md` documents the code.
+
+- **`place` on `GET /api/cases`.** The route takes a `place` parameter (422 `invalid_id` when it is not a UUID) and applies it in SQL to the rows, the tab counts and `truncated`. The design filtered the place in the browser.
+- **`back` on case URLs.** A row links to `/reputation/cases/<id>?back=<the table's query string>` (the table's search plus `range` and `place`), so "Back to cases" restores the table. Only a plain query string up to 500 characters is accepted.
+- **Tab counts and "Active".** `counts` come from the server over the whole window and place. The band tile "Active" (open plus contacted, now) equals the Active tab; the tab "Open" is open only.
+- **`hideBelow`.** Columns carry a `hideBelow` breakpoint: Cases hides Opened below `xl` (1280px) and Topics below `2xl` (1536px); Responses hides Topics below `2xl`.
+- **Debounce.** The Responses search is sent 300 ms after the last key (immediately when emptied); it is trimmed and cut to 200 characters. Cases search stays in the browser, over the comment excerpt.
+- **Sentiments.** The contract's values are `positive`, `mixed` and `negative`. The "neutral" in the mockups means `mixed`.
+- **Full width.** The app frame no longer caps the content width; every page uses the full width.
+- **Responses search** matches the comment, the best part and what to improve (as designed); the sentiment sort ranks the stored value `neutral`, which the contract does not have, so `mixed` answers sort with the unread ones.
+
 ## Out of scope
 
 - CSV export, bulk selection and actions, a column chooser, a density switch, saved views.

@@ -48,8 +48,8 @@ The user dropped Notion as the reference and asked for the Pirsch Analytics rule
 
 1. **Foundations** (this spec): product theme, data page template, bell.
 2. **Overview** in both apps: figures with change against the previous period, blocks with a table, a chart, backed by aggregate endpoints (delivery 2, see `2026-10-17-overview-analytics-design.md`).
-3. **Cases**: a table page with Sentiment's reading, a `/reputation/cases/<id>` detail route, the API returning sentiment, topics and safety, and the bell links moved to the route.
-4. **Responses, Help and Places** on the same table pattern.
+3. **Cases and Responses** as tables with a summary band, a `/reputation/cases/<id>` detail route and the bell links moved to it (delivery 3, see `2026-10-18-data-tables-design.md`).
+4. **Help requests, Places, Approvals and Forms & QR** on the same table pattern (delivery 4).
 
 Each delivery gets its own spec, plan and tests.
 
