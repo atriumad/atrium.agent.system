@@ -13,22 +13,28 @@ export type SectionBandProps = {
   aside?: ReactNode;
 };
 
-/** The summary on top of a section page. It has its own loading and error, and never blocks the table. */
+/**
+ * The summary on top of a section page. It has its own loading and error, and never blocks the table.
+ * From `lg` it is about a third of the viewport tall: the tiles are ONE row of four from `xl` (two by
+ * two below) and the aside takes the last third, stacked below on narrow screens.
+ */
 export function SectionBand({ state, onRetry, title, tiles, aside }: SectionBandProps) {
+  const grid =
+    "grid gap-4 lg:min-h-[clamp(14rem,30vh,20rem)] xl:grid-cols-3 xl:items-stretch";
   return (
-    <section
-      aria-label={title}
-      className="flex flex-col gap-4 lg:min-h-[clamp(14rem,30vh,20rem)] lg:flex-row lg:items-stretch"
-    >
+    <section aria-label={title} className={state === "ok" ? grid : "flex flex-col gap-4"}>
       {state === "loading" ? (
         <div
           role="status"
           aria-label="Loading the summary"
-          className="grid w-full flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid w-full gap-4 lg:min-h-[clamp(14rem,30vh,20rem)] xl:grid-cols-3"
         >
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-40 rounded-card lg:h-full" />
-          ))}
+          <div className="grid grid-cols-2 gap-4 xl:col-span-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 rounded-card lg:h-full" />
+            ))}
+          </div>
+          <Skeleton className="h-40 rounded-card lg:h-full" />
         </div>
       ) : state === "error" ? (
         <ErrorState
@@ -39,8 +45,12 @@ export function SectionBand({ state, onRetry, title, tiles, aside }: SectionBand
         />
       ) : (
         <>
-          <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{tiles}</div>
-          {aside ? <div className="flex flex-col gap-4 lg:w-80 lg:shrink-0">{aside}</div> : null}
+          <div
+            className={`grid grid-cols-2 gap-4 xl:grid-cols-4 ${aside ? "xl:col-span-2" : "xl:col-span-3"}`}
+          >
+            {tiles}
+          </div>
+          {aside ? <div className="flex min-w-0 flex-col gap-4 xl:col-span-1">{aside}</div> : null}
         </>
       )}
     </section>

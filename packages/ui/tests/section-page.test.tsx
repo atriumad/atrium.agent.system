@@ -90,6 +90,34 @@ describe("SectionBand", () => {
       "lg:min-h-[clamp(14rem,30vh,20rem)]",
     );
   });
+  test("tiles are one row of four from xl, with the aside as their sibling at a third", () => {
+    setup(
+      <SectionBand
+        {...base}
+        state="ok"
+        tiles={<p>tiles here</p>}
+        aside={<p>aside here</p>}
+      />,
+    );
+    const band = screen.getByRole("region", { name: "Summary" });
+    const tiles = screen.getByText("tiles here").parentElement as HTMLElement;
+    const aside = screen.getByText("aside here").parentElement as HTMLElement;
+    expect(tiles.parentElement).toBe(band);
+    expect(aside.parentElement).toBe(band);
+    expect(tiles.className).toContain("grid-cols-2");
+    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.className).toContain("xl:col-span-2");
+    expect(band.className).toContain("xl:grid-cols-3");
+    expect(aside.className).not.toContain("lg:w-80");
+    expect(band.outerHTML).not.toContain("overflow-x");
+    expect(band.outerHTML).not.toContain("min-w-[");
+  });
+  test("without an aside the tiles take the whole band", () => {
+    setup(<SectionBand {...base} state="ok" />);
+    const tiles = screen.getByText("tiles here").parentElement as HTMLElement;
+    expect(tiles.className).not.toContain("xl:col-span-2");
+    expect(tiles.className).toContain("xl:grid-cols-4");
+  });
   test("an error offers Retry and the table slot still renders", async () => {
     const onRetry = mock();
     const { user } = setup(

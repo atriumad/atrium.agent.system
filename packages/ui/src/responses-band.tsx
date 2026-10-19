@@ -7,9 +7,12 @@ import { SectionBand } from "./data/section-page";
 
 const pct = (v: number) => Math.round(v * 100);
 
+/** Tiles share the band's height; the label sits on top and the figure and notes settle below it. */
+const TILE = "justify-between";
+
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex min-w-0 flex-col gap-2 rounded-card border border-frame bg-surface-card p-4">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-card border border-frame bg-surface-card p-4">
       <h2 className="label-caps m-0 text-fg-muted">{title}</h2>
       {children}
     </section>
@@ -43,6 +46,7 @@ export function ResponsesBandView({
     tiles = (
       <>
         <KpiTile
+          className={TILE}
           label="Responses"
           value={responses.value ?? "—"}
           state={stateOf(responses.value, responses.small, responses.n)}
@@ -54,6 +58,7 @@ export function ResponsesBandView({
           sparkLabel="Responses per day"
         />
         <KpiTile
+          className={TILE}
           label="Average rating"
           value={rating.value === null ? "—" : rating.value.toFixed(1)}
           unit="/ 5"
@@ -63,6 +68,7 @@ export function ResponsesBandView({
           sparkLabel="Average rating per day"
         />
         <KpiTile
+          className={TILE}
           label="Negative share"
           value={neg.value === null ? "—" : pct(neg.value)}
           {...(neg.value === null ? {} : { unit: "%" })}
@@ -74,6 +80,7 @@ export function ResponsesBandView({
             : {})}
         />
         <KpiTile
+          className={TILE}
           label="Review link clicks"
           value={clicks.clicks}
           state={clickState}
@@ -90,7 +97,11 @@ export function ResponsesBandView({
     );
     aside = (
       <Block title="Rating distribution">
-        <RatingBars counts={band.distribution} label="Rating distribution" />
+        <RatingBars
+          counts={band.distribution}
+          label="Rating distribution"
+          className="flex-1 justify-around"
+        />
       </Block>
     );
   }
