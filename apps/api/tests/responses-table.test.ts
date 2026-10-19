@@ -169,9 +169,10 @@ describe("GET /api/surveys/responses (table)", () => {
 
   test("sentiment=mixed returns only the mixed answers, and a real topic is accepted", async () => {
     const clientId = (
-      await admin.unsafe("select client_id from reputation.survey_responses where location_id = $1 limit 1", [
-        locA,
-      ])
+      await admin.unsafe(
+        "select client_id from reputation.survey_responses where location_id = $1 limit 1",
+        [locA],
+      )
     )[0]?.client_id as string;
     const read = (sentiment: string) =>
       admin.unsafe(

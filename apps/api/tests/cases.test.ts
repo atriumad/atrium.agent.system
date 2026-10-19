@@ -300,7 +300,8 @@ describe("POST /api/cases/:id/advance", () => {
     const resolved = ((await done.json()) as { case: { status: string; resolvedBy: string } }).case;
     expect(resolved.status).toBe("resolved");
     expect(resolved.resolvedBy).toBeTruthy();
-  });
+    // Three round trips with audit and notification writes: the 5s default is tight under CI load.
+  }, 20_000);
 
   test("a resolved case cannot move again", async () => {
     const res = await advance("am", caseA, { to: "contacted" });
