@@ -204,6 +204,7 @@ describe("responses page: the table", () => {
     expect(place?.className).toContain("font-medium");
     expect(client?.textContent).toBe("Harbor Dental");
     expect(client?.className).toContain("text-fg-muted");
+    expect(client?.className).toContain("max-2xl:hidden");
     const link = screen.getAllByRole("link", { name: "View case" })[0] as HTMLAnchorElement;
     expect(link.getAttribute("href")?.startsWith("/reputation/cases/k1")).toBe(true);
     first.unmount();

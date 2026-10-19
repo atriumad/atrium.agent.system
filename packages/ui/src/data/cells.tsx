@@ -115,7 +115,7 @@ export function PlaceCell({ place, client }: { place: string; client: string }) 
   return (
     <span className="flex min-w-0 items-baseline gap-1.5">
       <span className="min-w-0 truncate font-medium text-fg-strong">{place}</span>
-      <span className="min-w-0 truncate text-fg-muted">{client}</span>
+      <span className="min-w-0 truncate text-fg-muted max-2xl:hidden">{client}</span>
     </span>
   );
 }

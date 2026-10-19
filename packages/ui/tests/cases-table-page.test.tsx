@@ -169,6 +169,7 @@ describe("cases table page", () => {
     expect(place?.className).toContain("truncate");
     expect(client?.textContent).toBe("Harbor Dental");
     expect(client?.className).toContain("text-fg-muted");
+    expect(client?.className).toContain("max-2xl:hidden");
     expect(client?.className).toContain("truncate");
   });
 
