@@ -69,26 +69,28 @@ export function KpiTile({
   const body = (
     <>
       <span className="label-caps text-fg-muted">{label}</span>
-      <span
-        className={cx(
-          "flex items-baseline gap-2.5 text-5xl leading-[0.9] tracking-tight text-fg-strong tabular-nums dark:text-lime-500",
-          figureFont === "sans" ? "font-sans font-medium" : "font-serif font-normal",
-        )}
-      >
-        {figureFont === "sans" && typeof value === "string" ? <Duration text={value} /> : value}
-        {unit ? (
-          <span className="font-sans text-sm tracking-normal text-fg-muted">{unit}</span>
+      <div className="flex flex-1 flex-col justify-center gap-2">
+        <span
+          className={cx(
+            "flex items-baseline gap-2.5 text-5xl leading-[0.9] tracking-tight text-fg-strong tabular-nums dark:text-lime-500",
+            figureFont === "sans" ? "font-sans font-medium" : "font-serif font-normal",
+          )}
+        >
+          {figureFont === "sans" && typeof value === "string" ? <Duration text={value} /> : value}
+          {unit ? (
+            <span className="font-sans text-sm tracking-normal text-fg-muted">{unit}</span>
+          ) : null}
+          {ok && delta !== undefined ? (
+            <Delta value={delta} goodWhen={goodWhen} unit={deltaUnit} />
+          ) : null}
+        </span>
+        {ok && spark ? <Sparkline values={spark} label={sparkLabel ?? `${label} trend`} /> : null}
+        {typeof state === "object" ? (
+          <span className="text-xs text-fg-muted">Too few answers ({state.tooFew})</span>
+        ) : state === "none" ? (
+          <span className="text-xs text-fg-muted">No data yet</span>
         ) : null}
-        {ok && delta !== undefined ? (
-          <Delta value={delta} goodWhen={goodWhen} unit={deltaUnit} />
-        ) : null}
-      </span>
-      {ok && spark ? <Sparkline values={spark} label={sparkLabel ?? `${label} trend`} /> : null}
-      {typeof state === "object" ? (
-        <span className="text-xs text-fg-muted">Too few answers ({state.tooFew})</span>
-      ) : state === "none" ? (
-        <span className="text-xs text-fg-muted">No data yet</span>
-      ) : null}
+      </div>
       {note ? <span className="text-xs text-fg-muted">{note}</span> : null}
     </>
   );

@@ -70,7 +70,7 @@ describe("the Cases and Responses columns", () => {
       casesColumns({ showClient: true, now }),
       responsesColumns({ surface: "manager", showClient: true, now, backSearch: undefined }),
     ]) {
-      const free = cols.filter((c) => !c.width).map((c) => c.key);
+      const free = cols.filter((c) => !c.width && !c.colClassName).map((c) => c.key);
       expect(free).toEqual(["comment"]);
     }
   });
@@ -120,5 +120,64 @@ describe("the Cases and Responses columns", () => {
     const td = container.querySelector("tbody td") as HTMLElement;
     expect(td.className).toContain("truncate");
     expect(td.getAttribute("title")).toBe(`${row.clientName} · ${row.locationName}`);
+  });
+});
+
+describe("round 2: Due, Status, balance", () => {
+  const now = new Date("2026-10-18T09:00:00.000Z");
+  const cases = casesColumns({ showClient: true, now });
+  const resp = responsesColumns({
+    surface: "manager",
+    showClient: true,
+    now,
+    backSearch: undefined,
+  });
+  const classOf = (cols: { key: string }[], key: string) =>
+    (cols.find((c) => c.key === key) as { colClassName?: string }).colClassName ?? "";
+
+  test("Due truncates its text, keeps the pill from shrinking and carries the full text in the title", () => {
+    const row = {
+      ...(casesTableFixture.cases[0] as (typeof casesTableFixture.cases)[number]),
+      status: "open" as const,
+      dueAt: "2026-10-17T05:52:00.000Z",
+    };
+    const due = cases.find((c) => c.key === "due") as (typeof cases)[number];
+    expect(due.truncate).toBe(true);
+    expect(due.titleOf?.(row)).toContain("Overdue by");
+    const { container } = setup(
+      <DataTable dense label="Due" columns={[due]} rows={[row]} rowKey={(r) => r.id} />,
+    );
+    const td = container.querySelector("tbody td") as HTMLElement;
+    expect(td.className).toContain("truncate");
+    expect(td.getAttribute("title")).toContain("Overdue by");
+    const wrap = td.firstElementChild as HTMLElement;
+    expect(wrap.className).toContain("min-w-0");
+    expect(wrap.firstElementChild?.className).toContain("shrink-0");
+    expect(wrap.lastElementChild?.className).toContain("truncate");
+  });
+
+  test("Due and Status get more room at 2xl, and the status pill never exceeds its cell", () => {
+    expect(classOf(cases, "due")).toContain("2xl:w-[13rem]");
+    expect(classOf(cases, "status")).toContain("2xl:w-[10rem]");
+    const row = casesTableFixture.cases[0] as (typeof casesTableFixture.cases)[number];
+    const status = cases.find((c) => c.key === "status") as (typeof cases)[number];
+    const { container } = setup(
+      <DataTable
+        dense
+        label="S"
+        columns={[status]}
+        rows={[{ ...row, status: "contacted" }]}
+        rowKey={(r) => r.id}
+      />,
+    );
+    expect(container.querySelector("tbody td span")?.className).toContain("max-w-full");
+  });
+
+  test("Place and Topics widen at 2xl, in Cases and Responses", () => {
+    for (const cols of [cases, resp]) {
+      expect(classOf(cols, "place")).toContain("2xl:w-[22%]");
+      expect(classOf(cols, "topics")).toContain("2xl:w-[13%]");
+    }
+    expect(resp.find((c) => c.key === "case")?.width).toBe("6.5rem");
   });
 });

@@ -207,3 +207,22 @@ describe("KpiTile", () => {
     expect(screen.getByText(/2 pts/)).toBeTruthy();
   });
 });
+
+describe("KpiTile structure", () => {
+  test("label on top, the figure centred in the room left, the note at the bottom", () => {
+    const { container } = setup(<KpiTile label="L" value="9" state="ok" note="a note" />);
+    const root = container.firstElementChild as HTMLElement;
+    const [label, middle, note] = Array.from(root.children) as HTMLElement[];
+    expect(label?.textContent).toBe("L");
+    expect(middle?.className).toContain("flex-1");
+    expect(middle?.className).toContain("justify-center");
+    expect(middle?.textContent).toContain("9");
+    expect(note?.textContent).toBe("a note");
+  });
+  test("a tile without a note has the same figure container", () => {
+    const { container } = setup(<KpiTile label="L" value="9" state="ok" />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.children).toHaveLength(2);
+    expect((root.children[1] as HTMLElement).className).toContain("justify-center");
+  });
+});

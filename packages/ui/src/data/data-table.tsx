@@ -32,6 +32,8 @@ export type Column<Row> = {
    * Below `lg` the layout is automatic and the table scrolls.
    */
   width?: string;
+  /** Tailwind width classes for the column's `<col>`, when the width changes with the screen. Used in place of `width`. */
+  colClassName?: string;
   /** A string or number to sort by. Without it the column does not sort. */
   sortValue?: (row: Row) => string | number;
 };
@@ -170,7 +172,7 @@ export function DataTable<Row>({
   if (!loading && rows.length === 0 && empty) return <>{empty}</>;
 
   const stick = Boolean(stickyHeader);
-  const sized = columns.some((c) => c.width);
+  const sized = columns.some((c) => c.width || c.colClassName);
 
   const table = (
     <Table
@@ -183,7 +185,14 @@ export function DataTable<Row>({
         <colgroup>
           {selectable ? <col style={{ width: "2.5rem" }} /> : null}
           {columns.map((c) => (
-            <col key={c.key} {...(c.width ? { style: { width: c.width } } : {})} />
+            <col
+              key={c.key}
+              {...(c.colClassName
+                ? { className: c.colClassName }
+                : c.width
+                  ? { style: { width: c.width } }
+                  : {})}
+            />
           ))}
         </colgroup>
       ) : null}

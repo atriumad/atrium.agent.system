@@ -40,7 +40,7 @@ export function responsesColumns({
     },
     {
       key: "place",
-      width: "12%",
+      colClassName: "w-[14%] 2xl:w-[22%]",
       header: "Place",
       truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
@@ -55,7 +55,7 @@ export function responsesColumns({
     },
     {
       key: "sentiment",
-      width: "7rem",
+      width: "8rem",
       header: "Sentiment",
       nowrap: true,
       cell: (r) => <SentimentPill sentiment={r.sentiment} />,
@@ -63,7 +63,7 @@ export function responsesColumns({
     },
     {
       key: "topics",
-      width: "11%",
+      colClassName: "w-[10%] 2xl:w-[13%]",
       header: "Topics",
       nowrap: true,
       cell: (r) => <TopicChips topics={r.topics} />,
@@ -91,7 +91,7 @@ export function responsesColumns({
     },
     {
       key: "case",
-      width: "5.5rem",
+      width: "6.5rem",
       header: "Case",
       nowrap: true,
       cell: (r) =>

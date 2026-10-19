@@ -35,7 +35,7 @@ export function casesColumns({
     },
     {
       key: "place",
-      width: "12%",
+      colClassName: "w-[14%] 2xl:w-[22%]",
       header: "Place",
       truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
@@ -50,23 +50,28 @@ export function casesColumns({
     },
     {
       key: "topics",
-      width: "11%",
+      colClassName: "w-[10%] 2xl:w-[13%]",
       header: "Topics",
       nowrap: true,
       cell: (r) => <TopicChips topics={r.topics} />,
     },
     {
       key: "due",
-      width: "8.5rem",
+      colClassName: "w-[11rem] 2xl:w-[13rem]",
       header: "Due",
-      nowrap: true,
+      truncate: true,
+      titleOf: (r) => dueLabel(r.status, r.dueAt, now)?.text ?? "",
       cell: (r) => {
         const due = dueLabel(r.status, r.dueAt, now);
         if (!due) return <span className="text-fg-muted">—</span>;
         return due.tone === "overdue" ? (
-          <span className="inline-flex items-center gap-1.5">
-            <StatusBadge status="danger">Overdue</StatusBadge>
-            <span className="text-xs text-fg-muted">{due.text.replace("Overdue ", "")}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <StatusBadge status="danger" className="shrink-0">
+              Overdue
+            </StatusBadge>
+            <span className="min-w-0 truncate text-xs text-fg-muted">
+              {due.text.replace("Overdue ", "")}
+            </span>
           </span>
         ) : (
           due.text
@@ -85,11 +90,12 @@ export function casesColumns({
     },
     {
       key: "status",
-      width: "7.5rem",
+      colClassName: "w-[9rem] 2xl:w-[10rem]",
       header: "Status",
       nowrap: true,
       cell: (r) => (
         <StatusBadge
+          className="max-w-full"
           status={
             r.status === "resolved" ? "positive" : r.status === "open" ? "warning" : "neutral"
           }

@@ -323,13 +323,13 @@ describe("cases table page", () => {
     expect(band.textContent).not.toContain("No data yet");
   });
 
-  test("the table has column widths, lays out fixed from lg and scrolls under 56rem", async () => {
+  test("the table has column widths, lays out fixed from lg and scrolls under 60rem", async () => {
     fakeFetch(routes());
     const { container } = page();
     await screen.findByText(/A tool was dropped/);
     const table = screen.getByRole("table", { name: "Cases" });
     expect(table.className).toContain("lg:table-fixed");
-    expect(table.style.minWidth).toBe("56rem");
+    expect(table.style.minWidth).toBe("60rem");
     expect(container.querySelectorAll("colgroup col")).toHaveLength(8);
   });
 
