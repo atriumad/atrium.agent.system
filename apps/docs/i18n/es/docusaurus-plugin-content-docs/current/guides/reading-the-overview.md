@@ -87,7 +87,7 @@ De arriba abajo:
 
 | Tipo | Qué es | Abre |
 | --- | --- | --- |
-| Case | Un caso abierto, vencido o por vencer en 24 horas | `/reputation/cases?case=<id>` |
+| Case | Un caso abierto, vencido o por vencer en 24 horas | `/reputation/cases/<id>` |
 | Approval | Una solicitud esperando el OK de la agencia | `/approvals/places` |
 | Account | Una solicitud para unirse, aún sin revisar | `/approvals/accounts` |
 | Place to activate | Un lugar esperando aprobación | `/approvals/places` |

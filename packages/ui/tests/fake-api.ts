@@ -255,7 +255,7 @@ export const agencyInsightsFixture: AgencyOverview = {
       severity: "high",
       dueAt: "2026-10-17T12:00:00.000Z",
       overdue: true,
-      href: "/reputation/cases?case=k1",
+      href: "/reputation/cases/k1",
     },
     {
       kind: "approval",

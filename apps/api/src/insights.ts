@@ -105,7 +105,7 @@ export function mountInsights(api: Hono<Env>, deps: AppDeps) {
         severity: k.severity,
         dueAt: k.dueAt,
         overdue: k.overdue,
-        href: `/reputation/cases?case=${k.id}`,
+        href: `/reputation/cases/${k.id}`,
       }));
 
       // Every approval links to /approvals/places: it is the only approvals target the Manager has for them today.

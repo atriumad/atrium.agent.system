@@ -292,7 +292,7 @@ describe("GET /api/insights/agency", () => {
     expect(body.queue[0]).toMatchObject({
       id: caseA,
       overdue: true,
-      href: `/reputation/cases?case=${caseA}`,
+      href: `/reputation/cases/${caseA}`,
     });
     expect(kinds.indexOf("approval")).toBeGreaterThan(kinds.lastIndexOf("case"));
     const place = body.queue.find((q) => q.kind === "place");

@@ -48,7 +48,7 @@ describe("agency overview", () => {
     expect(rows[1]?.textContent).toContain("Pier 4");
     expect(within(rows[1] as HTMLElement).getByText(/Overdue/)).toBeTruthy();
     const open = within(rows[1] as HTMLElement).getByRole("link", { name: /Open case/ });
-    expect(open.getAttribute("href")).toBe("/reputation/cases?case=k1");
+    expect(open.getAttribute("href")).toBe("/reputation/cases/k1");
     expect(rows[1]?.textContent).toContain("Case");
     expect(rows[2]?.textContent).toContain("Approval");
     const wash = screen.getByRole("heading", { name: "Needs a person now" }).closest("section");
@@ -71,7 +71,7 @@ describe("agency overview", () => {
     const cases = Array.from({ length: 8 }, (_, i) => ({
       ...(fx.queue[0] as AgencyOverview["queue"][number]),
       id: `k${i}`,
-      href: `/reputation/cases?case=k${i}`,
+      href: `/reputation/cases/k${i}`,
     }));
     fakeFetch(
       routes({

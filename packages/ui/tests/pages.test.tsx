@@ -251,7 +251,7 @@ describe("overview", () => {
     inside(amMe, <OverviewPage surface="manager" />);
     expect(await screen.findByText("Needs a person now")).toBeTruthy();
     expect(screen.getByRole("link", { name: /Open case/ }).getAttribute("href")).toBe(
-      "/reputation/cases?case=k1",
+      "/reputation/cases/k1",
     );
     expect(screen.getByText("Median time to contact")).toBeTruthy();
   });

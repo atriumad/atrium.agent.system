@@ -87,7 +87,7 @@ From top to bottom:
 
 | Kind | What it is | Opens |
 | --- | --- | --- |
-| Case | An open case that is overdue or due within 24 hours | `/reputation/cases?case=<id>` |
+| Case | An open case that is overdue or due within 24 hours | `/reputation/cases/<id>` |
 | Approval | A request waiting for the agency's OK | `/approvals/places` |
 | Account | A request to join, not yet reviewed | `/approvals/accounts` |
 | Place to activate | A place waiting for approval | `/approvals/places` |
