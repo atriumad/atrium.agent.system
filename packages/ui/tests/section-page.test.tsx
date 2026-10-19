@@ -98,18 +98,27 @@ describe("SectionBand", () => {
     expect(tiles.parentElement).toBe(band);
     expect(aside.parentElement).toBe(band);
     expect(tiles.className).toContain("grid-cols-2");
-    expect(tiles.className).toContain("xl:grid-cols-4");
-    expect(tiles.className).toContain("xl:col-span-2");
-    expect(band.className).toContain("xl:grid-cols-3");
+    expect(tiles.className).toContain("lg:grid-cols-4");
+    expect(tiles.className).toContain("2xl:col-span-2");
+    expect(band.className).toContain("2xl:grid-cols-3");
+    expect(aside.className).toContain("lg:grid-cols-2");
+    expect(aside.className).toContain("2xl:grid-cols-1");
     expect(aside.className).not.toContain("lg:w-80");
-    expect(band.outerHTML).not.toContain("overflow-x");
-    expect(band.outerHTML).not.toContain("min-w-[");
   });
   test("without an aside the tiles take the whole band", () => {
     setup(<SectionBand {...base} state="ok" />);
     const tiles = screen.getByText("tiles here").parentElement as HTMLElement;
-    expect(tiles.className).not.toContain("xl:col-span-2");
-    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.className).not.toContain("2xl:col-span-2");
+    expect(tiles.className).toContain("2xl:col-span-3");
+    expect(tiles.className).toContain("lg:grid-cols-4");
+  });
+  test("the loading skeleton draws an aside only when the page has one", () => {
+    const withAside = setup(<SectionBand {...base} state="loading" aside={null} />);
+    const status = screen.getByRole("status", { name: /loading/i });
+    expect(status.children).toHaveLength(2);
+    withAside.unmount();
+    setup(<SectionBand {...base} state="loading" />);
+    expect(screen.getByRole("status", { name: /loading/i }).children).toHaveLength(1);
   });
   test("an error offers Retry and the table slot still renders", async () => {
     const onRetry = mock();

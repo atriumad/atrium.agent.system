@@ -34,6 +34,8 @@ export type Column<Row> = {
   width?: string;
   /** Tailwind width classes for the column's `<col>`, when the width changes with the screen. Used in place of `width`. */
   colClassName?: string;
+  /** Hide the column (header, cells and `<col>`) on screens narrower than this, to give the rest room. */
+  hideBelow?: "xl" | "2xl";
   /** A string or number to sort by. Without it the column does not sort. */
   sortValue?: (row: Row) => string | number;
 };
@@ -79,6 +81,9 @@ export type DataTableProps<Row> = {
   /** The narrowest the table gets before it scrolls sideways, e.g. `52rem`. Pairs with column widths. */
   minWidth?: string;
 };
+
+/** Full literals, so Tailwind sees them. */
+const HIDE_BELOW = { xl: "max-xl:hidden", "2xl": "max-2xl:hidden" } as const;
 
 /** The plain text of a cell, for a title. Anything that is not text or a number has none. */
 function textOf(node: ReactNode): string {
@@ -187,11 +192,10 @@ export function DataTable<Row>({
           {columns.map((c) => (
             <col
               key={c.key}
-              {...(c.colClassName
-                ? { className: c.colClassName }
-                : c.width
-                  ? { style: { width: c.width } }
-                  : {})}
+              {...(c.colClassName || c.hideBelow
+                ? { className: cx(c.colClassName, c.hideBelow && HIDE_BELOW[c.hideBelow]) }
+                : {})}
+              {...(!c.colClassName && c.width ? { style: { width: c.width } } : {})}
             />
           ))}
         </colgroup>
@@ -220,6 +224,7 @@ export function DataTable<Row>({
               dense={stick}
               className={cx(
                 c.numeric && "text-right",
+                c.hideBelow && HIDE_BELOW[c.hideBelow],
                 columns[0]?.key === c.key &&
                   (stick
                     ? "max-md:left-0 max-md:z-20"
@@ -261,7 +266,13 @@ export function DataTable<Row>({
           ? [0, 1, 2].map((i) => (
               <Tr key={i} dense={dense}>
                 {(selectable ? [{ key: "sel" }, ...columns] : columns).map((c) => (
-                  <Td key={c.key} dense={dense}>
+                  <Td
+                    key={c.key}
+                    dense={dense}
+                    {...("hideBelow" in c && c.hideBelow
+                      ? { className: HIDE_BELOW[c.hideBelow] }
+                      : {})}
+                  >
                     <span
                       className="block h-3.5 w-3/4 animate-pulse rounded-xs bg-surface-sunken motion-reduce:animate-none"
                       aria-hidden="true"
@@ -309,6 +320,7 @@ export function DataTable<Row>({
                         {...(cellTitle ? { title: cellTitle } : {})}
                         className={cx(
                           c.nowrap && "whitespace-nowrap",
+                          c.hideBelow && HIDE_BELOW[c.hideBelow],
                           c.truncate && "max-w-0 truncate",
                           i === 0 &&
                             "max-md:sticky max-md:left-0 max-md:bg-surface-card max-md:group-aria-selected:bg-lime-100 dark:max-md:group-aria-selected:bg-charcoal-700",

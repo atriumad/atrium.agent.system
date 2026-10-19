@@ -8,6 +8,7 @@ import {
   type TableSpec,
   type TableState,
 } from "./table-state";
+import { writeParams } from "./write-params";
 
 /**
  * Search, filters, sort and page of a data page, kept in the address so a link can be shared and
@@ -31,13 +32,10 @@ export function useTableState(spec: TableSpec) {
       current.current = next;
       setState(next);
       // Keep what the table does not own (a range, a place), replace what it does.
-      const params = new URLSearchParams(window.location.search);
-      for (const key of ["q", "sort", "page", ...spec.filterKeys]) params.delete(key);
-      for (const [k, v] of new URLSearchParams(serializeTableState(next, spec))) params.set(k, v);
-      const query = params.toString();
-      const url = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-      if (mode === "push") window.history.pushState(null, "", url);
-      else window.history.replaceState(null, "", url);
+      const changes: Record<string, string | null> = {};
+      for (const key of ["q", "sort", "page", ...spec.filterKeys]) changes[key] = null;
+      for (const [k, v] of new URLSearchParams(serializeTableState(next, spec))) changes[k] = v;
+      writeParams(changes, mode, false);
     },
     [spec],
   );

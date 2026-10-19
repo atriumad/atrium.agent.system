@@ -8,6 +8,8 @@
 export function writeParams(
   changes: Record<string, string | null>,
   mode: "push" | "replace" = "push",
+  /** Tell the hooks listening for Back to re-read the address. Off for a caller that sets its own state. */
+  notify = true,
 ) {
   const params = new URLSearchParams(window.location.search);
   for (const [k, v] of Object.entries(changes)) {
@@ -18,5 +20,5 @@ export function writeParams(
   const url = `${window.location.pathname}${s ? `?${s}` : ""}${window.location.hash}`;
   if (mode === "replace") window.history.replaceState(null, "", url);
   else window.history.pushState(null, "", url);
-  window.dispatchEvent(new Event("popstate"));
+  if (notify) window.dispatchEvent(new Event("popstate"));
 }

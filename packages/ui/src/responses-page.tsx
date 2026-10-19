@@ -318,7 +318,7 @@ function ResponsesTablePage() {
           <DataTable
             dense
             label="Responses"
-            minWidth="60rem"
+            minWidth="52rem"
             columns={columns}
             rows={data.rows}
             rowKey={(r) => r.id}

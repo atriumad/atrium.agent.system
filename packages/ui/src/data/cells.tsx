@@ -28,16 +28,16 @@ export function TopicChips({ topics }: { topics: string[] | null }) {
   if (!topics || topics.length === 0) return dash;
   const rest = topics.length - 2;
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden">
       {topics.slice(0, 2).map((t) => (
         <span
           key={t}
-          className="rounded-full border border-line bg-surface-page px-2 text-[11.5px] whitespace-nowrap"
+          className="min-w-0 shrink truncate rounded-full border border-line bg-surface-page px-2 text-[11.5px] whitespace-nowrap"
         >
           {humaniseTopic(t)}
         </span>
       ))}
-      {rest > 0 ? <span className="text-xs text-fg-muted">+{rest}</span> : null}
+      {rest > 0 ? <span className="shrink-0 text-xs text-fg-muted">+{rest}</span> : null}
     </span>
   );
 }

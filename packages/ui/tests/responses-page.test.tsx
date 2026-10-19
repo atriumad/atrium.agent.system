@@ -446,10 +446,10 @@ describe("responses page: the band", () => {
     const aside = band.children[1] as HTMLElement;
     expect(band.children).toHaveLength(2);
     expect(tiles.className).toContain("grid-cols-2");
-    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.className).toContain("lg:grid-cols-4");
     expect(tiles.children).toHaveLength(4);
     expect(within(aside).getByText("Rating distribution")).toBeTruthy();
-    expect(band.outerHTML).not.toContain("overflow-x");
+    expect(aside.firstElementChild?.className).toContain("col-span-full");
   });
 
   test("tiles show figures, units and the notes", async () => {

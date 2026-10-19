@@ -226,3 +226,15 @@ describe("KpiTile structure", () => {
     expect((root.children[1] as HTMLElement).className).toContain("justify-center");
   });
 });
+
+describe("KpiTile figure row", () => {
+  test("the figure row wraps and can shrink, so a delta goes under the figure", () => {
+    const { container } = setup(<KpiTile label="L" value="9" state="ok" delta={3} />);
+    const row = (container.firstElementChild as HTMLElement).children[1]
+      ?.firstElementChild as HTMLElement;
+    expect(row.className).toContain("flex-wrap");
+    expect(row.className).toContain("min-w-0");
+    expect(row.className).toContain("text-4xl");
+    expect(row.className).toContain("2xl:text-5xl");
+  });
+});

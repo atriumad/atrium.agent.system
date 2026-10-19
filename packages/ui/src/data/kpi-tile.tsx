@@ -72,7 +72,7 @@ export function KpiTile({
       <div className="flex flex-1 flex-col justify-center gap-2">
         <span
           className={cx(
-            "flex items-baseline gap-2.5 text-5xl leading-[0.9] tracking-tight text-fg-strong tabular-nums dark:text-lime-500",
+            "flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 text-4xl leading-[0.9] tracking-tight text-fg-strong tabular-nums 2xl:text-5xl dark:text-lime-500",
             figureFont === "sans" ? "font-sans font-medium" : "font-serif font-normal",
           )}
         >

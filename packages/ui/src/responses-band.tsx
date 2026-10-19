@@ -12,7 +12,7 @@ const TILE = "justify-between";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-card border border-frame bg-surface-card p-4">
+    <section className="col-span-full flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-card border border-frame bg-surface-card p-4">
       <h2 className="label-caps m-0 text-fg-muted">{title}</h2>
       {children}
     </section>

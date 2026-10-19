@@ -5,7 +5,9 @@ import type { ResponseTableRow } from "./api";
 import { caseHref } from "./case-links";
 import type { Surface } from "./cases-app";
 import { SentimentPill, Stars, TopicChips, When } from "./data/cells";
+import { PLACE_COL, RATING_COL, TOPICS_COL } from "./data/column-widths";
 import type { Column } from "./data/data-table";
+import { humaniseTopic } from "./data/split-bars";
 
 const dash = <span className="text-fg-muted">—</span>;
 
@@ -24,7 +26,7 @@ export function responsesColumns({
   return [
     {
       key: "date",
-      width: "7rem",
+      width: "6.5rem",
       header: "Date",
       nowrap: true,
       cell: (r) => <When date={r.createdAt} now={now} />,
@@ -32,7 +34,7 @@ export function responsesColumns({
     },
     {
       key: "rating",
-      width: "6rem",
+      colClassName: RATING_COL,
       header: "Rating",
       nowrap: true,
       cell: (r) => <Stars rating={r.rating} />,
@@ -40,7 +42,7 @@ export function responsesColumns({
     },
     {
       key: "place",
-      colClassName: "w-[14%] 2xl:w-[22%]",
+      colClassName: PLACE_COL,
       header: "Place",
       truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
@@ -55,7 +57,7 @@ export function responsesColumns({
     },
     {
       key: "sentiment",
-      width: "8rem",
+      width: "7rem",
       header: "Sentiment",
       nowrap: true,
       cell: (r) => <SentimentPill sentiment={r.sentiment} />,
@@ -63,9 +65,11 @@ export function responsesColumns({
     },
     {
       key: "topics",
-      colClassName: "w-[10%] 2xl:w-[13%]",
+      colClassName: TOPICS_COL,
+      hideBelow: "2xl",
       header: "Topics",
-      nowrap: true,
+      truncate: true,
+      titleOf: (r) => (r.topics ?? []).map(humaniseTopic).join(", "),
       cell: (r) => <TopicChips topics={r.topics} />,
     },
     {
@@ -91,7 +95,7 @@ export function responsesColumns({
     },
     {
       key: "case",
-      width: "6.5rem",
+      width: "6rem",
       header: "Case",
       nowrap: true,
       cell: (r) =>

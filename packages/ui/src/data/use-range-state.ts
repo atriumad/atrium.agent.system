@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { RangeKey } from "../api";
+import { writeParams } from "./write-params";
 
 const RANGES: readonly RangeKey[] = ["7d", "30d", "90d"];
 
@@ -34,15 +35,7 @@ export function useRangeState(keys: { scope: "place" | "client" } = { scope: "pl
 
   const write = useCallback(
     (name: string, value: string | null) => {
-      const q = new URLSearchParams(window.location.search);
-      if (value) q.set(name, value);
-      else q.delete(name);
-      const s = q.toString();
-      window.history.pushState(
-        null,
-        "",
-        `${window.location.pathname}${s ? `?${s}` : ""}${window.location.hash}`,
-      );
+      writeParams({ [name]: value }, "push", false);
       setView(read(scopeKey));
     },
     [scopeKey],

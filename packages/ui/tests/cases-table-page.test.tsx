@@ -323,13 +323,13 @@ describe("cases table page", () => {
     expect(band.textContent).not.toContain("No data yet");
   });
 
-  test("the table has column widths, lays out fixed from lg and scrolls under 60rem", async () => {
+  test("the table has column widths, lays out fixed from lg and scrolls under 52rem", async () => {
     fakeFetch(routes());
     const { container } = page();
     await screen.findByText(/A tool was dropped/);
     const table = screen.getByRole("table", { name: "Cases" });
     expect(table.className).toContain("lg:table-fixed");
-    expect(table.style.minWidth).toBe("60rem");
+    expect(table.style.minWidth).toBe("52rem");
     expect(container.querySelectorAll("colgroup col")).toHaveLength(8);
   });
 
@@ -342,7 +342,7 @@ describe("cases table page", () => {
     const aside = band.children[1] as HTMLElement;
     expect(band.children).toHaveLength(2);
     expect(tiles.className).toContain("grid-cols-2");
-    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.className).toContain("lg:grid-cols-4");
     expect(tiles.children).toHaveLength(4);
     expect(within(aside).getByText("Opened per day")).toBeTruthy();
     expect(within(aside).getByText("By severity")).toBeTruthy();
@@ -351,6 +351,8 @@ describe("cases table page", () => {
         .getByRole("img", { name: /Cases opened per day/ })
         .getAttribute("class"),
     ).toContain("absolute");
-    expect(band.outerHTML).not.toContain("overflow-x");
+    // Under 2xl the aside sits below the tiles as two blocks side by side.
+    expect(aside.className).toContain("lg:grid-cols-2");
+    expect(aside.className).toContain("2xl:grid-cols-1");
   });
 });

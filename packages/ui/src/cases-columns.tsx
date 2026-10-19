@@ -2,7 +2,17 @@
 
 import type { CaseTableRow } from "./api";
 import { SeverityPill, Stars, TopicChips, When } from "./data/cells";
+import {
+  DUE_COL,
+  OPENED_COL,
+  PLACE_COL,
+  RATING_COL,
+  SEVERITY_COL,
+  STATUS_COL,
+  TOPICS_COL,
+} from "./data/column-widths";
 import type { Column } from "./data/data-table";
+import { humaniseTopic } from "./data/split-bars";
 import { StatusBadge } from "./feedback/badge";
 import { dueLabel, STATUS_LABEL } from "./format";
 
@@ -19,7 +29,7 @@ export function casesColumns({
   return [
     {
       key: "severity",
-      width: "6.5rem",
+      colClassName: SEVERITY_COL,
       header: "Severity",
       nowrap: true,
       cell: (r) => <SeverityPill severity={r.severity} />,
@@ -27,7 +37,7 @@ export function casesColumns({
     },
     {
       key: "rating",
-      width: "6rem",
+      colClassName: RATING_COL,
       header: "Rating",
       nowrap: true,
       cell: (r) => <Stars rating={r.rating} />,
@@ -35,7 +45,7 @@ export function casesColumns({
     },
     {
       key: "place",
-      colClassName: "w-[14%] 2xl:w-[22%]",
+      colClassName: PLACE_COL,
       header: "Place",
       truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
@@ -50,14 +60,16 @@ export function casesColumns({
     },
     {
       key: "topics",
-      colClassName: "w-[10%] 2xl:w-[13%]",
+      colClassName: TOPICS_COL,
+      hideBelow: "2xl",
       header: "Topics",
-      nowrap: true,
+      truncate: true,
+      titleOf: (r) => (r.topics ?? []).map(humaniseTopic).join(", "),
       cell: (r) => <TopicChips topics={r.topics} />,
     },
     {
       key: "due",
-      colClassName: "w-[11rem] 2xl:w-[13rem]",
+      colClassName: DUE_COL,
       header: "Due",
       truncate: true,
       titleOf: (r) => dueLabel(r.status, r.dueAt, now)?.text ?? "",
@@ -66,7 +78,7 @@ export function casesColumns({
         if (!due) return <span className="text-fg-muted">—</span>;
         return due.tone === "overdue" ? (
           <span className="flex min-w-0 items-center gap-1.5">
-            <StatusBadge status="danger" className="shrink-0">
+            <StatusBadge status="danger" className="max-w-full shrink-0">
               Overdue
             </StatusBadge>
             <span className="min-w-0 truncate text-xs text-fg-muted">
@@ -82,7 +94,8 @@ export function casesColumns({
     },
     {
       key: "opened",
-      width: "7rem",
+      colClassName: OPENED_COL,
+      hideBelow: "xl",
       header: "Opened",
       nowrap: true,
       cell: (r) => <When date={r.openedAt} now={now} />,
@@ -90,7 +103,7 @@ export function casesColumns({
     },
     {
       key: "status",
-      colClassName: "w-[9rem] 2xl:w-[10rem]",
+      colClassName: STATUS_COL,
       header: "Status",
       nowrap: true,
       cell: (r) => (
