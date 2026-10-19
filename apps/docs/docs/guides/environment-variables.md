@@ -66,6 +66,16 @@ Host's agents run in their own service ([ADR 0020](../adr/0020-agents-in-their-o
 | `HOST_MODEL_TIMEOUT_MS` | Time limit of one model call, in milliseconds. A reading holds a database transaction for that long, so keep it low in production. Free reasoning models need about 60000. Ignored if it is not a positive whole number. | `15000` | agents |
 | `HOST_ALLOW_FREE` | Set to `true` to allow a model id ending in `:free` outside development and test. Only for test data. | not set | agents |
 
+## Stamp card (loyalty)
+
+| Variable | What it is | Default | Who reads it |
+| --- | --- | --- | --- |
+| `LOYALTY_SECRET` | Signs the printed join QR tokens and hashes the device cookie. A random string of 32 characters or more. Without it the `/v1/loyalty` and `/api/loyalty` routes are not mounted. | none | API |
+| `TRUST_PROXY` | Set to `1` only when a proxy you control sets `X-Forwarded-For`; then the first hop is the client address. Otherwise the socket address is used. | not set | API |
+| `QR_CARD_URL` | Public origin of the card app; the printable join QR points to `<QR_CARD_URL>/j/<token>`. Also makes the device cookie `Secure` when it starts with `https://`. | `http://localhost:3006` in `.env.example` | API |
+
+See [Loyalty and the stamp card](./loyalty-and-qr-card) and [ADR 0022](../adr/0022-loyalty-card-device-bound).
+
 ## Connectors and providers
 
 | Variable | What it is | Status |

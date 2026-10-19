@@ -31,5 +31,6 @@ Every important technical decision is written down in a short ADR: context, deci
 | [0019](./0019-llm-provider-behind-a-port) | The language model sits behind a port | Accepted |
 | [0020](./0020-agents-in-their-own-service) | Agents live in their own service | Accepted |
 | [0021](./0021-resend-email-no-sms) | Resend for email, no SMS | Accepted |
+| [0022](./0022-loyalty-card-device-bound) | The loyalty card is anonymous and bound to a device | Accepted |
 
 To write a new one, see [How to write an ADR](../guides/write-an-adr).

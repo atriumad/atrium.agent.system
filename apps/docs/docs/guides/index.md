@@ -13,6 +13,7 @@ description: "How to work in the Atrium repository."
 | [Product theme](./product-theme) | How the product interface differs from the brand, and the rules for data screens |
 | [Reading the Overview](./reading-the-overview) | What the two Overview pages answer, how every figure is defined, and what is not there yet |
 | [Tables and section pages](./tables-and-section-pages) | The layout of Cases and Responses, the table rules, and what each column and figure means |
+| [Loyalty and the stamp card](./loyalty-and-qr-card) | How a venue sets the card up and uses it, the limits, and what is not there yet |
 | [Conventions](./conventions) | Code, names, commits and pull requests |
 | [Create a module](./create-a-module) | Add a new module with its standard shape |
 | [Create a subagent](./create-a-subagent) | Manifest, tools, playbook and evals |

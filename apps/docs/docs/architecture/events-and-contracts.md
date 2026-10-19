@@ -66,7 +66,10 @@ export type ReviewReceivedV1 = z.infer<typeof ReviewReceivedV1>;
 | `contact.captured` | crm | Memory, Flows |
 | `automation.fired` | crm | Scorekeeper |
 | `campaign.sent` | crm | Ledger, Scorekeeper |
-| `loyalty.milestone.reached` | crm | Crown |
+| `loyalty.card.issued` | crm | none yet |
+| `loyalty.stamp.added` | crm | none yet |
+| `loyalty.reward.earned` | crm | Crown |
+| `loyalty.reward.redeemed` | crm | none yet |
 | `content.status.changed` | content | Manager, Platform |
 | `content.approved` | content | Distribution, Manager |
 | `content.published` | content | Pulse, elements registry |

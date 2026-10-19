@@ -66,6 +66,16 @@ Los agentes de Host corren en su propio servicio ([ADR 0020](../adr/0020-agents-
 | `HOST_MODEL_TIMEOUT_MS` | Límite de tiempo de una llamada al modelo, en milisegundos. Una lectura mantiene una transacción abierta todo ese tiempo, así que en producción conviene dejarlo bajo. Los modelos gratuitos de razonamiento necesitan unos 60000. Se ignora si no es un entero positivo. | `15000` | agentes |
 | `HOST_ALLOW_FREE` | Con `true` permite un id de modelo que termina en `:free` fuera de development y test. Solo para datos de prueba. | sin definir | agentes |
 
+## Tarjeta de sellos (lealtad)
+
+| Variable | Qué es | Por defecto | Quién la lee |
+| --- | --- | --- | --- |
+| `LOYALTY_SECRET` | Firma los tokens del QR de registro impreso y hashea la cookie del dispositivo. Una cadena aleatoria de 32 caracteres o más. Sin ella las rutas `/v1/loyalty` y `/api/loyalty` no se montan. | ninguno | API |
+| `TRUST_PROXY` | Poner `1` solo cuando un proxy que controlas pone `X-Forwarded-For`; entonces el primer salto es la dirección del cliente. Si no, se usa la dirección del socket. | sin poner | API |
+| `QR_CARD_URL` | Origen público de la app de la tarjeta; el QR de registro imprimible apunta a `<QR_CARD_URL>/j/<token>`. También hace `Secure` la cookie del dispositivo cuando empieza con `https://`. | `http://localhost:3006` en `.env.example` | API |
+
+Ver [Lealtad y la tarjeta de sellos](./loyalty-and-qr-card) y el [ADR 0022](../adr/0022-loyalty-card-device-bound).
+
 ## Conectores y proveedores
 
 | Variable | Qué es | Estado |
