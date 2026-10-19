@@ -6,7 +6,17 @@ export type { ProgramInput } from "./application/program";
 export { getProgram, joinToken, rotateJoinQr, upsertProgram } from "./application/program";
 export { checkRate } from "./application/rate";
 export type { Accent, CrmDeps, Program } from "./application/shared";
-export { InvalidProgramError, LoyaltyForbiddenError } from "./application/shared";
+export {
+  CardNotFoundError,
+  InvalidProgramError,
+  InvalidStampInputError,
+  LoyaltyForbiddenError,
+  NoRewardError,
+  NothingToVoidError,
+  StampRefusedError,
+} from "./application/shared";
+export type { CardLookup, StampResult } from "./application/stamps";
+export { redeemReward, stampCard, voidLastStamp } from "./application/stamps";
 export { ACCENTS } from "./domain/loyalty";
 export { LIMITS } from "./domain/rate";
 export { hashCardToken, normalizeShortCode, signJoinToken } from "./domain/tokens";

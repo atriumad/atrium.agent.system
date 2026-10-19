@@ -62,3 +62,18 @@ export function canStamp(input: {
   }
   return { ok: true };
 }
+
+/**
+ * The stamp a void would cancel: the latest stamp of the current cycle that no void has
+ * cancelled. A stamp from before the last `reward_earned` is paid out and cannot be voided.
+ */
+export function lastVoidableStamp(events: EventRow[]): EventRow | null {
+  const ordered = [...events].sort((a, b) => a.at.getTime() - b.at.getTime() || a.seq - b.seq);
+  let cycle: EventRow[] = [];
+  for (const event of ordered) {
+    if (event.kind === "stamp") cycle.push(event);
+    else if (event.kind === "void") cycle = cycle.filter((s) => s.id !== event.voidsId);
+    else if (event.kind === "reward_earned") cycle = [];
+  }
+  return cycle.at(-1) ?? null;
+}

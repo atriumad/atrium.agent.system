@@ -21,6 +21,31 @@ export class LoyaltyForbiddenError extends Error {
 }
 export class InvalidProgramError extends Error {}
 
+export class CardNotFoundError extends Error {
+  constructor() {
+    super("card not found");
+  }
+}
+export class StampRefusedError extends Error {
+  constructor(
+    readonly reason: "paused" | "closed" | "cooldown",
+    readonly retryAt?: Date,
+  ) {
+    super(`stamp refused: ${reason}`);
+  }
+}
+export class NoRewardError extends Error {
+  constructor() {
+    super("the card has no reward to redeem");
+  }
+}
+export class NothingToVoidError extends Error {
+  constructor() {
+    super("there is no stamp to void");
+  }
+}
+export class InvalidStampInputError extends Error {}
+
 export type Program = {
   id: string;
   locationId: string;
