@@ -376,6 +376,25 @@ describe("the public flow, end to end", () => {
     expect(behind.res.headers.get("set-cookie") ?? "").toContain("Secure");
   });
 
+  test("the cookie is Secure when QR_CARD_URL is https, not for an untrusted forwarded proto", async () => {
+    const token = await joinTokenOf("owner-a", locA);
+    const secured = createApp({
+      db,
+      now: () => NOW,
+      session,
+      loyaltySecret: SECRET,
+      qrCardUrl: "https://card.example.com",
+    });
+    const viaUrl = await pub("/v1/loyalty/cards", { ...joinBody(token), target: secured });
+    expect(viaUrl.res.headers.get("set-cookie") ?? "").toContain("Secure");
+    const spoofed = await pub("/v1/loyalty/cards", {
+      ...joinBody(token),
+      headers: { "content-type": "application/json", "x-forwarded-proto": "https" },
+    });
+    expect(spoofed.res.status).toBe(201);
+    expect(spoofed.res.headers.get("set-cookie") ?? "").not.toContain("Secure");
+  });
+
   test("a bad, rotated or foreign token is 410", async () => {
     const bogus = await pub("/v1/loyalty/cards", joinBody("not-a-token"));
     expect(bogus.res.status).toBe(410);
@@ -405,6 +424,19 @@ describe("the public flow, end to end", () => {
       expect(r.res.status).toBe(404);
       expect(r.body).toEqual({ error: "not_found" });
     }
+  });
+
+  test("a garbage token is 404 and writes no rate counter row", async () => {
+    const count = async () =>
+      Number(
+        ((await admin.unsafe("select count(*)::int as n from crm.rate_counters")) as any)[0].n,
+      );
+    const before = await count();
+    for (const t of ["short", "x".repeat(21), `${"a".repeat(21)}+`]) {
+      const r = await pub(`/v1/loyalty/cards/${t}`);
+      expect(r.res.status).toBe(404);
+    }
+    expect(await count()).toBe(before);
   });
 
   test("reads over the per-token limit are 429 with Retry-After", async () => {

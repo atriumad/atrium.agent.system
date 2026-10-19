@@ -30,5 +30,10 @@ export { redeemReward, stampCard, voidLastStamp } from "./application/stamps";
 export { ACCENTS } from "./domain/loyalty";
 export { LIMITS } from "./domain/rate";
 export type { SummaryRange, Tile } from "./domain/summary";
-export { hashCardToken, normalizeShortCode, signJoinToken } from "./domain/tokens";
+export {
+  hashCardToken,
+  looksLikeCardToken,
+  normalizeShortCode,
+  signJoinToken,
+} from "./domain/tokens";
 export { crmTools } from "./mcp/tools";

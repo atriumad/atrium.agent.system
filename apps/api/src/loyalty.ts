@@ -16,6 +16,7 @@ import {
   joinToken,
   LoyaltyForbiddenError,
   listActivity,
+  looksLikeCardToken,
   loyaltySummary,
   NoRewardError,
   NothingToVoidError,
@@ -74,8 +75,13 @@ function clientIp(c: Context, trustProxy: boolean): string {
   return server?.requestIP?.(c.req.raw)?.address ?? "unknown";
 }
 
-function isHttps(c: Context, trustProxy: boolean): boolean {
+/**
+ * Whether the device cookie is Secure: the request is https, a trusted proxy says it was, the card
+ * app's public origin is https, or this is production. An untrusted `X-Forwarded-Proto` counts for nothing.
+ */
+function isHttps(c: Context, trustProxy: boolean, qrCardUrl?: string): boolean {
   if (new URL(c.req.url).protocol === "https:") return true;
+  if (qrCardUrl?.startsWith("https://") || process.env.NODE_ENV === "production") return true;
   return trustProxy && c.req.header("x-forwarded-proto")?.split(",")[0]?.trim() === "https";
 }
 
@@ -127,7 +133,7 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
       setCookie(c, DEVICE_COOKIE, deviceId, {
         httpOnly: true,
         sameSite: "Lax",
-        secure: isHttps(c, trustProxy),
+        secure: isHttps(c, trustProxy, deps.qrCardUrl),
         maxAge: DEVICE_COOKIE_SECONDS,
         // The card app reaches this API through a rewrite on its own path, so a narrower path
         // would never be sent back.
@@ -152,6 +158,8 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
 
   app.get("/v1/loyalty/cards/:token", async (c) => {
     const token = c.req.param("token");
+    // a path that cannot be a token costs nothing: no counter row is written for garbage
+    if (!looksLikeCardToken(token)) return c.json({ error: "not_found" }, 404);
     const limit = await checkRate(
       deps.db,
       `read:token:${digest(token.slice(0, MAX_TOKEN_CHARS))}`,
