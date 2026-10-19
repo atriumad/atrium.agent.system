@@ -35,7 +35,7 @@ const APP_URL =
 const suffix = crypto.randomUUID().slice(0, 8);
 const { db, close } = createDatabase(APP_URL);
 const admin = new SQL(ADMIN_URL);
-const SECRET = "loyalty-secret-for-tests";
+const SECRET = "loyalty-secret-for-tests-0123456789abcdef";
 
 // A fixed clock in the middle of the current hour keeps the window counters stable for the run.
 const NOW = new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000 + 1_800_000);

@@ -339,8 +339,8 @@ describe("constraints", () => {
     });
     expect(got.map((r) => r.k)).toEqual(["s1", "s2", "s3"]);
     const seqs = got.map((r) => Number(r.seq));
-    expect(seqs[0]).toBeLessThan(seqs[1] as number);
-    expect(seqs[1]).toBeLessThan(seqs[2] as number);
+    expect(seqs[0], `got ${JSON.stringify(got)}`).toBeLessThan(seqs[1] as number);
+    expect(seqs[1], `got ${JSON.stringify(got)}`).toBeLessThan(seqs[2] as number);
   });
 
   test("a redeemed event can only name a reward of its own card", async () => {

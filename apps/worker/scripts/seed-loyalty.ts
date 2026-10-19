@@ -15,13 +15,18 @@ import {
   withAgency,
   withScope,
 } from "@atrium/core";
-import { getProgram, joinToken, type ProgramInput, upsertProgram } from "@atrium/crm";
+import {
+  ACCENTS,
+  type Accent,
+  getProgram,
+  joinToken,
+  type ProgramInput,
+  upsertProgram,
+} from "@atrium/crm";
 import { SQL } from "bun";
 import { isLocalDatabase } from "./seed-history";
 
 export type DemoLocation = { id: string; clientId: string; name: string };
-
-const ACCENTS = ["lime", "clay", "charcoal", "sage"] as const;
 
 /** The programs to create: one per location that has none, with a small stable variety. */
 export function planLoyalty(
@@ -38,7 +43,7 @@ export function planLoyalty(
         rewardLabel: "A free coffee or dessert",
         cooldownMinutes: 240,
         active: true,
-        accent: ACCENTS[i % ACCENTS.length] as ProgramInput["accent"],
+        accent: ACCENTS[i % ACCENTS.length] as Accent,
       },
     }));
 }

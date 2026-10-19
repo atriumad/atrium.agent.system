@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   assignClient,
   assignLocation,
@@ -14,6 +15,7 @@ import { SQL } from "bun";
 import { sql } from "drizzle-orm";
 import { migrate } from "../../../scripts/migrate";
 import { createApp } from "../src/app";
+import { usableLoyaltySecret } from "../src/loyalty";
 
 const ADMIN_URL =
   process.env.DATABASE_ADMIN_URL ?? "postgres://atrium:atrium@localhost:5432/atrium";
@@ -24,7 +26,7 @@ const suffix = crypto.randomUUID().slice(0, 8);
 const AGENCY_SLUG = `atrium-loy-${suffix}`;
 const PASSWORD = "correct-horse-battery";
 const ORIGIN = "http://localhost:3001";
-const SECRET = "loyalty-secret-for-api-tests";
+const SECRET = "loyalty-secret-for-api-tests-0123456789";
 const CARD_URL = "http://card.test";
 const seed = { type: "user", id: `seed-loy-${suffix}` } as const;
 
@@ -439,11 +441,19 @@ describe("the public flow, end to end", () => {
     expect(await count()).toBe(before);
   });
 
+  /** Puts a card's counter at the limit, so the next HTTP call is the one over it. */
+  const fillCounter = async (prefix: string, token: string, count: number) => {
+    const windowStart = new Date(Math.floor(NOW.getTime() / 60_000) * 60_000);
+    await admin.unsafe(
+      "insert into crm.rate_counters (key, window_start, count) values ($1, $2, $3) on conflict (key, window_start) do update set count = excluded.count",
+      [`${prefix}:token:${createHash("sha256").update(token).digest("hex")}`, windowStart, count],
+    );
+  };
+
   test("reads over the per-token limit are 429 with Retry-After", async () => {
     const card = await newCard(await joinTokenOf("owner-a", locA));
-    let last = 200;
-    for (let i = 0; i < 120; i++) last = (await pub(`/v1/loyalty/cards/${card.token}`)).res.status;
-    expect(last).toBe(200);
+    await fillCounter("read", card.token, 119);
+    expect((await pub(`/v1/loyalty/cards/${card.token}`)).res.status).toBe(200);
     const over = await pub(`/v1/loyalty/cards/${card.token}`);
     expect(over.res.status).toBe(429);
     expect(Number(over.res.headers.get("retry-after"))).toBeGreaterThan(0);
@@ -457,12 +467,27 @@ describe("the public flow, end to end", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email: "nope", consent: true }),
       });
-    let status = 0;
-    for (let i = 0; i < 125; i++) {
-      status = (await attempt()).res.status;
-      if (status === 429) break;
+    await fillCounter("email", card.token, 119);
+    expect((await attempt()).res.status).toBe(400);
+    expect((await attempt()).res.status).toBe(429);
+  });
+
+  test("a garbage token on the email route is 404 and writes no rate counter row", async () => {
+    const count = async () =>
+      Number(
+        ((await admin.unsafe("select count(*)::int as n from crm.rate_counters")) as any)[0].n,
+      );
+    const before = await count();
+    for (const t of ["short", "x".repeat(21), `${"a".repeat(21)}+`]) {
+      const r = await pub(`/v1/loyalty/cards/${t}/email`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "a@b.co", consent: true }),
+      });
+      expect(r.res.status).toBe(404);
+      expect(r.body).toEqual({ error: "unavailable" });
     }
-    expect(status).toBe(429);
+    expect(await count()).toBe(before);
   });
 
   test("a paused program: the card answers 200 paused and a stamp is refused 409", async () => {
@@ -834,6 +859,14 @@ describe("the retention feature is locked", () => {
 });
 
 describe("mounting", () => {
+  test("a LOYALTY_SECRET shorter than 32 characters is not usable", () => {
+    expect(usableLoyaltySecret(undefined)).toBeUndefined();
+    expect(usableLoyaltySecret("")).toBeUndefined();
+    expect(usableLoyaltySecret("x".repeat(31))).toBeUndefined();
+    expect(usableLoyaltySecret("x".repeat(32))).toBe("x".repeat(32));
+    expect(SECRET.length).toBeGreaterThanOrEqual(32);
+  });
+
   test("without LOYALTY_SECRET no loyalty route exists", async () => {
     expect((await off.request("/v1/loyalty/cards/abc")).status).toBe(404);
     expect(

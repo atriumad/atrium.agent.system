@@ -6,6 +6,7 @@ import {
   transportFromEnv,
 } from "@atrium/core";
 import { createApp } from "./app";
+import { MIN_LOYALTY_SECRET_CHARS, usableLoyaltySecret } from "./loyalty";
 import { sendSetPasswordEmail } from "./setup-email";
 
 const { db, close } = createDatabase();
@@ -72,12 +73,18 @@ if (
 }
 
 // The stamp card's routes need a secret of their own; without one they are not mounted.
-const loyaltySecret = process.env.LOYALTY_SECRET;
+const loyaltySecretRaw = process.env.LOYALTY_SECRET;
+const loyaltySecret = usableLoyaltySecret(loyaltySecretRaw);
 const trustProxy = process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
 const qrCardUrl = process.env.QR_CARD_URL;
 if (!loyaltySecret) {
   console.log(
-    JSON.stringify({ level: "warn", message: "LOYALTY_SECRET unset: loyalty routes are off" }),
+    JSON.stringify({
+      level: "warn",
+      message: loyaltySecretRaw
+        ? `LOYALTY_SECRET is shorter than ${MIN_LOYALTY_SECRET_CHARS} characters: loyalty routes are off`
+        : "LOYALTY_SECRET unset: loyalty routes are off",
+    }),
   );
 }
 

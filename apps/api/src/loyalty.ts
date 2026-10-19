@@ -48,6 +48,14 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** `LOYALTY_SECRET` must be at least this long, or the loyalty routes are not mounted. */
+export const MIN_LOYALTY_SECRET_CHARS = 32;
+
+/** The secret when it is long enough to sign with, otherwise undefined. */
+export function usableLoyaltySecret(value: string | undefined): string | undefined {
+  return value && value.length >= MIN_LOYALTY_SECRET_CHARS ? value : undefined;
+}
+
 export type LoyaltySecrets = {
   /** `LOYALTY_SECRET`: signs the join tokens and the device hash. */
   loyaltySecret: string;
@@ -181,14 +189,9 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
 
   app.post("/v1/loyalty/cards/:token/email", async (c) => {
     const token = c.req.param("token");
+    // a path that cannot be a token costs nothing: no counter row is written for garbage
+    if (!looksLikeCardToken(token)) return c.json({ error: "unavailable" }, 404);
     const at = now();
-    const byToken = await checkRate(
-      deps.db,
-      `email:token:${digest(token.slice(0, MAX_TOKEN_CHARS))}`,
-      "readsPerToken",
-      at,
-    );
-    if (!byToken.allowed) return rateLimited(c, byToken.retryAfter);
     const byIp = await checkRate(
       deps.db,
       `email:ip:${digest(clientIp(c, trustProxy))}`,
@@ -196,6 +199,13 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
       at,
     );
     if (!byIp.allowed) return rateLimited(c, byIp.retryAfter);
+    const byToken = await checkRate(
+      deps.db,
+      `email:token:${digest(token.slice(0, MAX_TOKEN_CHARS))}`,
+      "readsPerToken",
+      at,
+    );
+    if (!byToken.allowed) return rateLimited(c, byToken.retryAfter);
 
     const body = await c.req.json().catch(() => null);
     if (!isObject(body)) return c.json({ error: "invalid_request" }, 400);
