@@ -58,8 +58,7 @@ export function signJoinToken(secret: string, programId: string, version: number
   if (!Number.isInteger(version) || version < 1 || version > 999_999) {
     throw new Error("signJoinToken: version must be an integer from 1 to 999999");
   }
-  const payload = `jq1.${programId}.${version}`;
-  return `${payload}.${sign(secret, payload)}`;
+  return `jq1.${programId}.${version}.${sign(secret, `join:${programId}:${version}`)}`;
 }
 
 /** The program and version a join token names, or null if it is malformed or not ours. */
@@ -71,7 +70,7 @@ export function verifyJoinToken(
   if (parts.length !== 4 || parts[0] !== "jq1") return null;
   const [, programId, versionText, signature] = parts as [string, string, string, string];
   if (!UUID.test(programId) || !/^[1-9]\d{0,5}$/.test(versionText)) return null;
-  const expected = Buffer.from(sign(secret, `jq1.${programId}.${versionText}`));
+  const expected = Buffer.from(sign(secret, `join:${programId}:${versionText}`));
   const given = Buffer.from(signature);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
   return { programId: programId.toLowerCase(), version: Number(versionText) };

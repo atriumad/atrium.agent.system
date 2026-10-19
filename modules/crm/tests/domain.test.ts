@@ -74,6 +74,12 @@ describe("join tokens", () => {
     expect(verifyJoinToken("s", `${parts[0]}.${id}.4.${sig}`)).toBeNull();
     expect(verifyJoinToken("other", token)).toBeNull();
   });
+  test("the signature is the HMAC of join:<programId>:<version>", () => {
+    const expected = createHmac("sha256", "s").update(`join:${id}:3`).digest("base64url");
+    expect(token).toBe(`jq1.${id}.3.${expected}`);
+    const old = createHmac("sha256", "s").update(`jq1.${id}.3`).digest("base64url");
+    expect(verifyJoinToken("s", `jq1.${id}.3.${old}`)).toBeNull();
+  });
   test("rejects other prefixes", () => {
     expect(verifyJoinToken("s", token.replace(/^jq1/, "qr1"))).toBeNull();
     expect(verifyJoinToken("s", token.replace(/^jq1/, "jq2"))).toBeNull();
@@ -81,7 +87,8 @@ describe("join tokens", () => {
   test("rejects a non-uuid id and non-positive versions", () => {
     const forge = (pid: string, v: string) => {
       const payload = `jq1.${pid}.${v}`;
-      return `${payload}.${createHmac("sha256", "s").update(payload).digest("base64url")}`;
+      const message = `join:${pid}:${v}`;
+      return `${payload}.${createHmac("sha256", "s").update(message).digest("base64url")}`;
     };
     expect(verifyJoinToken("s", forge("nope", "3"))).toBeNull();
     expect(verifyJoinToken("s", forge(id, "0"))).toBeNull();

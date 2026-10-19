@@ -269,7 +269,7 @@ describe("issueCard", () => {
     await setStatus(locC, "active");
   });
 
-  test("the same device twice on one program in a day gives device_limit", async () => {
+  test("the same device twice on one program within 24 hours gives device_limit", async () => {
     const program = await programOf(locA);
     const device = nextDevice();
     const first = await issueCard(
@@ -283,10 +283,67 @@ describe("issueCard", () => {
       { joinToken: joinToken(program, SECRET), deviceHash: device, ip: nextIp() },
       deps,
     );
-    expect(second.ok).toBe(false);
-    if (!second.ok) {
-      expect(second.reason).toBe("device_limit");
-      expect(second.retryAfter).toBeGreaterThan(0);
+    expect(second).toMatchObject({ ok: false, reason: "device_limit" });
+    if (!second.ok) expect(second.retryAfter).toBeGreaterThan(0);
+  });
+
+  test("the device is allowed again once its card is 24 hours old", async () => {
+    const program = await programOf(locA);
+    const device = nextDevice();
+    const first = await issueCard(
+      db,
+      { joinToken: joinToken(program, SECRET), deviceHash: device, ip: nextIp() },
+      deps,
+    );
+    expect(first.ok).toBe(true);
+    await admin.unsafe(
+      "update crm.loyalty_cards set created_at = $1 where program_id = $2 and device_hash = $3",
+      [new Date(NOW.getTime() - 24 * 3_600_000 - 1000), program.id, device],
+    );
+    const again = await issueCard(
+      db,
+      { joinToken: joinToken(program, SECRET), deviceHash: device, ip: nextIp() },
+      deps,
+    );
+    expect(again.ok).toBe(true);
+  });
+
+  test("a failed issue does not use up the device's allowance", async () => {
+    const program = await programOf(locA);
+    const device = nextDevice();
+    const taken = "UUUU2222";
+    const occupy = await issueCard(
+      db,
+      { joinToken: joinToken(program, SECRET), deviceHash: nextDevice(), ip: nextIp() },
+      { ...deps, generateShortCode: () => taken },
+    );
+    expect(occupy.ok).toBe(true);
+    const stuck: CrmDeps = { ...deps, generateShortCode: () => taken };
+    await expect(
+      issueCard(
+        db,
+        { joinToken: joinToken(program, SECRET), deviceHash: device, ip: nextIp() },
+        stuck,
+      ),
+    ).rejects.toThrow(/short code/);
+    const ok = await issueCard(
+      db,
+      { joinToken: joinToken(program, SECRET), deviceHash: device, ip: nextIp() },
+      deps,
+    );
+    expect(ok.ok).toBe(true);
+  });
+
+  test("an empty device hash is invalid", async () => {
+    const program = await programOf(locA);
+    for (const deviceHash of ["", "   "]) {
+      expect(
+        await issueCard(
+          db,
+          { joinToken: joinToken(program, SECRET), deviceHash, ip: nextIp() },
+          deps,
+        ),
+      ).toEqual({ ok: false, reason: "invalid" });
     }
   });
 
@@ -324,6 +381,14 @@ describe("issueCard", () => {
     );
     expect(over).toMatchObject({ ok: false, reason: "rate_limited" });
     if (!over.ok) expect(over.retryAfter).toBe(1800);
+    // the refused attempt left no card, so its device has not used its allowance
+    const refusedDevice = nextDevice();
+    await issueCard(db, { joinToken: token, deviceHash: refusedDevice, ip: nextIp() }, deps);
+    const held = await admin.unsafe(
+      "select count(*)::int as n from crm.loyalty_cards where device_hash = $1",
+      [refusedDevice],
+    );
+    expect(held[0].n).toBe(0);
   }, 60_000);
 
   test("a short-code collision is retried", async () => {
@@ -348,7 +413,15 @@ describe("issueCard", () => {
 
   test("gives up after five collisions", async () => {
     const program = await programOf(locA);
-    const stuck: CrmDeps = { ...deps, generateShortCode: () => "K7M492QD" };
+    // its own occupied code, so the test does not lean on an earlier one
+    const taken = "TTTT2222";
+    const first = await issueCard(
+      db,
+      { joinToken: joinToken(program, SECRET), deviceHash: nextDevice(), ip: nextIp() },
+      { ...deps, generateShortCode: () => taken },
+    );
+    expect(first.ok).toBe(true);
+    const stuck: CrmDeps = { ...deps, generateShortCode: () => taken };
     await expect(
       issueCard(
         db,

@@ -6,7 +6,7 @@ import {
   type Tx,
   writeAudit,
 } from "@atrium/core";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ACCENTS } from "../domain/loyalty";
 import { signJoinToken } from "../domain/tokens";
 import { loyaltyPrograms } from "../infra/schema";
@@ -116,7 +116,7 @@ export async function rotateJoinQr(tx: Tx, scope: Scope, programId: string): Pro
   const [row] = await tx
     .update(loyaltyPrograms)
     .set({ joinQrVersion: sql`${loyaltyPrograms.joinQrVersion} + 1`, updatedAt: new Date() })
-    .where(and(eq(loyaltyPrograms.id, programId)))
+    .where(eq(loyaltyPrograms.id, programId))
     .returning();
   if (!row || !locationVisible(scope, row.locationId)) {
     throw new InvalidProgramError("unknown program");

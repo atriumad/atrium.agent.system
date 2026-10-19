@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { type Database, listLocations, locationStatusFor, withTenant } from "@atrium/core";
-import { eq, sql } from "drizzle-orm";
+import { and, count, eq, gt, min, sql } from "drizzle-orm";
 import { progress } from "../domain/loyalty";
+import { LIMITS } from "../domain/rate";
 import {
   formatShortCode,
   generateCardToken,
@@ -36,6 +37,7 @@ export async function issueCard(
   deps: CrmDeps,
 ): Promise<IssueResult> {
   const now = clock(deps);
+  if (input.deviceHash.trim() === "") return { ok: false, reason: "invalid" };
 
   // Every attempt counts against the address first, valid or not, so probing is limited too.
   const byIp = await checkRate(db, `join:ip:${digest(input.ip)}`, "joinPerIp", now);
@@ -58,15 +60,6 @@ export async function issueCard(
   if (status === null) return { ok: false, reason: "invalid" };
   if (!program.active || status !== "active") return { ok: false, reason: "paused" };
 
-  const byDevice = await checkRate(
-    db,
-    `card:device:${claim.programId}:${digest(input.deviceHash)}`,
-    "cardPerDevicePerDay",
-    now,
-  );
-  if (!byDevice.allowed) {
-    return { ok: false, reason: "device_limit", retryAfter: byDevice.retryAfter };
-  }
   const byProgram = await checkRate(
     db,
     `card:program:${claim.programId}`,
@@ -82,6 +75,30 @@ export async function issueCard(
   const makeCode = deps.generateShortCode ?? generateShortCode;
 
   return withTenant(db, program.client_id, async (tx) => {
+    // A device may hold one card per program in any 24 hours. Only cards that exist count, so a
+    // failed attempt never uses the allowance up.
+    const since = new Date(now.getTime() - LIMITS.cardPerDevicePerDay.windowSeconds * 1000);
+    const [recent] = await tx
+      .select({ oldest: min(loyaltyCards.createdAt), n: count() })
+      .from(loyaltyCards)
+      .where(
+        and(
+          eq(loyaltyCards.programId, claim.programId),
+          eq(loyaltyCards.deviceHash, input.deviceHash),
+          gt(loyaltyCards.createdAt, since),
+        ),
+      );
+    if (recent && recent.n >= LIMITS.cardPerDevicePerDay.limit) {
+      const until =
+        (recent.oldest?.getTime() ?? now.getTime()) +
+        LIMITS.cardPerDevicePerDay.windowSeconds * 1000;
+      return {
+        ok: false as const,
+        reason: "device_limit" as const,
+        retryAfter: Math.max(1, Math.ceil((until - now.getTime()) / 1000)),
+      };
+    }
+
     for (let attempt = 0; attempt < MAX_SHORT_CODE_ATTEMPTS; attempt++) {
       const shortCode = makeCode();
       // client and location come from the program, never from the caller
@@ -96,7 +113,7 @@ export async function issueCard(
           deviceHash: input.deviceHash,
           createdAt: now,
         })
-        .onConflictDoNothing()
+        .onConflictDoNothing({ target: [loyaltyCards.locationId, loyaltyCards.shortCode] })
         .returning({ id: loyaltyCards.id });
       if (!card) continue;
       await deps.publish?.(
