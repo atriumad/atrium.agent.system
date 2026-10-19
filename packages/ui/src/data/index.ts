@@ -14,5 +14,6 @@ export * from "./stat-tile";
 export * from "./table";
 export * from "./table-state";
 export * from "./trend-chart";
+export * from "./use-debounced";
 export * from "./use-range-state";
 export * from "./use-table-state";

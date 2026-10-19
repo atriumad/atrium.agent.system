@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import {
   api,
@@ -19,6 +19,7 @@ import { PageControls } from "./data/page-controls";
 import { DataSectionPage } from "./data/section-page";
 import { humaniseTopic } from "./data/split-bars";
 import { serializeTableState, type TableSpec } from "./data/table-state";
+import { useDebounced } from "./data/use-debounced";
 import { useRangeState } from "./data/use-range-state";
 import { useTableState } from "./data/use-table-state";
 import { EmptyState, ErrorState } from "./feedback/states";
@@ -114,6 +115,11 @@ function ResponsesTablePage() {
   const topic = TOPICS.find((t) => t === state.filters.topic);
   const rating = Number(state.filters.rating);
 
+  // The box follows every keystroke; the request follows it 300ms later. Emptying it applies at once.
+  const q = useDebounced(state.q.trim().slice(0, 200), 300, (v) => v === "");
+  const setPageRef = useRef(table.setPage);
+  setPageRef.current = table.setPage;
+
   const key = JSON.stringify({
     range,
     ...(scopeId ? { place: scopeId } : {}),
@@ -121,7 +127,7 @@ function ResponsesTablePage() {
     pageSize: PAGE_SIZE,
     sort: sortKey,
     dir: sortDir,
-    ...(state.q.trim() ? { q: state.q.trim().slice(0, 200) } : {}),
+    ...(q ? { q } : {}),
     ...(tab === "low" ? { maxRating: 3 } : {}),
     ...(tab === "contact" ? { wantsContact: true } : {}),
     ...(tab === "case" ? { hasCase: true } : {}),
@@ -152,6 +158,12 @@ function ResponsesTablePage() {
       .responsesPage(JSON.parse(key) as ResponsesQuery)
       .then((d) => {
         if (!current) return;
+        // A link to a page past the end: ask for the last page once instead of showing nothing.
+        const asked = (JSON.parse(key) as ResponsesQuery).page ?? 1;
+        if (d.rows.length === 0 && d.total > 0 && asked > 1) {
+          setPageRef.current(Math.max(1, Math.ceil(d.total / d.pageSize)));
+          return;
+        }
         setData(d);
         setNow(new Date());
         setLoading(false);
@@ -326,6 +338,8 @@ function ResponsesTablePage() {
             columns={columns}
             rows={data.rows}
             rowKey={(r) => r.id}
+            // A row opens the drawer, not a page. DataTable makes a row clickable only through a
+            // link in its first cell, so the link is a button (RowButton) and the href is unused.
             rowHref={() => "#"}
             linkAs={RowButton}
             onRowOpen={setOpen}

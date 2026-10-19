@@ -290,6 +290,10 @@ describe("responses page: the table", () => {
     expect(await screen.findByText("No responses yet")).toBeTruthy();
     await user.type(screen.getByRole("searchbox"), "zzzz");
     expect(await screen.findByText("Your filters found nothing")).toBeTruthy();
+    // Let the debounced search reach the server before the box is cleared.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 450));
+    });
     serve(base({ [FIRST]: responsesPageFixture }));
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(await screen.findByText(/The room was cold/)).toBeTruthy();
@@ -333,6 +337,69 @@ describe("responses page: the table", () => {
     expect(window.location.search).not.toContain("page=");
     expect(window.history.length).toBe(length + 1);
     expect(await screen.findByText(/Showing 1–25 of 107/)).toBeTruthy();
+  });
+});
+
+describe("responses page: search debounce", () => {
+  const typed = (q: string) => `${FIRST}&q=${q}`;
+  const wait = (ms: number) =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, ms));
+    });
+
+  test("typing cold sends one request with q=cold and none for the prefixes; the box updates at once", async () => {
+    const { calls } = serve(base({ [typed("cold")]: responsesPageFixture }));
+    const { user } = page();
+    await screen.findByText(/The room was cold/);
+    const box = screen.getByRole("searchbox") as HTMLInputElement;
+    await user.type(box, "cold");
+    expect(box.value).toBe("cold");
+    await wait(450);
+    const withQ = calls.filter((c) => c.includes("&q="));
+    expect(withQ).toEqual([typed("cold")]);
+  });
+
+  test("clearing the box sends the unfiltered request at once", async () => {
+    const { calls } = serve(base({ [typed("cold")]: responsesPageFixture }));
+    const { user } = page();
+    await screen.findByText(/The room was cold/);
+    await user.type(screen.getByRole("searchbox"), "cold");
+    await wait(450);
+    const before = calls.filter((c) => c === FIRST).length;
+    await user.clear(screen.getByRole("searchbox"));
+    await wait(30);
+    expect(calls.filter((c) => c === FIRST).length).toBeGreaterThan(before);
+  });
+
+  test("a tab click during a pending debounce does not carry the stale q", async () => {
+    const { calls } = serve(
+      base({
+        [`${FIRST}&maxRating=3`]: responsesPageFixture,
+        [`${FIRST}&q=co&maxRating=3`]: responsesPageFixture,
+      }),
+    );
+    const { user } = page();
+    await screen.findByText(/The room was cold/);
+    await user.type(screen.getByRole("searchbox"), "co");
+    await user.click(screen.getByRole("tab", { name: /3 stars or fewer/ }));
+    await wait(450);
+    expect(calls).toContain(`${FIRST}&maxRating=3`);
+    expect(calls).toContain(`${FIRST}&q=co&maxRating=3`);
+    expect(calls.some((c) => c.includes("q=c&") || c.endsWith("q=c"))).toBe(false);
+  });
+
+  test("a page past the end asks for the last page once", async () => {
+    window.history.replaceState({}, "", "/?page=9");
+    const { calls } = serve(
+      base({
+        [`${BASE}&page=9&pageSize=25&sort=date&dir=desc`]: { ...many(0, 9), rows: [] },
+        [`${BASE}&page=5&pageSize=25&sort=date&dir=desc`]: many(7, 5),
+      }),
+    );
+    page();
+    expect(await screen.findByText(/Showing 101–107 of 107/)).toBeTruthy();
+    expect(calls.filter((c) => c.includes("page=5"))).toHaveLength(1);
+    expect(screen.queryByText("No responses yet")).toBeNull();
   });
 });
 
