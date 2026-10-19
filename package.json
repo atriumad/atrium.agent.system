@@ -18,7 +18,8 @@
     "db:migrate": "bun scripts/migrate.ts",
     "ci": "bun run lint && bun run check:deps && bun run typecheck && bun run test",
     "seed": "bun apps/worker/scripts/seed.ts",
-    "seed:history": "bun apps/worker/scripts/seed-history.ts"
+    "seed:history": "bun apps/worker/scripts/seed-history.ts",
+    "seed:loyalty": "bun apps/worker/scripts/seed-loyalty.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
