@@ -343,6 +343,25 @@ describe("constraints", () => {
     expect(seqs[1]).toBeLessThan(seqs[2] as number);
   });
 
+  test("a redeemed event can only name a reward of its own card", async () => {
+    const a1 = cards["1A"] as { id: string };
+    const other = Object.entries(cards).find(([tag]) => tag !== "1A")?.[1] as { id: string };
+    const [reward] = await admin.unsafe("select id from crm.loyalty_rewards where card_id = $1", [
+      other.id,
+    ]);
+    const [own] = await admin.unsafe(
+      "select client_id, location_id from crm.loyalty_cards where id = $1",
+      [a1.id],
+    );
+    await fails(
+      admin.unsafe(
+        "insert into crm.loyalty_events (client_id, location_id, card_id, kind, idempotency_key, reward_id) values ($1, $2, $3, 'reward_redeemed', 'rw-cross', $4)",
+        [own.client_id, own.location_id, a1.id, reward.id],
+      ),
+      /foreign key/i,
+    );
+  });
+
   test("a child cannot point at a parent of another client or location", async () => {
     const a1 = cards["1A"] as { id: string; programId: string };
     const x = cards["XA"] as { id: string; programId: string };

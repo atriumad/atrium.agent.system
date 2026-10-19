@@ -394,6 +394,59 @@ describe("idempotency and concurrency", () => {
   });
 });
 
+describe("clock, keys and scope hardening", () => {
+  test("a clock that runs backwards keeps the log ordered: no lost stamp, a void still cancels", async () => {
+    const f = await fixture();
+    const start = now;
+    await stamp(f);
+    now = new Date(start.getTime() - 60 * 60_000);
+    expect((await stamp(f)).stampsInCycle).toBe(2);
+    expect((await stamp(f)).stampsInCycle).toBe(3);
+    expect((await voidLast(f)).stampsInCycle).toBe(2);
+    expect((await voidLast(f)).stampsInCycle).toBe(1);
+    const rows = await admin.unsafe(
+      "select kind, created_at from crm.loyalty_events where card_id = $1 order by seq",
+      [f.cardId],
+    );
+    const times = rows.map((r: { created_at: Date }) => new Date(r.created_at).getTime());
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+    now = start;
+  });
+
+  test("the reserved earned: prefix is refused as a key", async () => {
+    const f = await fixture();
+    await expect(stamp(f, owner(), "earned:abc")).rejects.toBeInstanceOf(InvalidStampInputError);
+    await expect(redeem(f, owner(), "earned:abc")).rejects.toBeInstanceOf(InvalidStampInputError);
+    await expect(voidLast(f, admin_, "r", "earned:abc")).rejects.toBeInstanceOf(
+      InvalidStampInputError,
+    );
+  });
+
+  test("a location or card id that is not a uuid is CardNotFoundError, not a database error", async () => {
+    const f = await fixture();
+    const scope = owner();
+    await expect(
+      withScope(db, scope, (tx) =>
+        stampCard(tx, scope, { locationId: "nope", code: f.code }, { idempotencyKey: key() }, deps),
+      ),
+    ).rejects.toBeInstanceOf(CardNotFoundError);
+    await expect(
+      withScope(db, admin_, (tx) =>
+        voidLastStamp(tx, admin_, { cardId: "nope", reason: "x", idempotencyKey: key() }, deps),
+      ),
+    ).rejects.toBeInstanceOf(CardNotFoundError);
+  });
+
+  test("staff limited to location A cannot redeem a card at location B", async () => {
+    const a = await fixture({ required: 2 });
+    const b = await fixture({ required: 2 });
+    await stamp(b);
+    await stamp(b);
+    await expect(redeem(b, staffAt(a.locationId))).rejects.toBeInstanceOf(CardNotFoundError);
+    expect(await count(b, "reward_redeemed")).toBe(0);
+  });
+});
+
 describe("redeeming", () => {
   test("with no reward it throws NoRewardError", async () => {
     const f = await fixture();

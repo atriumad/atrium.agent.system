@@ -26,6 +26,12 @@ import {
 
 export type CardLookup = { locationId: string } & ({ code: string } | { cardToken: string });
 
+/**
+ * `stampsInCycle` on the completing stamp equals `stampsRequired` (the card view shows 0 with
+ * `rewardReady` once the reward is earned). A replayed key recomputes the result with the
+ * program's current `stampsRequired`. Redeeming is allowed on a paused program or a closed card
+ * on purpose: an earned reward is honoured.
+ */
 export type StampResult = {
   cardId: string;
   stampsInCycle: number;
@@ -44,13 +50,32 @@ function checkKey(key: unknown): string {
   if (typeof key !== "string" || key.trim() === "" || key.length > 200) {
     throw new InvalidStampInputError("idempotencyKey: 1 to 200 characters");
   }
+  // `earned:` keys are written by stampCard itself for the reward_earned event
+  if (key.startsWith("earned:"))
+    throw new InvalidStampInputError("idempotencyKey: reserved prefix");
   return key;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The time a new event is stamped with. Read after the card lock, and never earlier than the
+ * card's latest event or stamp: events are ordered by (created_at, seq), so a clock that runs
+ * backwards must not sort a new event before one the lock order already put ahead of it.
+ */
+function eventTime(deps: CrmDeps, events: EventRow[], card: { lastStampAt: Date | null }): Date {
+  const times = [clock(deps).getTime(), card.lastStampAt?.getTime() ?? 0];
+  const latest = events.at(-1);
+  if (latest) times.push(latest.at.getTime());
+  return new Date(Math.max(...times));
 }
 
 type Card = typeof loyaltyCards.$inferSelect;
 
 async function findCard(tx: Tx, scope: Scope, lookup: CardLookup): Promise<Card> {
-  if (!locationVisible(scope, lookup.locationId)) throw new CardNotFoundError();
+  if (!UUID.test(String(lookup.locationId)) || !locationVisible(scope, lookup.locationId)) {
+    throw new CardNotFoundError();
+  }
   let match: ReturnType<typeof eq>;
   if ("code" in lookup) {
     const code = typeof lookup.code === "string" ? normalizeShortCode(lookup.code) : null;
@@ -114,11 +139,11 @@ export async function stampCard(
 ): Promise<StampResult> {
   require(scope, "stamp");
   const key = checkKey(input.idempotencyKey);
-  const now = clock(deps);
   const found = await findCard(tx, scope, lookup);
   const card = await lockCard(tx, found.id);
   const program = await programOf(tx, card);
   const events = await listCardEvents(tx, card.id);
+  const now = eventTime(deps, events, card);
 
   const seen = await previousEvent(tx, card.id, key);
   if (seen) {
@@ -241,13 +266,12 @@ export async function redeemReward(
 ): Promise<{ cardId: string; rewardId: string }> {
   require(scope, "redeem");
   const key = checkKey(input.idempotencyKey);
-  const now = clock(deps);
   const found = await findCard(tx, scope, lookup);
   const card = await lockCard(tx, found.id);
 
   const seen = await previousEvent(tx, card.id, key);
   if (seen) {
-    const rewardId = seen.kind === "reward_redeemed" ? seen.note?.replace(/^reward:/, "") : null;
+    const rewardId = seen.kind === "reward_redeemed" ? seen.rewardId : null;
     if (!rewardId) throw new InvalidStampInputError("idempotencyKey: already used");
     return { cardId: card.id, rewardId };
   }
@@ -259,6 +283,7 @@ export async function redeemReward(
     .orderBy(asc(loyaltyRewards.earnedAt), asc(loyaltyRewards.id))
     .limit(1);
   if (!pending) throw new NoRewardError();
+  const now = eventTime(deps, await listCardEvents(tx, card.id), card);
   // the guard keeps a reward from being redeemed twice even if the lock were ever bypassed
   const [reward] = await tx
     .update(loyaltyRewards)
@@ -274,8 +299,8 @@ export async function redeemReward(
     kind: "reward_redeemed",
     actorId: scope.userId,
     idempotencyKey: key,
-    // the id of the reward, so a replay of the key can return it
-    note: `reward:${reward.id}`,
+    // so a replay of the key can return it
+    rewardId: reward.id,
     createdAt: now,
   });
   await writeAudit(tx, {
@@ -314,12 +339,13 @@ export async function voidLastStamp(
   if (reason.length < 1 || reason.length > 200) {
     throw new InvalidStampInputError("reason: 1 to 200 characters");
   }
-  const now = clock(deps);
+  if (!UUID.test(String(input.cardId))) throw new CardNotFoundError();
   const [visible] = await tx.select().from(loyaltyCards).where(eq(loyaltyCards.id, input.cardId));
   if (!visible || !locationVisible(scope, visible.locationId)) throw new CardNotFoundError();
   const card = await lockCard(tx, visible.id);
   const program = await programOf(tx, card);
   const events = await listCardEvents(tx, card.id);
+  const now = eventTime(deps, events, card);
 
   const result = (list: EventRow[]): StampResult => {
     const p = progress(list, program.stampsRequired);

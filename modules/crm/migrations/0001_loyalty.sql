@@ -54,6 +54,23 @@ create index loyalty_cards_guest_idx on crm.loyalty_cards (guest_id) where guest
 create index loyalty_cards_device_idx on crm.loyalty_cards (program_id, device_hash, created_at)
   where device_hash is not null;
 
+create table crm.loyalty_rewards (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null,
+  location_id uuid not null,
+  card_id uuid not null,
+  earned_at timestamptz not null default now(),
+  redeemed_at timestamptz,
+  redeemed_by text,
+  check (redeemed_by is null or redeemed_at is not null),
+  unique (id, card_id),
+  foreign key (card_id, client_id, location_id)
+    references crm.loyalty_cards (id, client_id, location_id) on delete cascade,
+  foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
+);
+create index loyalty_rewards_card_idx on crm.loyalty_rewards (card_id, earned_at);
+create index loyalty_rewards_client_idx on crm.loyalty_rewards (client_id, earned_at desc);
+
 -- Append-only. client_id and location_id are copied from the card by the use case (the policy and
 -- the foreign key need them); there are no triggers.
 create table crm.loyalty_events (
@@ -69,6 +86,8 @@ create table crm.loyalty_events (
   idempotency_key text not null check (length(idempotency_key) between 1 and 200),
   -- a void points at the stamp it cancels
   voids_id uuid,
+  -- a reward_redeemed event names the reward it redeemed
+  reward_id uuid,
   note text check (length(note) <= 500),
   created_at timestamptz not null default now(),
   unique (card_id, idempotency_key),
@@ -77,26 +96,12 @@ create table crm.loyalty_events (
     references crm.loyalty_cards (id, client_id, location_id) on delete cascade,
   -- a void can only cancel an event of its own card
   foreign key (voids_id, card_id) references crm.loyalty_events (id, card_id),
+  -- and only a reward of its own card (MATCH SIMPLE: null is allowed)
+  foreign key (reward_id, card_id) references crm.loyalty_rewards (id, card_id),
   foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
 );
 create index loyalty_events_card_idx on crm.loyalty_events (card_id, created_at, seq);
 create index loyalty_events_client_idx on crm.loyalty_events (client_id, created_at desc);
-
-create table crm.loyalty_rewards (
-  id uuid primary key default gen_random_uuid(),
-  client_id uuid not null,
-  location_id uuid not null,
-  card_id uuid not null,
-  earned_at timestamptz not null default now(),
-  redeemed_at timestamptz,
-  redeemed_by text,
-  check (redeemed_by is null or redeemed_at is not null),
-  foreign key (card_id, client_id, location_id)
-    references crm.loyalty_cards (id, client_id, location_id) on delete cascade,
-  foreign key (client_id, location_id) references core.locations (client_id, id) on delete cascade
-);
-create index loyalty_rewards_card_idx on crm.loyalty_rewards (card_id, earned_at);
-create index loyalty_rewards_client_idx on crm.loyalty_rewards (client_id, earned_at desc);
 
 -- Rate-limit counters. Not tenant data (keys are opaque hashes and ids, no client_id), and not
 -- reachable by atrium_app at all: no grant, only crm.hit_rate (security definer) touches it.

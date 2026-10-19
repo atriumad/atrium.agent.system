@@ -53,6 +53,7 @@ export const loyaltyEvents = crm.table("loyalty_events", {
   actorId: text("actor_id"),
   idempotencyKey: text("idempotency_key").notNull(),
   voidsId: uuid("voids_id"),
+  rewardId: uuid("reward_id"),
   note: text("note"),
   createdAt: at("created_at").notNull().defaultNow(),
 });
