@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createHmac } from "node:crypto";
 import {
   ACCENTS,
   canStamp,
@@ -47,6 +48,7 @@ describe("short codes", () => {
   });
   test("an injected random of 0 gives the first character", () => {
     expect(generateShortCode(() => 0)).toBe("22222222");
+    expect(generateShortCode(() => 1)).toBe("ZZZZZZZZ");
   });
   test("formatShortCode", () => {
     expect(formatShortCode("K7M492QD")).toBe("K7M4-92QD");
@@ -77,9 +79,25 @@ describe("join tokens", () => {
     expect(verifyJoinToken("s", token.replace(/^jq1/, "jq2"))).toBeNull();
   });
   test("rejects a non-uuid id and non-positive versions", () => {
-    expect(verifyJoinToken("s", signJoinToken("s", "nope", 3))).toBeNull();
-    expect(verifyJoinToken("s", signJoinToken("s", id, 0))).toBeNull();
-    expect(verifyJoinToken("s", signJoinToken("s", id, -1))).toBeNull();
+    const forge = (pid: string, v: string) => {
+      const payload = `jq1.${pid}.${v}`;
+      return `${payload}.${createHmac("sha256", "s").update(payload).digest("base64url")}`;
+    };
+    expect(verifyJoinToken("s", forge("nope", "3"))).toBeNull();
+    expect(verifyJoinToken("s", forge(id, "0"))).toBeNull();
+    expect(verifyJoinToken("s", forge(id, "-1"))).toBeNull();
+  });
+  test("signing refuses bad input", () => {
+    expect(() => signJoinToken("s", "nope", 3)).toThrow();
+    expect(() => signJoinToken("s", id, 0)).toThrow();
+    expect(() => signJoinToken("s", id, -1)).toThrow();
+    expect(() => signJoinToken("s", id, 1.5)).toThrow();
+    expect(() => signJoinToken("s", id, 1_000_000)).toThrow();
+    expect(() => signJoinToken("s", id, 999_999)).not.toThrow();
+  });
+  test("the program id comes back lower-cased", () => {
+    const mixed = "ABCDEF12-1111-4111-8111-111111111111";
+    expect(verifyJoinToken("s", signJoinToken("s", mixed, 2))?.programId).toBe(mixed.toLowerCase());
   });
   test("a token for one program never verifies as another", () => {
     const other = id.replace(/^1/, "2");
@@ -92,7 +110,8 @@ let n = 0;
 const ev = (kind: EventRow["kind"], extra: Partial<EventRow> = {}): EventRow => ({
   kind,
   at: new Date(T0 + n * 1000),
-  id: `e${n++}`,
+  id: `e${n}`,
+  seq: n++,
   ...extra,
 });
 const stamps = (count: number) => Array.from({ length: count }, () => ev("stamp"));
@@ -127,6 +146,37 @@ describe("progress", () => {
       ev("void", { voidsId: (old[0] as EventRow).id }),
     ];
     expect(progress(events, 8).stampsInCycle).toBe(2);
+  });
+});
+
+describe("progress ordering", () => {
+  const at = new Date(T0);
+  const stamp = { id: "s", seq: 1, kind: "stamp", at } as const;
+  const earned = { id: "r", seq: 2, kind: "reward_earned", at } as const;
+  test("equal timestamps are ordered by seq", () => {
+    expect(progress([stamp, earned], 8)).toMatchObject({ stampsInCycle: 0, rewardsEarned: 1 });
+  });
+  test("array order does not matter, seq does", () => {
+    expect(progress([earned, stamp], 8)).toMatchObject({ stampsInCycle: 0, rewardsEarned: 1 });
+  });
+  test("a void with the same at and a higher seq cancels its stamp", () => {
+    const v = { id: "v", seq: 2, kind: "void", at, voidsId: "s" } as const;
+    expect(progress([v, stamp], 8).stampsInCycle).toBe(0);
+  });
+  test("reward_redeemed counts each time", () => {
+    const events = [
+      ev("reward_earned"),
+      ev("reward_earned"),
+      ev("reward_redeemed"),
+      ev("reward_redeemed"),
+    ];
+    expect(progress(events, 8)).toMatchObject({ rewardsRedeemed: 2, rewardReady: false });
+  });
+  test("a void pointing at a non-stamp is a no-op", () => {
+    const earnedEvent = ev("reward_earned");
+    const s = ev("stamp");
+    const events = [earnedEvent, s, ev("void", { voidsId: earnedEvent.id })];
+    expect(progress(events, 8)).toMatchObject({ stampsInCycle: 1, rewardsEarned: 1 });
   });
 });
 

@@ -1,11 +1,18 @@
 export type LoyaltyEventKind = "stamp" | "reward_earned" | "reward_redeemed" | "void";
 
-export type EventRow = { kind: LoyaltyEventKind; at: Date; voidsId?: string; id: string };
+export type EventRow = {
+  id: string;
+  seq: number;
+  kind: LoyaltyEventKind;
+  at: Date;
+  voidsId?: string;
+};
 
 export const ACCENTS = ["lime", "clay", "charcoal", "sage"] as const;
 
 /**
- * Where a card stands. Events are read in time order. A `void` cancels the stamp it points to,
+ * Where a card stands. Events are read in order (at, seq), ascending; seq is the events
+ * table's identity column, so events written with the same `at` still have a stable order. A `void` cancels the stamp it points to,
  * but only while that stamp is in the current cycle: a void whose target is before the last
  * `reward_earned` is ignored, because that cycle is already paid out.
  */
@@ -18,7 +25,7 @@ export function progress(
   rewardsRedeemed: number;
   rewardReady: boolean;
 } {
-  const ordered = [...events].sort((a, b) => a.at.getTime() - b.at.getTime());
+  const ordered = [...events].sort((a, b) => a.at.getTime() - b.at.getTime() || a.seq - b.seq);
   let cycle = new Set<string>();
   let rewardsEarned = 0;
   let rewardsRedeemed = 0;

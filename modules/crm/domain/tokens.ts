@@ -45,16 +45,20 @@ export function normalizeShortCode(input: string): string | null {
   return code;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const sign = (secret: string, payload: string) =>
   createHmac("sha256", secret).update(payload).digest("base64url");
 
 /** `jq1.<programId>.<version>.<signature>` */
 export function signJoinToken(secret: string, programId: string, version: number): string {
+  if (!UUID.test(programId)) throw new Error("signJoinToken: programId is not a uuid");
+  if (!Number.isInteger(version) || version < 1 || version > 999_999) {
+    throw new Error("signJoinToken: version must be an integer from 1 to 999999");
+  }
   const payload = `jq1.${programId}.${version}`;
   return `${payload}.${sign(secret, payload)}`;
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The program and version a join token names, or null if it is malformed or not ours. */
 export function verifyJoinToken(
@@ -68,5 +72,5 @@ export function verifyJoinToken(
   const expected = Buffer.from(sign(secret, `jq1.${programId}.${versionText}`));
   const given = Buffer.from(signature);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
-  return { programId, version: Number(versionText) };
+  return { programId: programId.toLowerCase(), version: Number(versionText) };
 }
