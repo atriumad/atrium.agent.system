@@ -1,7 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type ElementType, type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./actions/button";
 import { ApiError, api, type CaseDetail, type CaseSummary, type Me } from "./api";
 import { CasesTablePage } from "./cases-table-page";
@@ -83,8 +83,8 @@ export function SignIn({ surface }: { surface: Surface }) {
   );
 }
 
-export function CasesPage({ surface }: { surface: Surface }) {
-  return <CasesTablePage surface={surface} />;
+export function CasesPage({ surface, linkAs }: { surface: Surface; linkAs?: ElementType }) {
+  return <CasesTablePage surface={surface} {...(linkAs ? { linkAs } : {})} />;
 }
 
 function DueBadge({ status, dueAt, now }: { status: string; dueAt: string; now: Date }) {

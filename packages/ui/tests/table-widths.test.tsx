@@ -95,7 +95,7 @@ describe("the Cases and Responses columns", () => {
     const td = container.querySelector("tbody td") as HTMLElement;
     expect(td.className).toContain("truncate");
     expect(td.getAttribute("title")).toBe(
-      "Harbor Dental Group of Northern Texas · Downtown Plaza Tower, Floor 12",
+      "Downtown Plaza Tower, Floor 12 · Harbor Dental Group of Northern Texas",
     );
   });
 
@@ -119,7 +119,7 @@ describe("the Cases and Responses columns", () => {
     );
     const td = container.querySelector("tbody td") as HTMLElement;
     expect(td.className).toContain("truncate");
-    expect(td.getAttribute("title")).toBe(`${row.clientName} · ${row.locationName}`);
+    expect(td.getAttribute("title")).toBe(`${row.locationName} · ${row.clientName}`);
   });
 });
 

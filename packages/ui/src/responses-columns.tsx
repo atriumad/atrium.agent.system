@@ -1,10 +1,11 @@
 "use client";
 
 import { Check } from "lucide-react";
+import type { ElementType } from "react";
 import type { ResponseTableRow } from "./api";
 import { caseHref } from "./case-links";
 import type { Surface } from "./cases-app";
-import { SentimentPill, Stars, TopicChips, When } from "./data/cells";
+import { PlaceCell, placeTitle, SentimentPill, Stars, TopicChips, When } from "./data/cells";
 import { PLACE_COL, RATING_COL, TOPICS_COL } from "./data/column-widths";
 import type { Column } from "./data/data-table";
 import { humaniseTopic } from "./data/split-bars";
@@ -17,7 +18,9 @@ export function responsesColumns({
   showClient,
   now,
   backSearch,
+  linkAs: LinkAs = "a",
 }: {
+  linkAs?: ElementType;
   surface: Surface;
   showClient: boolean;
   now: Date;
@@ -45,7 +48,9 @@ export function responsesColumns({
       colClassName: PLACE_COL,
       header: "Place",
       truncate: true,
-      cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
+      titleOf: (r) => (showClient ? placeTitle(r.locationName, r.clientName) : r.locationName),
+      cell: (r) =>
+        showClient ? <PlaceCell place={r.locationName} client={r.clientName} /> : r.locationName,
       sortValue: (r) => r.locationName,
     },
     {
@@ -100,12 +105,12 @@ export function responsesColumns({
       nowrap: true,
       cell: (r) =>
         r.caseId ? (
-          <a
+          <LinkAs
             href={caseHref(surface, r.caseId, backSearch)}
             className="relative z-10 font-medium text-fg-strong underline-offset-2 hover:underline"
           >
             View case
-          </a>
+          </LinkAs>
         ) : (
           dash
         ),

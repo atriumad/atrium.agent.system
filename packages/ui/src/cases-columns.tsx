@@ -1,7 +1,7 @@
 "use client";
 
 import type { CaseTableRow } from "./api";
-import { SeverityPill, Stars, TopicChips, When } from "./data/cells";
+import { PlaceCell, placeTitle, SeverityPill, Stars, TopicChips, When } from "./data/cells";
 import {
   DUE_COL,
   OPENED_COL,
@@ -32,7 +32,16 @@ export function casesColumns({
       colClassName: SEVERITY_COL,
       header: "Severity",
       nowrap: true,
-      cell: (r) => <SeverityPill severity={r.severity} />,
+      // The row link is this cell, so its name says more than the severity word.
+      cell: (r) => (
+        <>
+          <SeverityPill severity={r.severity} />
+          <span className="sr-only">
+            , case at {r.locationName}, opened{" "}
+            {new Date(r.openedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        </>
+      ),
       sortValue: (r) => SEVERITY_RANK[r.severity],
     },
     {
@@ -48,7 +57,9 @@ export function casesColumns({
       colClassName: PLACE_COL,
       header: "Place",
       truncate: true,
-      cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
+      titleOf: (r) => (showClient ? placeTitle(r.locationName, r.clientName) : r.locationName),
+      cell: (r) =>
+        showClient ? <PlaceCell place={r.locationName} client={r.clientName} /> : r.locationName,
       sortValue: (r) => r.locationName,
     },
     {
@@ -81,7 +92,7 @@ export function casesColumns({
             <StatusBadge status="danger" className="max-w-full shrink-0">
               Overdue
             </StatusBadge>
-            <span className="min-w-0 truncate text-xs text-fg-muted">
+            <span className="min-w-0 truncate text-xs text-fg-muted max-xl:hidden">
               {due.text.replace("Overdue ", "")}
             </span>
           </span>

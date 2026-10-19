@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ElementType, useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "./actions/button";
 import { api, type CasesBand, type CasesTable, type CaseTableRow, type RangeKey } from "./api";
 import { caseHref, redirectLegacyCase } from "./case-links";
@@ -65,8 +65,11 @@ function asTab(value: string | undefined): Tab {
 export function CasesTablePage({
   surface,
   replace,
+  linkAs,
 }: {
   surface: Surface;
+  /** Render the row links with your router's Link: `linkAs={NextLink}`. A plain anchor by default. */
+  linkAs?: ElementType;
   /** Where an old `?case=` address goes. The browser's location by default. */
   replace?: (url: string) => void;
 }) {
@@ -327,6 +330,7 @@ export function CasesTablePage({
           rows={rows}
           rowKey={(r) => r.id}
           rowHref={(r) => caseHref(surface, r.id, backSearch)}
+          {...(linkAs ? { linkAs } : {})}
           sort={sort}
           onSortChange={table.setSort}
           page={state.page}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { type ElementType, useRef } from "react";
 import { Button } from "./actions/button";
 import type { ResponseTableRow } from "./api";
 import { caseHref } from "./case-links";
@@ -28,7 +28,9 @@ export function ResponseDrawer({
   canAskForHelp,
   backSearch,
   now,
+  linkAs: LinkAs = "a",
 }: {
+  linkAs?: ElementType;
   row: ResponseTableRow | null;
   onClose: () => void;
   surface: Surface;
@@ -91,7 +93,7 @@ export function ResponseDrawer({
               <Button
                 size="sm"
                 nativeButton={false}
-                render={<a href={caseHref(surface, r.caseId, backSearch)} />}
+                render={<LinkAs href={caseHref(surface, r.caseId, backSearch)} />}
               >
                 Open case
               </Button>

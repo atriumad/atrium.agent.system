@@ -48,10 +48,15 @@ const page = (
   surface: "manager" | "platform" = "manager",
   me = amMe,
   replace?: (u: string) => void,
+  linkAs?: React.ElementType,
 ) =>
   setup(
     <MeProvider me={me}>
-      <CasesTablePage surface={surface} {...(replace ? { replace } : {})} />
+      <CasesTablePage
+        surface={surface}
+        {...(replace ? { replace } : {})}
+        {...(linkAs ? { linkAs } : {})}
+      />
     </MeProvider>,
   );
 
@@ -116,6 +121,66 @@ describe("cases table page", () => {
         `/reputation/cases/k3?back=${encodeURIComponent("?tab=all")}`,
       );
     });
+  });
+
+  test("the row link is named by severity, place and opening date, not by the severity word alone", async () => {
+    fakeFetch(routes());
+    page();
+    await screen.findByText(/A tool was dropped/);
+    const links = screen.getAllByRole("link", {
+      name: /^High ?, case at Harbor Dental Downtown, opened [A-Z][a-z]{2} \d+$/,
+    });
+    expect(links.some((l) => l.getAttribute("href")?.includes("/reputation/cases/k1"))).toBe(true);
+  });
+
+  test("the row link uses the router's link when one is given", async () => {
+    fakeFetch(routes());
+    const Spy = ({ href, ...rest }: React.ComponentProps<"a">) => (
+      <a href={href} data-spy="" {...rest} />
+    );
+    page("manager", amMe, undefined, Spy);
+    await screen.findByText(/A tool was dropped/);
+    const link = document.querySelector("a[data-row-link]") as HTMLAnchorElement;
+    expect(link.hasAttribute("data-spy")).toBe(true);
+  });
+
+  test("an overdue row hides the relative text below xl but keeps it in the cell title", async () => {
+    const overdue = {
+      ...casesTableFixture,
+      cases: [{ ...casesTableFixture.cases[0], dueAt: "2026-10-17T00:00:00.000Z" }],
+    } as typeof casesTableFixture;
+    fakeFetch(routes(overdue));
+    page();
+    const text = await screen.findByText(/^by /);
+    expect(text.className).toContain("max-xl:hidden");
+    expect(text.closest("td")?.getAttribute("title")).toMatch(/^Overdue by /);
+  });
+
+  test("the agency sees the place first in bold and the client after it, muted", async () => {
+    fakeFetch(routes());
+    page();
+    await screen.findByText(/A tool was dropped/);
+    const cell = screen.getAllByTitle("Harbor Dental Downtown · Harbor Dental")[0] as HTMLElement;
+    const [place, client] = Array.from(
+      (cell.firstElementChild as HTMLElement).children,
+    ) as HTMLElement[];
+    expect(place?.textContent).toBe("Harbor Dental Downtown");
+    expect(place?.className).toContain("font-medium");
+    expect(place?.className).toContain("truncate");
+    expect(client?.textContent).toBe("Harbor Dental");
+    expect(client?.className).toContain("text-fg-muted");
+    expect(client?.className).toContain("truncate");
+  });
+
+  test("a small resolved count says too few cases, not answers", async () => {
+    const small = {
+      ...casesBandFixture,
+      resolved: { value: 3, change: null, small: true },
+    };
+    fakeFetch(routes(casesTableFixture, small));
+    page();
+    const band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("Too few cases (3)"));
   });
 
   test("platform rows link to the feedback route and hide the client name", async () => {

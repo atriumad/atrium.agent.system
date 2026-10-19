@@ -17,6 +17,8 @@ export type KpiTileProps = {
   sparkLabel?: string;
   href?: string;
   state: KpiState;
+  /** What the "too few" note counts: "answers" by default, "cases" for a count of cases. */
+  tooFewLabel?: string;
   /** `lime` washes the tile; use it on one tile per view. */
   tone?: "default" | "lime";
   /** `sans` is for durations such as `11h 43m`, where the serif 1 reads as an l. */
@@ -55,6 +57,7 @@ export function KpiTile({
   sparkLabel,
   href,
   state,
+  tooFewLabel = "answers",
   tone = "default",
   figureFont = "serif",
   className,
@@ -86,7 +89,9 @@ export function KpiTile({
         </span>
         {ok && spark ? <Sparkline values={spark} label={sparkLabel ?? `${label} trend`} /> : null}
         {typeof state === "object" ? (
-          <span className="text-xs text-fg-muted">Too few answers ({state.tooFew})</span>
+          <span className="text-xs text-fg-muted">
+            Too few {tooFewLabel} ({state.tooFew})
+          </span>
         ) : state === "none" ? (
           <span className="text-xs text-fg-muted">No data yet</span>
         ) : null}

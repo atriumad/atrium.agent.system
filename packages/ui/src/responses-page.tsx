@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ElementType, useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "./actions/button";
 import {
   api,
@@ -65,7 +65,7 @@ const COUNT_OF = {
 } as const;
 
 /** The Responses section: a summary band, tabs, filters and a server-paged table, with a drawer for one answer. */
-function ResponsesTablePage() {
+function ResponsesTablePage({ linkAs }: { linkAs?: ElementType }) {
   const me = useMe();
   const surface = me.kind === "client" ? "platform" : "manager";
   const showClient = me.kind !== "client";
@@ -203,7 +203,13 @@ function ResponsesTablePage() {
     });
   const setFilter = (name: string) => (value: string | null) => table.setFilter(name, value);
   const sort: Sort = { key: sortKey, dir: sortDir };
-  const columns = responsesColumns({ surface, showClient, now, backSearch });
+  const columns = responsesColumns({
+    surface,
+    showClient,
+    now,
+    backSearch,
+    ...(linkAs ? { linkAs } : {}),
+  });
   const unread = data?.unread ?? 0;
 
   const note = (
@@ -346,6 +352,7 @@ function ResponsesTablePage() {
         canAskForHelp={me.canRequestSurveys}
         backSearch={backSearch}
         now={now}
+        {...(linkAs ? { linkAs } : {})}
       />
     </DataSectionPage>
   );
@@ -372,7 +379,11 @@ function RowButton({
   );
 }
 
-export function ResponsesPage() {
+export function ResponsesPage({ linkAs }: { linkAs?: ElementType } = {}) {
   const me = useMe();
-  return me.canReadSurveys ? <ResponsesTablePage /> : <NotAvailable />;
+  return me.canReadSurveys ? (
+    <ResponsesTablePage {...(linkAs ? { linkAs } : {})} />
+  ) : (
+    <NotAvailable />
+  );
 }

@@ -68,7 +68,7 @@ describe("pages carry no navigation chrome of their own", () => {
       "/api/insights/cases?range=30d": casesBandFixture,
     });
     inside(amMe, <CasesPage surface="manager" />);
-    expect(await screen.findByText(/Bellaire a/)).toBeTruthy();
+    expect((await screen.findAllByText(/Bellaire a/)).length).toBeGreaterThan(0);
     expect(screen.queryByRole("navigation", { name: "Sections" })).toBeNull();
     expect(screen.queryByText("Sign out")).toBeNull();
   });

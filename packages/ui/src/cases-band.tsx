@@ -81,6 +81,7 @@ export function CasesBandView({
           label="Resolved"
           value={band.resolved.value}
           state={band.resolved.small ? { tooFew: band.resolved.value } : "ok"}
+          tooFewLabel="cases"
           {...(band.resolved.change !== null ? { delta: band.resolved.change } : {})}
         />
       </>

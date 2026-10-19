@@ -47,10 +47,10 @@ const base = (extra: Record<string, Body | (() => Body)> = {}) => ({
   [BAND]: responsesBandFixture,
   ...extra,
 });
-const page = (me = amMe) =>
+const page = (me = amMe, linkAs?: React.ElementType) =>
   setup(
     <MeProvider me={me}>
-      <ResponsesPage />
+      <ResponsesPage {...(linkAs ? { linkAs } : {})} />
     </MeProvider>,
   );
 const many = (n: number, pageNo: number, total = 107) => ({
@@ -195,7 +195,15 @@ describe("responses page: the table", () => {
     serve(base());
     const first = page(amMe);
     await screen.findByText(/The room was cold/);
-    expect(screen.getAllByText("Harbor Dental · Harbor Dental Downtown").length).toBeGreaterThan(0);
+    // The place first (bold), the client after it (muted), so a narrow column keeps the place.
+    const cell = screen.getAllByTitle("Harbor Dental Downtown · Harbor Dental")[0] as HTMLElement;
+    const [place, client] = Array.from(
+      (cell.firstElementChild as HTMLElement).children,
+    ) as HTMLElement[];
+    expect(place?.textContent).toBe("Harbor Dental Downtown");
+    expect(place?.className).toContain("font-medium");
+    expect(client?.textContent).toBe("Harbor Dental");
+    expect(client?.className).toContain("text-fg-muted");
     const link = screen.getAllByRole("link", { name: "View case" })[0] as HTMLAnchorElement;
     expect(link.getAttribute("href")?.startsWith("/reputation/cases/k1")).toBe(true);
     first.unmount();
@@ -205,6 +213,21 @@ describe("responses page: the table", () => {
     expect(screen.queryByText(/Harbor Dental · /)).toBeNull();
     const own = screen.getAllByRole("link", { name: "View case" })[0] as HTMLAnchorElement;
     expect(own.getAttribute("href")?.startsWith("/reputation/feedback/k1")).toBe(true);
+  });
+
+  test("View case and the drawer's Open case use the router's link when one is given", async () => {
+    serve(base());
+    const Spy = ({ href, ...rest }: React.ComponentProps<"a">) => (
+      <a href={href} data-spy="" {...rest} />
+    );
+    const { user } = page(amMe, Spy);
+    await screen.findByText(/The room was cold/);
+    const link = screen.getAllByRole("link", { name: "View case" })[0] as HTMLAnchorElement;
+    expect(link.hasAttribute("data-spy")).toBe(true);
+    await user.click(screen.getByText(/The room was cold/));
+    const dialog = await screen.findByRole("dialog");
+    const open = within(dialog).getByRole("button", { name: "Open case" });
+    expect(open.hasAttribute("data-spy")).toBe(true);
   });
 
   test("a stale response never overwrites a newer one", async () => {
