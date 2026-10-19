@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { cx } from "../lib/cx";
 import { Sparkline } from "./charts";
 import { Delta } from "./delta";
@@ -26,21 +26,31 @@ export type KpiTileProps = {
   className?: string;
 };
 
-/** `11h 43m` as medium sans digits with small muted units. Anything else is left as it is. */
+const UNIT_WORDS = { h: "hour", m: "minute" } as const;
+
+/**
+ * `11h 43m` as one figure: each unit sits right after its number (same baseline, medium muted
+ * letters), and the two number-and-unit pairs are set apart. Read aloud as "11 hours 43 minutes".
+ * Anything that is not a duration is left as it is.
+ */
 function Duration({ text }: { text: string }) {
-  const parts = text.split(/(\d+)([hm])/).filter(Boolean);
+  const pairs = [...text.matchAll(/(\d+)([hm])/g)];
+  if (pairs.length === 0) return <>{text}</>;
+  const spoken = pairs
+    .map(([, n, u]) => `${n} ${UNIT_WORDS[u as "h" | "m"]}${n === "1" ? "" : "s"}`)
+    .join(" ");
   return (
-    <>
-      {parts.map((part, i) =>
-        part === "h" || part === "m" ? (
-          <span key={i} className="text-lg text-fg-muted">
-            {part}
+    <span role="img" aria-label={spoken} className="inline-flex items-baseline gap-x-3">
+      {pairs.map(([, n, u], i) => (
+        <Fragment key={u}>
+          {i > 0 ? " " : null}
+          <span aria-hidden="true" className="inline-flex items-baseline gap-x-0.5">
+            {n}
+            <span className="text-2xl font-medium text-fg-muted">{u}</span>
           </span>
-        ) : (
-          part
-        ),
-      )}
-    </>
+        </Fragment>
+      ))}
+    </span>
   );
 }
 

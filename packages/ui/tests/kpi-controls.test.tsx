@@ -154,7 +154,44 @@ describe("KpiTile", () => {
     expect(fig).toBeTruthy();
     expect(fig.textContent).toBe("11h 43m");
     expect(fig.className).not.toContain("font-serif");
-    expect([...fig.querySelectorAll("span")].map((e) => e.textContent)).toEqual(["h", "m"]);
+  });
+
+  test("a duration keeps each unit attached to its number, with a wider gap between the pairs", () => {
+    const { container } = setup(<KpiTile label="T" value="11h 43m" state="ok" figureFont="sans" />);
+    const fig = container.querySelector("span.font-sans.font-medium") as HTMLElement;
+    const group = fig.querySelector('[role="img"]') as HTMLElement;
+    expect(group.className).toContain("gap-x-3");
+    const pairs = [...group.children] as HTMLElement[];
+    expect(pairs.map((p) => p.textContent)).toEqual(["11h", "43m"]);
+    for (const p of pairs) {
+      expect(p.className).toContain("gap-x-0.5");
+      expect(p.className).toContain("items-baseline");
+      const unit = p.querySelector("span") as HTMLElement;
+      expect(unit.className).toContain("text-2xl");
+      expect(unit.className).toContain("font-medium");
+      expect(unit.className).toContain("text-fg-muted");
+    }
+  });
+
+  test("a duration is read aloud in hours and minutes", () => {
+    setup(<KpiTile label="T" value="11h 43m" state="ok" figureFont="sans" />);
+    expect(screen.getByRole("img", { name: "11 hours 43 minutes" })).toBeTruthy();
+  });
+
+  test("edge durations: minutes only, whole hours, and a dash", () => {
+    const { container, unmount } = setup(
+      <KpiTile label="T" value="30m" state="ok" figureFont="sans" />,
+    );
+    expect(container.querySelector("span.font-sans")?.textContent).toBe("30m");
+    expect(screen.getByRole("img", { name: "30 minutes" })).toBeTruthy();
+    unmount();
+    const two = setup(<KpiTile label="T" value="2h" state="ok" figureFont="sans" />);
+    expect(two.container.querySelector("span.font-sans")?.textContent).toBe("2h");
+    expect(screen.getByRole("img", { name: "2 hours" })).toBeTruthy();
+    two.unmount();
+    const none = setup(<KpiTile label="T" value="—" state="none" figureFont="sans" />);
+    expect(none.container.querySelector("span.font-sans")?.textContent).toBe("—");
+    expect(screen.queryByRole("img")).toBeNull();
   });
 
   test("the default figure is serif", () => {
