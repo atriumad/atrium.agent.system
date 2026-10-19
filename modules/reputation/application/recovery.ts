@@ -10,7 +10,7 @@ import {
   type Tx,
   writeAudit,
 } from "@atrium/core";
-import { and, desc, eq, ne, type SQL } from "drizzle-orm";
+import { and, desc, eq, ne, type SQL, sql } from "drizzle-orm";
 import { type CaseStatus, canTransition, caseDueAt, type Severity } from "../domain/recovery";
 import { escalatedSeverity, shouldOpenWithReading, storedReading } from "../domain/sentiment";
 import { recoveryCases, surveyResponses } from "../infra/schema";
@@ -331,7 +331,7 @@ export type CaseSummary = {
 };
 
 /**
- * The shared read of cases with the answer each came from, newest first, with names from Core.
+ * The shared read of cases with the answer each came from, unresolved first and then newest first, with names from Core.
  * One place for the join: the list and the table both build on it. There is no client filter on
  * purpose: RLS (the passed Tx) decides what each role sees.
  */
@@ -345,7 +345,12 @@ export async function selectCaseRows(
     .from(recoveryCases)
     .innerJoin(surveyResponses, eq(surveyResponses.id, recoveryCases.responseId))
     .where(filter)
-    .orderBy(desc(recoveryCases.openedAt), desc(recoveryCases.id))
+    // Unresolved cases first, so a cap on `limit` only ever cuts old resolved ones.
+    .orderBy(
+      sql`case when ${recoveryCases.status} in ('open', 'contacted') then 0 else 1 end`,
+      desc(recoveryCases.openedAt),
+      desc(recoveryCases.id),
+    )
     .limit(limit);
   const labels = await describeLocations(
     tx,
@@ -370,19 +375,6 @@ export async function selectCaseRows(
       },
     };
   });
-}
-
-/**
- * The cases the scope can see, most urgent first: unresolved by due date, then the resolved ones
- * newest first.
- */
-export async function listCaseSummaries(tx: Tx, status?: CaseStatus): Promise<CaseSummary[]> {
-  const rows = await selectCaseRows(tx, status ? eq(recoveryCases.status, status) : undefined, 200);
-  const summaries = rows.map(({ summary }) => summary);
-  const open = summaries
-    .filter((s) => s.status !== "resolved")
-    .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
-  return [...open, ...summaries.filter((s) => s.status === "resolved")];
 }
 
 export type CaseDetail = CaseSummary & {

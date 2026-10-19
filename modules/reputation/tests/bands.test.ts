@@ -10,7 +10,7 @@ import {
 import { SQL } from "bun";
 import { sql } from "drizzle-orm";
 import { migrate } from "../../../scripts/migrate";
-import { casesBand, responsesBand } from "../index";
+import { casesBand, listCasesTable, responsesBand } from "../index";
 
 const ADMIN_URL =
   process.env.DATABASE_ADMIN_URL ?? "postgres://atrium:atrium@localhost:5432/atrium";
@@ -202,6 +202,10 @@ describe("casesBand", () => {
     await theCase(f, ago(1));
     await theCase(f, ago(0, 2));
     const b = await cases(f);
+    const table = await withTenant(db, f.clientId, (tx) =>
+      listCasesTable(tx, { range: "30d", now: NOW }),
+    );
+    expect(b.open).toBe(table.counts.active);
     expect(b.open).toBe(3);
     expect(b.overdue.value).toBe(1);
   });
@@ -215,6 +219,10 @@ describe("casesBand", () => {
     expect(b.open).toBe(2);
     expect(b.overdue.value).toBe(1);
     expect(b.resolved.value).toBe(1);
+    const table = await withTenant(db, f.clientId, (tx) =>
+      listCasesTable(tx, { range: "30d", now: NOW }),
+    );
+    expect(b.open).toBe(table.counts.active);
   });
 
   test("openedPerDay has one entry per day of the range; bySeverity sums to the window", async () => {

@@ -162,6 +162,25 @@ describe("listCasesTable", () => {
     expect(times).toEqual([...times].sort((a, b) => b - a));
   });
 
+  test("the cap cuts old resolved cases, never an old active one", async () => {
+    const f = await fresh();
+    await admin.unsafe(
+      `with r as (
+         insert into reputation.survey_responses (id, client_id, location_id, rating, created_at)
+         select gen_random_uuid(), $1::uuid, $2::uuid, 1, $3::timestamptz - (g || ' minutes')::interval
+         from generate_series(1, 201) g returning id, created_at)
+       insert into reputation.recovery_cases (client_id, location_id, response_id, severity, status, opened_at, due_at, resolved_at)
+       select $1::uuid, $2::uuid, id, 'high', 'resolved', created_at, created_at + interval '1 day', created_at from r`,
+      [f.clientId, f.place, ago(1)],
+    );
+    const oldOpen = await caseOf(f, ago(25), "open");
+    const t = await run(f);
+    expect(t.truncated).toBe(true);
+    expect(t.cases).toHaveLength(200);
+    expect(t.cases.map((c) => c.id)).toContain(oldOpen);
+    expect(t.cases[0]?.id).toBe(oldOpen);
+  });
+
   test("exactly 200 is not truncated", async () => {
     const f = await fresh();
     await admin.unsafe(
