@@ -390,7 +390,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   me: () => call<Me>("/api/me"),
   cases: () => call<{ cases: CaseSummary[] }>("/api/cases").then((r) => r.cases),
-  casesTable: (range: RangeKey) => call<CasesTable>(`/api/cases?${new URLSearchParams({ range })}`),
+  casesTable: (range: RangeKey, place?: string) =>
+    call<CasesTable>(`/api/cases?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`),
   casesBand: (range: RangeKey, place?: string) =>
     call<CasesBand>(
       `/api/insights/cases?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,

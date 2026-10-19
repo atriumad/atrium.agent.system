@@ -95,6 +95,51 @@ afterAll(async () => {
   await close();
 });
 
+describe("listCasesTable by place", () => {
+  async function secondPlace(f: Fresh) {
+    return withAgency(
+      db,
+      async (tx) =>
+        (await createLocation(tx, f.clientId, { name: "Dallas", timeZone: "America/Chicago" })).id,
+    );
+  }
+  const bulk = (f: Fresh, place: string, n: number) =>
+    admin.unsafe(
+      `with r as (
+         insert into reputation.survey_responses (id, client_id, location_id, rating, created_at)
+         select gen_random_uuid(), $1::uuid, $2::uuid, 1, $3::timestamptz - (g || ' minutes')::interval
+         from generate_series(1, $4::int) g returning id, created_at)
+       insert into reputation.recovery_cases (client_id, location_id, response_id, severity, status, opened_at, due_at)
+       select $1::uuid, $2::uuid, id, 'high', 'open', created_at, created_at + interval '1 day' from r`,
+      [f.clientId, place, ago(1), n],
+    );
+
+  test("a place narrows rows and counts together", async () => {
+    const f = await fresh();
+    const b = await secondPlace(f);
+    const inA = await caseOf(f, ago(1), "open");
+    await caseOf({ ...f, place: b }, ago(1), "resolved");
+    const t = await withTenant(db, f.clientId, (tx) =>
+      listCasesTable(tx, { range: "30d", now: NOW, locationId: f.place }),
+    );
+    expect(t.cases.map((c) => c.id)).toEqual([inA]);
+    expect(t.counts).toEqual({ active: 1, open: 1, contacted: 0, resolved: 0, all: 1 });
+  });
+
+  test("the 200 cap applies per place", async () => {
+    const f = await fresh();
+    const b = await secondPlace(f);
+    await bulk(f, f.place, 205);
+    await bulk(f, b, 3);
+    const t = await withTenant(db, f.clientId, (tx) =>
+      listCasesTable(tx, { range: "30d", now: NOW, locationId: b }),
+    );
+    expect(t.cases).toHaveLength(3);
+    expect(t.truncated).toBe(false);
+    expect(t.counts.all).toBe(3);
+  });
+});
+
 describe("listCasesTable", () => {
   test("205 open cases: 200 rows, truncated, counts over all 205", async () => {
     const f = await fresh();

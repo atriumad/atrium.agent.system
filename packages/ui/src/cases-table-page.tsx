@@ -3,16 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "./actions/button";
 import { api, type CasesBand, type CasesTable, type CaseTableRow, type RangeKey } from "./api";
-import { caseHref, redirectLegacyCase } from "./case-detail-page";
+import { caseHref, redirectLegacyCase } from "./case-links";
 import type { Surface } from "./cases-app";
-import { SeverityPill, Stars, TopicChips, When } from "./data/cells";
-import { DailyBars } from "./data/daily-bars";
-import { type Column, DataTable, type Sort } from "./data/data-table";
+import { CasesBandView } from "./cases-band";
+import { casesColumns } from "./cases-columns";
+import { DataTable, type Sort } from "./data/data-table";
 import { FilterBar } from "./data/filter-bar";
-import { KpiTile } from "./data/kpi-tile";
 import { Skeleton } from "./data/misc";
 import { PageControls } from "./data/page-controls";
-import { DataSectionPage, SectionBand } from "./data/section-page";
+import { DataSectionPage } from "./data/section-page";
 import { humaniseTopic } from "./data/split-bars";
 import {
   applyTableState,
@@ -24,7 +23,7 @@ import { useRangeState } from "./data/use-range-state";
 import { useTableState } from "./data/use-table-state";
 import { StatusBadge } from "./feedback/badge";
 import { EmptyState, ErrorState } from "./feedback/states";
-import { dueLabel, duration, inTab, STATUS_LABEL, TABS, type Tab } from "./format";
+import { inTab, TABS, type Tab } from "./format";
 import { Tabs } from "./navigation/tabs";
 import { useMe } from "./shell/me-context";
 
@@ -46,9 +45,7 @@ const COPY: Record<Surface, { title: string; blurb: string }> = {
   },
 };
 
-const DAYS: Record<RangeKey, number> = { "7d": 7, "30d": 30, "90d": 90 };
 const TOPICS = ["food", "service", "wait", "cleanliness", "price", "atmosphere", "staff", "other"];
-const SEVERITY_RANK = { high: 0, medium: 1, low: 2 } as const;
 const SORT_WORDS: Record<string, string> = {
   severity: "severity",
   rating: "rating",
@@ -58,125 +55,9 @@ const SORT_WORDS: Record<string, string> = {
   opened: "opened date",
   status: "status",
 };
-const pct = (v: number) => Math.round(v * 100);
-const hoursText = (h: number) => duration(h * 3_600_000);
 
 function asTab(value: string | undefined): Tab {
   return TABS.find((t) => t === value) ?? "active";
-}
-
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex min-w-0 flex-col gap-2 rounded-card border border-frame bg-surface-card p-4">
-      <h2 className="label-caps m-0 text-fg-muted">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function Band({
-  band,
-  state,
-  onRetry,
-  range,
-}: {
-  band: CasesBand | null;
-  state: "loading" | "error" | "ok";
-  onRetry: () => void;
-  range: RangeKey;
-}) {
-  const days = DAYS[range];
-  let tiles: React.ReactNode = null;
-  let aside: React.ReactNode = null;
-  if (band) {
-    const c = band.contact;
-    const parts = [
-      "Target 24h",
-      c.insideTarget !== null ? `${pct(c.insideTarget)}% inside target` : null,
-      c.change !== null && Math.round(Math.abs(c.change) * 10) > 0
-        ? `${Math.round(Math.abs(c.change) * 10) / 10}h ${c.change < 0 ? "faster" : "slower"} than before`
-        : null,
-    ].filter(Boolean);
-    const severities = (["high", "medium", "low"] as const)
-      .map((s) => ({ s, n: band.bySeverity[s] }))
-      .sort((a, b) => b.n - a.n);
-    const top = Math.max(...severities.map((r) => r.n), 1);
-    tiles = (
-      <>
-        <KpiTile
-          label="Active"
-          value={band.open}
-          state="ok"
-          note={`${band.overdue.value} overdue`}
-          tone="lime"
-        />
-        <KpiTile
-          label="Overdue"
-          value={band.overdue.value}
-          state="ok"
-          goodWhen="down"
-          note={`Was ${band.overdue.previous} in the previous ${days} days`}
-        />
-        <KpiTile
-          label="Median time to contact"
-          value={c.medianHours === null ? "—" : hoursText(c.medianHours)}
-          figureFont="sans"
-          state={
-            c.medianHours === null
-              ? c.cases === 0
-                ? "none"
-                : "none"
-              : c.small
-                ? { tooFew: c.cases }
-                : "ok"
-          }
-          note={parts.join(" · ")}
-        />
-        <KpiTile
-          label="Resolved"
-          value={band.resolved.value}
-          state={band.resolved.small ? { tooFew: band.resolved.value } : "ok"}
-          {...(band.resolved.change !== null ? { delta: band.resolved.change } : {})}
-        />
-      </>
-    );
-    aside = (
-      <>
-        <Block title="Opened per day">
-          <DailyBars days={band.openedPerDay} label="Cases opened per day" />
-        </Block>
-        <Block title="By severity">
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {severities.map(({ s, n }) => (
-              <li key={s} className="flex flex-col gap-1">
-                <span className="flex items-baseline justify-between text-sm">
-                  <span className="font-medium text-fg-strong">
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </span>
-                  <span className="tabular-nums text-fg-muted">{n}</span>
-                </span>
-                <span className="h-2 w-full rounded-sm border border-frame">
-                  <span
-                    className="block h-full bg-charcoal-800 dark:bg-cream-300"
-                    style={{ width: `${(n / top) * 100}%` }}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Block>
-      </>
-    );
-  }
-  return (
-    <SectionBand
-      state={state}
-      onRetry={onRetry}
-      title="Cases summary"
-      tiles={tiles}
-      aside={aside}
-    />
-  );
 }
 
 /** The Cases section: a summary band on top, then tabs, filters and a dense table. */
@@ -189,9 +70,22 @@ export function CasesTablePage({
   replace?: (url: string) => void;
 }) {
   const me = useMe();
-  const { range, scopeId, setRange, setScopeId } = useRangeState({ scope: "place" });
+  const range$ = useRangeState({ scope: "place" });
+  const { range, scopeId } = range$;
   const table = useTableState(SPEC);
   const { state } = table;
+  // A new range or place starts at page 1, in the address too.
+  const toFirstPage = () => {
+    if (state.page > 1) table.setPage(1);
+  };
+  const setRange = (r: RangeKey) => {
+    range$.setRange(r);
+    toFirstPage();
+  };
+  const setScopeId = (id: string | null) => {
+    range$.setScopeId(id);
+    toFirstPage();
+  };
 
   const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
   const [data, setData] = useState<CasesTable | null>(null);
@@ -226,7 +120,7 @@ export function CasesTablePage({
     let current = true;
     const load = () =>
       api
-        .casesTable(range)
+        .casesTable(range, scopeId ?? undefined)
         .then((d) => {
           if (!current) return;
           setData(d);
@@ -244,7 +138,7 @@ export function CasesTablePage({
       current = false;
       clearInterval(timer);
     };
-  }, [range, tableTries]);
+  }, [range, scopeId, tableTries]);
 
   // The band: its own request and its own error, so a failure here never hides the table.
   useEffect(() => {
@@ -282,10 +176,9 @@ export function CasesTablePage({
 
   const inTabRows = useMemo(
     () =>
-      (data?.cases ?? []).filter(
-        (r) => inTab(r.status, tab) && (!scopeId || r.locationId === scopeId),
-      ),
-    [data, tab, scopeId],
+      // The server has already narrowed the rows to the chosen place.
+      (data?.cases ?? []).filter((r) => inTab(r.status, tab)),
+    [data, tab],
   );
   const rows = useMemo(
     () => applyTableState(inTabRows, state, rowSpec),
@@ -311,83 +204,7 @@ export function CasesTablePage({
   };
   const setFilter = (key: string) => (value: string | null) => table.setFilter(key, value);
 
-  const columns: Column<CaseTableRow>[] = [
-    {
-      key: "severity",
-      header: "Severity",
-      nowrap: true,
-      cell: (r) => <SeverityPill severity={r.severity} />,
-      sortValue: (r) => SEVERITY_RANK[r.severity],
-    },
-    {
-      key: "rating",
-      header: "Rating",
-      nowrap: true,
-      cell: (r) => <Stars rating={r.rating} />,
-      sortValue: (r) => r.rating,
-    },
-    {
-      key: "place",
-      header: "Place",
-      nowrap: true,
-      cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
-      sortValue: (r) => r.locationName,
-    },
-    {
-      key: "comment",
-      header: "What the guest said",
-      truncate: true,
-      titleOf: (r) => r.comment ?? "",
-      cell: (r) => r.comment ?? <span className="text-fg-muted">—</span>,
-    },
-    {
-      key: "topics",
-      header: "Topics",
-      nowrap: true,
-      cell: (r) => <TopicChips topics={r.topics} />,
-    },
-    {
-      key: "due",
-      header: "Due",
-      nowrap: true,
-      cell: (r) => {
-        const due = dueLabel(r.status, r.dueAt, now);
-        if (!due) return <span className="text-fg-muted">—</span>;
-        return due.tone === "overdue" ? (
-          <span className="inline-flex items-center gap-1.5">
-            <StatusBadge status="danger">Overdue</StatusBadge>
-            <span className="text-xs text-fg-muted">{due.text.replace("Overdue ", "")}</span>
-          </span>
-        ) : (
-          due.text
-        );
-      },
-      sortValue: (r) =>
-        r.status === "open" ? new Date(r.dueAt).getTime() : Number.MAX_SAFE_INTEGER,
-    },
-    {
-      key: "opened",
-      header: "Opened",
-      nowrap: true,
-      cell: (r) => <When date={r.openedAt} now={now} />,
-      sortValue: (r) => new Date(r.openedAt).getTime(),
-    },
-    {
-      key: "status",
-      header: "Status",
-      nowrap: true,
-      cell: (r) => (
-        <StatusBadge
-          status={
-            r.status === "resolved" ? "positive" : r.status === "open" ? "warning" : "neutral"
-          }
-        >
-          {STATUS_LABEL[r.status] ?? r.status}
-        </StatusBadge>
-      ),
-      sortValue: (r) => r.status,
-    },
-  ];
+  const columns = casesColumns({ showClient, now });
 
   const sortWord = SORT_WORDS[state.sort?.key ?? "due"] ?? "due time";
   const note = (
@@ -434,7 +251,7 @@ export function CasesTablePage({
         />
       }
       band={
-        <Band
+        <CasesBandView
           band={band}
           state={bandState}
           onRetry={() => setBandTries((t) => t + 1)}
@@ -473,6 +290,7 @@ export function CasesTablePage({
             value: state.filters.severity ?? null,
             onChange: setFilter("severity"),
           },
+          // The same state as the Place control in the page header: both edit the place in the address.
           {
             key: "place",
             label: "Place",

@@ -72,6 +72,11 @@ describe("table pages client", () => {
     await api.casesTable("7d");
     expect(url()).toBe("/api/cases?range=7d");
   });
+  test("casesTable with a place", async () => {
+    const url = stub(casesTableFixture);
+    await api.casesTable("7d", "p1");
+    expect(url()).toBe("/api/cases?range=7d&place=p1");
+  });
   test("cases still returns the list", async () => {
     stub(casesTableFixture);
     expect(await api.cases()).toEqual(casesTableFixture.cases);

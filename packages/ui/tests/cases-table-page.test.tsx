@@ -30,10 +30,17 @@ const places = {
     },
   ],
 };
+const placeTable = {
+  cases: casesTableFixture.cases.slice(0, 1),
+  counts: { active: 1, open: 1, contacted: 0, resolved: 4, all: 5 },
+  truncated: false,
+};
 const routes = (table = casesTableFixture, band = casesBandFixture) => ({
   "/api/locations": places,
   "/api/cases?range=30d": table,
   "/api/cases?range=7d": table,
+  "/api/cases?range=30d&place=p1": placeTable,
+  "/api/insights/cases?range=30d&place=p1": casesBandFixture,
   "/api/insights/cases?range=30d": band,
   "/api/insights/cases?range=7d": { ...band, range: "7d" },
 });
@@ -194,5 +201,63 @@ describe("cases table page", () => {
     expect(await screen.findByText("Your filters found nothing")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(await screen.findByText(/A tool was dropped/)).toBeTruthy();
+  });
+
+  test("choosing a place refetches with place= and shows that place's counts; Clear filters clears it", async () => {
+    const calls = fakeFetch(routes());
+    const { user } = page();
+    await screen.findByText(/A tool was dropped/);
+    await user.click(screen.getAllByRole("combobox", { name: "Place" })[0] as HTMLElement);
+    await user.click(await screen.findByRole("option", { name: "Harbor Dental Downtown" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.path === "/api/cases?range=30d&place=p1")).toBe(true),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: /Resolved/ }).textContent).toContain("4"),
+    );
+    expect(screen.queryByText(/A tool was dropped/)).toBeNull();
+    await user.click(await screen.findByRole("button", { name: "Clear all" }));
+    await waitFor(() => expect(window.location.search).not.toContain("place="));
+    expect(await screen.findByText(/A tool was dropped/)).toBeTruthy();
+  });
+
+  test("changing the range goes back to page 1", async () => {
+    const many = {
+      ...casesTableFixture,
+      cases: Array.from({ length: 30 }, (_, i) => ({
+        ...casesTableFixture.cases[0],
+        id: `m${i}`,
+      })),
+    };
+    fakeFetch(routes(many as never));
+    window.history.replaceState({}, "", "/?page=2");
+    const { user } = page();
+    await screen.findByText("Page 2 of 2");
+    await user.click(screen.getByRole("radio", { name: "7D" }));
+    await waitFor(() => expect(window.location.search).not.toContain("page="));
+    expect(window.location.search).toContain("range=7d");
+    expect(await screen.findByText("Page 1 of 2")).toBeTruthy();
+  });
+
+  test("a median that is too small to trust says too few, and none says no data", async () => {
+    const small = {
+      ...casesBandFixture,
+      contact: { medianHours: 3, insideTarget: null, cases: 4, change: null, small: true },
+    };
+    fakeFetch(routes(casesTableFixture, small));
+    page();
+    const band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("Too few answers (4)"));
+  });
+
+  test("no median at all says no data yet", async () => {
+    const none = {
+      ...casesBandFixture,
+      contact: { medianHours: null, insideTarget: null, cases: 0, change: null, small: false },
+    };
+    fakeFetch(routes(casesTableFixture, none));
+    page();
+    const band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("No data yet"));
   });
 });

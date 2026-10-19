@@ -85,6 +85,9 @@ async function caseOf(
   );
 }
 
+let placeA = "";
+let placeB = "";
+
 type Body = {
   cases: { clientName: string; status: string; comment: string | null; openedAt: string }[];
   counts: Record<string, number>;
@@ -118,6 +121,8 @@ beforeAll(async () => {
       timeZone: "America/Chicago",
     });
     ids = { a: [a.client.id, locA.id], b: [b.client.id, locB.id] };
+    placeA = locA.id;
+    placeB = locB.id;
   });
   const [ac, al] = ids.a as [string, string];
   const [bc, bl] = ids.b as [string, string];
@@ -186,6 +191,27 @@ describe("GET /api/cases as a table", () => {
     const s = await get("owner-a", "/api/cases?status=bogus");
     expect(s.status).toBe(422);
     expect(await s.json()).toEqual({ error: "invalid_status" });
+  });
+
+  test("?place= narrows rows and counts to the caller's own place", async () => {
+    const body = (await (await get("owner-a", `/api/cases?place=${placeA}`)).json()) as Body;
+    expect(body.cases).toHaveLength(2);
+    expect(body.counts.all).toBe(2);
+  });
+
+  test("another client's place returns empty, never 403", async () => {
+    const res = await get("owner-a", `/api/cases?place=${placeB}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Body;
+    expect(body.cases).toEqual([]);
+    expect(body.counts).toEqual({ active: 0, open: 0, contacted: 0, resolved: 0, all: 0 });
+    expect(body.truncated).toBe(false);
+  });
+
+  test("a place that is not a uuid is 422 invalid_id", async () => {
+    const res = await get("owner-a", "/api/cases?place=nope");
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "invalid_id" });
   });
 
   test("the account manager sees the assigned client's cases", async () => {

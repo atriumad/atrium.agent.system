@@ -31,12 +31,15 @@ export type CasesTable = {
  */
 export async function listCasesTable(
   tx: Tx,
-  input: { range: Range; now: Date; status?: CaseStatus },
+  input: { range: Range; now: Date; status?: CaseStatus; locationId?: string | undefined },
 ): Promise<CasesTable> {
   const from = new Date(input.now.getTime() - RANGE_DAYS[input.range] * DAY_MS);
+  // One where-clause for the rows and the counts. A place narrows both, in SQL, so the 200-row
+  // cap and `truncated` are per place too. A place outside the caller's scope finds nothing (RLS).
   const inWindow = and(
     lte(recoveryCases.openedAt, input.now),
     or(gte(recoveryCases.openedAt, from), inArray(recoveryCases.status, ["open", "contacted"])),
+    input.locationId ? eq(recoveryCases.locationId, input.locationId) : undefined,
   );
 
   // Counts come from every case in the window, not from the rows loaded below.

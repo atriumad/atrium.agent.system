@@ -109,11 +109,14 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
     }
     const range = parseRange(c.req.query("range"));
     if (!range) return c.json({ error: "invalid_range" }, 422);
+    const place = c.req.query("place");
+    if (place !== undefined && !UUID.test(place)) return c.json({ error: "invalid_id" }, 422);
     const now = deps.now?.() ?? new Date();
     const table = await withScope(deps.db, c.get("scope"), (tx) =>
       listCasesTable(tx, {
         range,
         now,
+        ...(place ? { locationId: place } : {}),
         ...(status ? { status: status as (typeof STATUSES)[number] } : {}),
       }),
     );
