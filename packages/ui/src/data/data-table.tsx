@@ -26,6 +26,12 @@ export type Column<Row> = {
   truncate?: boolean;
   /** The full text for the title of a truncated cell. Without it the cell's own text is used. */
   titleOf?: (row: Row) => string;
+  /**
+   * A CSS width for the column (`7rem`, `12%`). When any column has one, the table lays out fixed
+   * from `lg`: the columns share the width and a long cell truncates instead of widening the table.
+   * Below `lg` the layout is automatic and the table scrolls.
+   */
+  width?: string;
   /** A string or number to sort by. Without it the column does not sort. */
   sortValue?: (row: Row) => string | number;
 };
@@ -68,6 +74,8 @@ export type DataTableProps<Row> = {
   /** Dense tables only: said in the footer after the count, e.g. "sorted by date". */
   footerNote?: ReactNode;
   className?: string;
+  /** The narrowest the table gets before it scrolls sideways, e.g. `52rem`. Pairs with column widths. */
+  minWidth?: string;
 };
 
 /** The plain text of a cell, for a title. Anything that is not text or a number has none. */
@@ -106,6 +114,7 @@ export function DataTable<Row>({
   stickyHeader = dense,
   footerNote,
   totalRows,
+  minWidth,
 }: DataTableProps<Row>) {
   const [innerSort, setInnerSort] = useState<Sort | null>(null);
   const sort = sortProp !== undefined ? sortProp : innerSort;
@@ -161,9 +170,23 @@ export function DataTable<Row>({
   if (!loading && rows.length === 0 && empty) return <>{empty}</>;
 
   const stick = Boolean(stickyHeader);
+  const sized = columns.some((c) => c.width);
 
   const table = (
-    <Table aria-label={label} aria-busy={loading || undefined}>
+    <Table
+      aria-label={label}
+      aria-busy={loading || undefined}
+      className={sized ? "lg:table-fixed" : undefined}
+      {...(minWidth ? { style: { minWidth } } : {})}
+    >
+      {sized ? (
+        <colgroup>
+          {selectable ? <col style={{ width: "2.5rem" }} /> : null}
+          {columns.map((c) => (
+            <col key={c.key} {...(c.width ? { style: { width: c.width } } : {})} />
+          ))}
+        </colgroup>
+      ) : null}
       <THead>
         <tr>
           {selectable ? (

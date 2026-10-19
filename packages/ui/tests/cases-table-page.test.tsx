@@ -323,6 +323,16 @@ describe("cases table page", () => {
     expect(band.textContent).not.toContain("No data yet");
   });
 
+  test("the table has column widths, lays out fixed from lg and scrolls under 56rem", async () => {
+    fakeFetch(routes());
+    const { container } = page();
+    await screen.findByText(/A tool was dropped/);
+    const table = screen.getByRole("table", { name: "Cases" });
+    expect(table.className).toContain("lg:table-fixed");
+    expect(table.style.minWidth).toBe("56rem");
+    expect(container.querySelectorAll("colgroup col")).toHaveLength(8);
+  });
+
   test("the band is four tiles in one row and an aside as their siblings", async () => {
     fakeFetch(routes());
     page();
@@ -336,9 +346,11 @@ describe("cases table page", () => {
     expect(tiles.children).toHaveLength(4);
     expect(within(aside).getByText("Opened per day")).toBeTruthy();
     expect(within(aside).getByText("By severity")).toBeTruthy();
-    expect(within(aside).getByRole("img", { name: /Cases opened per day/ }).getAttribute("class")).toContain(
-      "absolute",
-    );
+    expect(
+      within(aside)
+        .getByRole("img", { name: /Cases opened per day/ })
+        .getAttribute("class"),
+    ).toContain("absolute");
     expect(band.outerHTML).not.toContain("overflow-x");
   });
 });

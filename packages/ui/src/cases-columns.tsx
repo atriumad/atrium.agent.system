@@ -19,6 +19,7 @@ export function casesColumns({
   return [
     {
       key: "severity",
+      width: "6.5rem",
       header: "Severity",
       nowrap: true,
       cell: (r) => <SeverityPill severity={r.severity} />,
@@ -26,6 +27,7 @@ export function casesColumns({
     },
     {
       key: "rating",
+      width: "6rem",
       header: "Rating",
       nowrap: true,
       cell: (r) => <Stars rating={r.rating} />,
@@ -33,8 +35,9 @@ export function casesColumns({
     },
     {
       key: "place",
+      width: "12%",
       header: "Place",
-      nowrap: true,
+      truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
       sortValue: (r) => r.locationName,
     },
@@ -47,12 +50,14 @@ export function casesColumns({
     },
     {
       key: "topics",
+      width: "11%",
       header: "Topics",
       nowrap: true,
       cell: (r) => <TopicChips topics={r.topics} />,
     },
     {
       key: "due",
+      width: "8.5rem",
       header: "Due",
       nowrap: true,
       cell: (r) => {
@@ -72,6 +77,7 @@ export function casesColumns({
     },
     {
       key: "opened",
+      width: "7rem",
       header: "Opened",
       nowrap: true,
       cell: (r) => <When date={r.openedAt} now={now} />,
@@ -79,6 +85,7 @@ export function casesColumns({
     },
     {
       key: "status",
+      width: "7.5rem",
       header: "Status",
       nowrap: true,
       cell: (r) => (

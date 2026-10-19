@@ -24,6 +24,7 @@ export function responsesColumns({
   return [
     {
       key: "date",
+      width: "7rem",
       header: "Date",
       nowrap: true,
       cell: (r) => <When date={r.createdAt} now={now} />,
@@ -31,6 +32,7 @@ export function responsesColumns({
     },
     {
       key: "rating",
+      width: "6rem",
       header: "Rating",
       nowrap: true,
       cell: (r) => <Stars rating={r.rating} />,
@@ -38,8 +40,9 @@ export function responsesColumns({
     },
     {
       key: "place",
+      width: "12%",
       header: "Place",
-      nowrap: true,
+      truncate: true,
       cell: (r) => (showClient ? `${r.clientName} · ${r.locationName}` : r.locationName),
       sortValue: (r) => r.locationName,
     },
@@ -52,6 +55,7 @@ export function responsesColumns({
     },
     {
       key: "sentiment",
+      width: "7rem",
       header: "Sentiment",
       nowrap: true,
       cell: (r) => <SentimentPill sentiment={r.sentiment} />,
@@ -59,18 +63,21 @@ export function responsesColumns({
     },
     {
       key: "topics",
+      width: "11%",
       header: "Topics",
       nowrap: true,
       cell: (r) => <TopicChips topics={r.topics} />,
     },
     {
       key: "contact",
+      width: "5.25rem",
       header: "Contact",
       nowrap: true,
       cell: (r) => (r.wantsContact ? "Yes" : dash),
     },
     {
       key: "review",
+      width: "5rem",
       header: "Review",
       nowrap: true,
       cell: (r) =>
@@ -84,6 +91,7 @@ export function responsesColumns({
     },
     {
       key: "case",
+      width: "5.5rem",
       header: "Case",
       nowrap: true,
       cell: (r) =>

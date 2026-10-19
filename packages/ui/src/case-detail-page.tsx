@@ -68,16 +68,16 @@ export function CaseDetailPage({
           }}
         />
       ) : (
-<div className="w-full max-w-4xl">
-        <Detail
-          key={`${id}:${attempt}`}
-          id={id}
-          me={me}
-          now={now}
-          hideClose
-          onLoadError={onLoadError}
-        />
-</div>
+        <div className="w-full max-w-4xl">
+          <Detail
+            key={`${id}:${attempt}`}
+            id={id}
+            me={me}
+            now={now}
+            hideClose
+            onLoadError={onLoadError}
+          />
+        </div>
       )}
     </div>
   );

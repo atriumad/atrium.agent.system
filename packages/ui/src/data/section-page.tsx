@@ -19,8 +19,7 @@ export type SectionBandProps = {
  * two below) and the aside takes the last third, stacked below on narrow screens.
  */
 export function SectionBand({ state, onRetry, title, tiles, aside }: SectionBandProps) {
-  const grid =
-    "grid gap-4 lg:min-h-[clamp(14rem,30vh,20rem)] xl:grid-cols-3 xl:items-stretch";
+  const grid = "grid gap-4 lg:min-h-[clamp(14rem,30vh,20rem)] xl:grid-cols-3 xl:items-stretch";
   return (
     <section aria-label={title} className={state === "ok" ? grid : "flex flex-col gap-4"}>
       {state === "loading" ? (

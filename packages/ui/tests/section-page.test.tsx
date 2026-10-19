@@ -91,14 +91,7 @@ describe("SectionBand", () => {
     );
   });
   test("tiles are one row of four from xl, with the aside as their sibling at a third", () => {
-    setup(
-      <SectionBand
-        {...base}
-        state="ok"
-        tiles={<p>tiles here</p>}
-        aside={<p>aside here</p>}
-      />,
-    );
+    setup(<SectionBand {...base} state="ok" tiles={<p>tiles here</p>} aside={<p>aside here</p>} />);
     const band = screen.getByRole("region", { name: "Summary" });
     const tiles = screen.getByText("tiles here").parentElement as HTMLElement;
     const aside = screen.getByText("aside here").parentElement as HTMLElement;

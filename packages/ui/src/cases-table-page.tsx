@@ -322,6 +322,7 @@ export function CasesTablePage({
         <DataTable
           dense
           label="Cases"
+          minWidth="56rem"
           columns={columns}
           rows={rows}
           rowKey={(r) => r.id}
