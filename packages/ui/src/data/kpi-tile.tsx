@@ -21,16 +21,15 @@ export type KpiTileProps = {
   tooFewLabel?: string;
   /** `lime` washes the tile; use it on one tile per view. */
   tone?: "default" | "lime";
-  /** `sans` is for durations such as `11h 43m`, where the serif 1 reads as an l. */
-  figureFont?: "serif" | "sans";
   className?: string;
 };
 
+const DURATION = /^(\d+h)?( ?\d+m)?$/;
 const UNIT_WORDS = { h: "hour", m: "minute" } as const;
 
 /**
- * `11h 43m` as one figure: each unit sits right after its number (same baseline, medium muted
- * letters), and the two number-and-unit pairs are set apart. Read aloud as "11 hours 43 minutes".
+ * `11h 43m` as one figure: large serif digits, each unit right after its number (same baseline,
+ * small muted italic serif letters), and the two number-and-unit pairs are set apart. Read aloud as "11 hours 43 minutes".
  * Anything that is not a duration is left as it is.
  */
 function Duration({ text }: { text: string }) {
@@ -46,7 +45,9 @@ function Duration({ text }: { text: string }) {
           {i > 0 ? " " : null}
           <span aria-hidden="true" className="inline-flex items-baseline gap-x-0.5">
             {n}
-            <span className="text-2xl font-medium text-fg-muted">{u}</span>
+            <span className="font-serif text-2xl font-normal text-fg-muted italic 2xl:text-3xl">
+              {u}
+            </span>
           </span>
         </Fragment>
       ))}
@@ -69,7 +70,6 @@ export function KpiTile({
   state,
   tooFewLabel = "answers",
   tone = "default",
-  figureFont = "serif",
   className,
 }: KpiTileProps) {
   const ok = state === "ok";
@@ -86,10 +86,10 @@ export function KpiTile({
         <span
           className={cx(
             "flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1 text-4xl leading-[0.9] tracking-tight text-fg-strong tabular-nums 2xl:text-5xl dark:text-lime-500",
-            figureFont === "sans" ? "font-sans font-medium" : "font-serif font-normal",
+            "font-serif font-normal",
           )}
         >
-          {figureFont === "sans" && typeof value === "string" ? <Duration text={value} /> : value}
+          {typeof value === "string" && DURATION.test(value) ? <Duration text={value} /> : value}
           {unit ? (
             <span className="font-sans text-sm tracking-normal text-fg-muted">{unit}</span>
           ) : null}

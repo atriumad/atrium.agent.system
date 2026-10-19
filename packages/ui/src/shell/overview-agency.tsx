@@ -315,7 +315,6 @@ export function AgencyOverview() {
               ]
                 .filter(Boolean)
                 .join(" · ")}
-              figureFont="sans"
               href="/reputation/cases"
             />
             <KpiTile

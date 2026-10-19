@@ -72,7 +72,6 @@ export function CasesBandView({
           className={TILE}
           label="Median time to contact"
           value={c.medianHours === null ? "—" : hoursText(c.medianHours)}
-          figureFont="sans"
           state={c.medianHours === null ? "none" : c.small ? { tooFew: c.cases } : "ok"}
           note={parts.join(" · ")}
         />

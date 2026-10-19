@@ -148,17 +148,17 @@ describe("KpiTile", () => {
     expect(cls).not.toContain("bg-surface-card");
   });
 
-  test("figureFont sans sets the sans face and shrinks the units", () => {
-    const { container } = setup(<KpiTile label="T" value="11h 43m" state="ok" figureFont="sans" />);
-    const fig = container.querySelector("span.font-sans.font-medium") as HTMLElement;
+  test("a duration is set in the serif, not the sans", () => {
+    const { container } = setup(<KpiTile label="T" value="11h 43m" state="ok" />);
+    const fig = container.querySelector("span.font-serif") as HTMLElement;
     expect(fig).toBeTruthy();
     expect(fig.textContent).toBe("11h 43m");
-    expect(fig.className).not.toContain("font-serif");
+    expect(fig.className).not.toContain("font-sans");
   });
 
   test("a duration keeps each unit attached to its number, with a wider gap between the pairs", () => {
-    const { container } = setup(<KpiTile label="T" value="11h 43m" state="ok" figureFont="sans" />);
-    const fig = container.querySelector("span.font-sans.font-medium") as HTMLElement;
+    const { container } = setup(<KpiTile label="T" value="11h 43m" state="ok" />);
+    const fig = container.querySelector("span.font-serif") as HTMLElement;
     const group = fig.querySelector('[role="img"]') as HTMLElement;
     expect(group.className).toContain("gap-x-3");
     const pairs = [...group.children] as HTMLElement[];
@@ -168,29 +168,28 @@ describe("KpiTile", () => {
       expect(p.className).toContain("items-baseline");
       const unit = p.querySelector("span") as HTMLElement;
       expect(unit.className).toContain("text-2xl");
-      expect(unit.className).toContain("font-medium");
+      expect(unit.className).toContain("font-serif");
+      expect(unit.className).toContain("italic");
       expect(unit.className).toContain("text-fg-muted");
     }
   });
 
   test("a duration is read aloud in hours and minutes", () => {
-    setup(<KpiTile label="T" value="11h 43m" state="ok" figureFont="sans" />);
+    setup(<KpiTile label="T" value="11h 43m" state="ok" />);
     expect(screen.getByRole("img", { name: "11 hours 43 minutes" })).toBeTruthy();
   });
 
   test("edge durations: minutes only, whole hours, and a dash", () => {
-    const { container, unmount } = setup(
-      <KpiTile label="T" value="30m" state="ok" figureFont="sans" />,
-    );
-    expect(container.querySelector("span.font-sans")?.textContent).toBe("30m");
+    const { container, unmount } = setup(<KpiTile label="T" value="30m" state="ok" />);
+    expect(container.querySelector("span.font-serif")?.textContent).toBe("30m");
     expect(screen.getByRole("img", { name: "30 minutes" })).toBeTruthy();
     unmount();
-    const two = setup(<KpiTile label="T" value="2h" state="ok" figureFont="sans" />);
-    expect(two.container.querySelector("span.font-sans")?.textContent).toBe("2h");
+    const two = setup(<KpiTile label="T" value="2h" state="ok" />);
+    expect(two.container.querySelector("span.font-serif")?.textContent).toBe("2h");
     expect(screen.getByRole("img", { name: "2 hours" })).toBeTruthy();
     two.unmount();
-    const none = setup(<KpiTile label="T" value="—" state="none" figureFont="sans" />);
-    expect(none.container.querySelector("span.font-sans")?.textContent).toBe("—");
+    const none = setup(<KpiTile label="T" value="—" state="none" />);
+    expect(none.container.querySelector("span.font-serif")?.textContent).toBe("—");
     expect(screen.queryByRole("img")).toBeNull();
   });
 

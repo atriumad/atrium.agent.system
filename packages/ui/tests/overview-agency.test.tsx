@@ -234,11 +234,11 @@ describe("agency overview numbers", () => {
     expect(tile.textContent).not.toContain("0h");
   });
 
-  test("the contact figure is set in the sans face", async () => {
+  test("the contact figure is set in the brand serif", async () => {
     fakeFetch(routes());
     const { container } = inside();
     await screen.findByText("Median time to contact");
-    expect(container.querySelector("span.font-sans.font-medium")?.textContent).toBe("6h 12m");
+    expect(container.querySelector("span.font-serif")?.textContent).toBe("6h 12m");
   });
 });
 
