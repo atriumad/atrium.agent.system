@@ -403,7 +403,55 @@ describe("responses page: search debounce", () => {
   });
 });
 
+describe("responses page: the clamp to the last page", () => {
+  test("correcting a page past the end replaces the history entry, so Back does not trap", async () => {
+    window.history.replaceState({}, "", "/?page=9");
+    const length = window.history.length;
+    serve(
+      base({
+        [`${BASE}&page=9&pageSize=25&sort=date&dir=desc`]: { ...many(0, 9), rows: [] },
+        [`${BASE}&page=5&pageSize=25&sort=date&dir=desc`]: many(7, 5),
+      }),
+    );
+    page();
+    expect(await screen.findByText(/Showing 101–107 of 107/)).toBeTruthy();
+    expect(window.location.search).toContain("page=5");
+    expect(window.history.length).toBe(length);
+  });
+
+  test("when the last page is the page just asked, it falls through to the empty state", async () => {
+    window.history.replaceState({}, "", "/?page=2");
+    const length = window.history.length;
+    const { calls } = serve(
+      base({
+        // The server says 50 answers in all but gives none for page 2, which is also the last page.
+        [`${BASE}&page=2&pageSize=25&sort=date&dir=desc`]: { ...many(0, 2, 50), rows: [] },
+      }),
+    );
+    page();
+    expect(await screen.findByText("No responses yet")).toBeTruthy();
+    expect(screen.queryByRole("status", { name: /loading/i })).toBeNull();
+    expect(calls.filter((c) => c.includes("&page=2&"))).toHaveLength(1);
+    expect(window.history.length).toBe(length);
+  });
+});
+
 describe("responses page: the band", () => {
+  test("the band is four tiles in one row and the distribution as their sibling", async () => {
+    serve(base());
+    page();
+    const band = await screen.findByRole("region", { name: "Responses summary" });
+    await waitFor(() => expect(band.textContent).toContain("107"));
+    const tiles = band.children[0] as HTMLElement;
+    const aside = band.children[1] as HTMLElement;
+    expect(band.children).toHaveLength(2);
+    expect(tiles.className).toContain("grid-cols-2");
+    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.children).toHaveLength(4);
+    expect(within(aside).getByText("Rating distribution")).toBeTruthy();
+    expect(band.outerHTML).not.toContain("overflow-x");
+  });
+
   test("tiles show figures, units and the notes", async () => {
     serve(base());
     page();

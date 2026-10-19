@@ -239,6 +239,36 @@ describe("cases table page", () => {
     expect(await screen.findByText("Page 1 of 2")).toBeTruthy();
   });
 
+  test("a range or place change on page 2 is ONE history entry", async () => {
+    const many = {
+      ...casesTableFixture,
+      cases: Array.from({ length: 30 }, (_, i) => ({
+        ...casesTableFixture.cases[0],
+        id: `m${i}`,
+      })),
+    };
+    fakeFetch(routes(many as never));
+    window.history.replaceState({}, "", "/?page=2");
+    const { user } = page();
+    await screen.findByText("Page 2 of 2");
+    let length = window.history.length;
+    await user.click(screen.getByRole("radio", { name: "7D" }));
+    await waitFor(() => expect(window.location.search).toContain("range=7d"));
+    expect(window.location.search).not.toContain("page=");
+    expect(window.history.length).toBe(length + 1);
+    expect(await screen.findByText("Page 1 of 2")).toBeTruthy();
+
+    window.history.replaceState({}, "", "/?page=2");
+    await waitFor(() => window.dispatchEvent(new Event("popstate")));
+    await screen.findByText("Page 2 of 2");
+    length = window.history.length;
+    await user.click(screen.getAllByRole("combobox", { name: "Place" })[0] as HTMLElement);
+    await user.click(await screen.findByRole("option", { name: "Harbor Dental Downtown" }));
+    await waitFor(() => expect(window.location.search).toContain("place=p1"));
+    expect(window.location.search).not.toContain("page=");
+    expect(window.history.length).toBe(length + 1);
+  });
+
   test("a median that is too small to trust says too few, and none says no data", async () => {
     const small = {
       ...casesBandFixture,
@@ -259,5 +289,56 @@ describe("cases table page", () => {
     page();
     const band = await screen.findByRole("region", { name: "Cases summary" });
     await waitFor(() => expect(band.textContent).toContain("No data yet"));
+  });
+
+  test("a null median with cases behind it is none; a small one is too few; a good one is a figure", async () => {
+    const noneWithCases = {
+      ...casesBandFixture,
+      contact: { medianHours: null, insideTarget: null, cases: 5, change: null, small: false },
+    };
+    fakeFetch(routes(casesTableFixture, noneWithCases));
+    const first = page();
+    let band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("No data yet"));
+    expect(band.textContent).not.toContain("Too few answers (5)");
+    first.unmount();
+    restoreFetch();
+
+    const small = {
+      ...casesBandFixture,
+      contact: { medianHours: 3, insideTarget: null, cases: 5, change: null, small: true },
+    };
+    fakeFetch(routes(casesTableFixture, small));
+    const second = page();
+    band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("Too few answers (5)"));
+    second.unmount();
+    restoreFetch();
+
+    fakeFetch(routes());
+    page();
+    band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("6h 12m"));
+    expect(band.textContent).not.toContain("Too few answers");
+    expect(band.textContent).not.toContain("No data yet");
+  });
+
+  test("the band is four tiles in one row and an aside as their siblings", async () => {
+    fakeFetch(routes());
+    page();
+    const band = await screen.findByRole("region", { name: "Cases summary" });
+    await waitFor(() => expect(band.textContent).toContain("6h 12m"));
+    const tiles = band.children[0] as HTMLElement;
+    const aside = band.children[1] as HTMLElement;
+    expect(band.children).toHaveLength(2);
+    expect(tiles.className).toContain("grid-cols-2");
+    expect(tiles.className).toContain("xl:grid-cols-4");
+    expect(tiles.children).toHaveLength(4);
+    expect(within(aside).getByText("Opened per day")).toBeTruthy();
+    expect(within(aside).getByText("By severity")).toBeTruthy();
+    expect(within(aside).getByRole("img", { name: /Cases opened per day/ }).getAttribute("class")).toContain(
+      "absolute",
+    );
+    expect(band.outerHTML).not.toContain("overflow-x");
   });
 });

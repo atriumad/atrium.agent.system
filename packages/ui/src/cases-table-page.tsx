@@ -21,6 +21,7 @@ import {
 } from "./data/table-state";
 import { useRangeState } from "./data/use-range-state";
 import { useTableState } from "./data/use-table-state";
+import { writeParams } from "./data/write-params";
 import { StatusBadge } from "./feedback/badge";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { inTab, TABS, type Tab } from "./format";
@@ -74,18 +75,9 @@ export function CasesTablePage({
   const { range, scopeId } = range$;
   const table = useTableState(SPEC);
   const { state } = table;
-  // A new range or place starts at page 1, in the address too.
-  const toFirstPage = () => {
-    if (state.page > 1) table.setPage(1);
-  };
-  const setRange = (r: RangeKey) => {
-    range$.setRange(r);
-    toFirstPage();
-  };
-  const setScopeId = (id: string | null) => {
-    range$.setScopeId(id);
-    toFirstPage();
-  };
+  // A new range or place starts at page 1, in the same history entry.
+  const setRange = (r: RangeKey) => writeParams({ range: r, page: null });
+  const setScopeId = (id: string | null) => writeParams({ place: id, page: null });
 
   const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
   const [data, setData] = useState<CasesTable | null>(null);

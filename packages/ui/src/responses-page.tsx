@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "./actions/button";
 import {
   api,
@@ -22,6 +22,7 @@ import { serializeTableState, type TableSpec } from "./data/table-state";
 import { useDebounced } from "./data/use-debounced";
 import { useRangeState } from "./data/use-range-state";
 import { useTableState } from "./data/use-table-state";
+import { writeParams } from "./data/write-params";
 import { EmptyState, ErrorState } from "./feedback/states";
 import { Tabs } from "./navigation/tabs";
 import { ResponseDrawer } from "./response-drawer";
@@ -63,25 +64,6 @@ const COUNT_OF = {
   safety: "safety",
 } as const;
 
-/**
- * Writes address parameters in ONE history entry (a null deletes one), then lets the range and
- * table hooks re-read the address the way they do for Back.
- */
-function writeParams(changes: Record<string, string | null>) {
-  const params = new URLSearchParams(window.location.search);
-  for (const [k, v] of Object.entries(changes)) {
-    if (v) params.set(k, v);
-    else params.delete(k);
-  }
-  const s = params.toString();
-  window.history.pushState(
-    null,
-    "",
-    `${window.location.pathname}${s ? `?${s}` : ""}${window.location.hash}`,
-  );
-  window.dispatchEvent(new Event("popstate"));
-}
-
 /** The Responses section: a summary band, tabs, filters and a server-paged table, with a drawer for one answer. */
 function ResponsesTablePage() {
   const me = useMe();
@@ -117,8 +99,6 @@ function ResponsesTablePage() {
 
   // The box follows every keystroke; the request follows it 300ms later. Emptying it applies at once.
   const q = useDebounced(state.q.trim().slice(0, 200), 300, (v) => v === "");
-  const setPageRef = useRef(table.setPage);
-  setPageRef.current = table.setPage;
 
   const key = JSON.stringify({
     range,
@@ -158,10 +138,13 @@ function ResponsesTablePage() {
       .responsesPage(JSON.parse(key) as ResponsesQuery)
       .then((d) => {
         if (!current) return;
-        // A link to a page past the end: ask for the last page once instead of showing nothing.
+        // A link to a page past the end: move to the last page once, replacing the entry so Back
+        // does not return to the bad one. If the last page is the one just asked, there is nothing
+        // to move to: fall through to the empty state instead of waiting on a request that never comes.
         const asked = (JSON.parse(key) as ResponsesQuery).page ?? 1;
-        if (d.rows.length === 0 && d.total > 0 && asked > 1) {
-          setPageRef.current(Math.max(1, Math.ceil(d.total / d.pageSize)));
+        const last = Math.max(1, Math.ceil(d.total / d.pageSize));
+        if (d.rows.length === 0 && d.total > 0 && asked > 1 && last !== asked) {
+          writeParams({ page: last > 1 ? String(last) : null }, "replace");
           return;
         }
         setData(d);
