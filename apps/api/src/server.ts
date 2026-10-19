@@ -77,6 +77,19 @@ const loyaltySecretRaw = process.env.LOYALTY_SECRET;
 const loyaltySecret = usableLoyaltySecret(loyaltySecretRaw);
 const trustProxy = process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
 const qrCardUrl = process.env.QR_CARD_URL;
+const loyaltyProxySecretRaw = process.env.LOYALTY_PROXY_SECRET;
+const loyaltyProxySecret =
+  loyaltyProxySecretRaw && loyaltyProxySecretRaw.length >= 32 ? loyaltyProxySecretRaw : undefined;
+if (trustProxy && !loyaltyProxySecret) {
+  console.log(
+    JSON.stringify({
+      level: "warn",
+      message: "loyalty.proxy_secret_missing",
+      detail:
+        "TRUST_PROXY is on without a LOYALTY_PROXY_SECRET of 32+ characters: anyone calling the API directly can choose the address the join limits count",
+    }),
+  );
+}
 if (!loyaltySecret) {
   console.log(
     JSON.stringify({
@@ -92,6 +105,7 @@ const app = createApp({
   db,
   ...(loyaltySecret ? { loyaltySecret } : {}),
   ...(trustProxy ? { trustProxy } : {}),
+  ...(loyaltyProxySecret ? { loyaltyProxySecret } : {}),
   ...(qrCardUrl ? { qrCardUrl } : {}),
   transport,
   ...(unsubscribeSecret ? { unsubscribeSecret } : {}),

@@ -115,6 +115,23 @@
         "tailwindcss": "^4.0.0",
       },
     },
+    "apps/qr-card": {
+      "name": "@atrium/qr-card",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/ui": "workspace:*",
+        "next": "^16.3.8",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@tailwindcss/postcss": "^4.0.0",
+        "@types/node": "^24.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "tailwindcss": "^4.0.0",
+      },
+    },
     "apps/worker": {
       "name": "@atrium/worker",
       "version": "0.0.0",
@@ -308,6 +325,8 @@
     "@atrium/platform": ["@atrium/platform@workspace:apps/platform"],
 
     "@atrium/policy": ["@atrium/policy@workspace:packages/policy"],
+
+    "@atrium/qr-card": ["@atrium/qr-card@workspace:apps/qr-card"],
 
     "@atrium/reputation": ["@atrium/reputation@workspace:modules/reputation"],
 

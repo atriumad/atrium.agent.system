@@ -1,4 +1,4 @@
-import { createHash, createHmac } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { accessFor, can, type Scope, withScope } from "@atrium/core";
 import {
@@ -70,12 +70,26 @@ const crmDeps = (deps: AppDeps, secret: string): CrmDeps => ({
 });
 
 /**
+ * Whether `X-Forwarded-For` and `X-Forwarded-Proto` may be believed: the deployment says a proxy it
+ * controls sits in front (`TRUST_PROXY`) and, when `LOYALTY_PROXY_SECRET` is set, the request carries
+ * it in `x-atrium-proxy`. The API is public for connectors, so without the secret anyone calling it
+ * directly could pick their own address.
+ */
+function trustsForwarding(c: Context, trustProxy: boolean, proxySecret?: string): boolean {
+  if (!trustProxy) return false;
+  if (!proxySecret) return true;
+  const sent = Buffer.from(c.req.header("x-atrium-proxy") ?? "");
+  const want = Buffer.from(proxySecret);
+  return sent.length === want.length && timingSafeEqual(sent, want);
+}
+
+/**
  * The caller's address. The first hop of `X-Forwarded-For` only when the deployment says a proxy
  * it controls sits in front (`trustProxy`) and the hop is a real address; otherwise the socket's.
  * Anything else a client can write is ignored.
  */
-function clientIp(c: Context, trustProxy: boolean): string {
-  if (trustProxy) {
+function clientIp(c: Context, trustProxy: boolean, proxySecret?: string): string {
+  if (trustsForwarding(c, trustProxy, proxySecret)) {
     const first = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
     if (first && isIP(first)) return first;
   }
@@ -87,10 +101,18 @@ function clientIp(c: Context, trustProxy: boolean): string {
  * Whether the device cookie is Secure: the request is https, a trusted proxy says it was, the card
  * app's public origin is https, or this is production. An untrusted `X-Forwarded-Proto` counts for nothing.
  */
-function isHttps(c: Context, trustProxy: boolean, qrCardUrl?: string): boolean {
+function isHttps(
+  c: Context,
+  trustProxy: boolean,
+  qrCardUrl?: string,
+  proxySecret?: string,
+): boolean {
   if (new URL(c.req.url).protocol === "https:") return true;
   if (qrCardUrl?.startsWith("https://") || process.env.NODE_ENV === "production") return true;
-  return trustProxy && c.req.header("x-forwarded-proto")?.split(",")[0]?.trim() === "https";
+  return (
+    trustsForwarding(c, trustProxy, proxySecret) &&
+    c.req.header("x-forwarded-proto")?.split(",")[0]?.trim() === "https"
+  );
 }
 
 function rateLimited(c: Context, retryAfter: number) {
@@ -111,6 +133,7 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
     return;
   }
   const trustProxy = deps.trustProxy === true;
+  const proxySecret = deps.loyaltyProxySecret;
   const crm = crmDeps(deps, secret);
   const now = () => deps.now?.() ?? new Date();
 
@@ -141,7 +164,7 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
       setCookie(c, DEVICE_COOKIE, deviceId, {
         httpOnly: true,
         sameSite: "Lax",
-        secure: isHttps(c, trustProxy, deps.qrCardUrl),
+        secure: isHttps(c, trustProxy, deps.qrCardUrl, proxySecret),
         maxAge: DEVICE_COOKIE_SECONDS,
         // The card app reaches this API through a rewrite on its own path, so a narrower path
         // would never be sent back.
@@ -152,7 +175,7 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
 
     const issued = await issueCard(
       deps.db,
-      { joinToken: token, deviceHash, ip: clientIp(c, trustProxy) },
+      { joinToken: token, deviceHash, ip: clientIp(c, trustProxy, proxySecret) },
       crm,
     );
     if (issued.ok) {
@@ -194,7 +217,7 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
     const at = now();
     const byIp = await checkRate(
       deps.db,
-      `email:ip:${digest(clientIp(c, trustProxy))}`,
+      `email:ip:${digest(clientIp(c, trustProxy, proxySecret))}`,
       "joinPerIp",
       at,
     );

@@ -59,6 +59,15 @@ const proxied = createApp({
   loyaltySecret: SECRET,
   trustProxy: true,
 });
+const PROXY_SECRET = "q".repeat(32);
+const gated = createApp({
+  db,
+  now: () => NOW,
+  session,
+  loyaltySecret: SECRET,
+  trustProxy: true,
+  loyaltyProxySecret: PROXY_SECRET,
+});
 const off = createApp({ db, now: () => NOW, session });
 
 const cookies: Record<string, string> = {};
@@ -548,6 +557,34 @@ describe("the public flow, end to end", () => {
       headers: { "content-type": "application/json", "x-forwarded-for": nextIp() },
     });
     expect(other.res.status).toBe(410);
+  });
+
+  test("with LOYALTY_PROXY_SECRET, X-Forwarded-For counts only when x-atrium-proxy matches", async () => {
+    const join = (socket: string, forwarded: string, proxy?: string) =>
+      pub("/v1/loyalty/cards", {
+        ...joinBody("nope"),
+        ip: socket,
+        target: gated,
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": forwarded,
+          ...(proxy === undefined ? {} : { "x-atrium-proxy": proxy }),
+        },
+      });
+    // no header: every forwarded value is ignored, so the socket's single bucket fills
+    const bare = nextIp();
+    for (let i = 0; i < 20; i++) expect((await join(bare, `7.7.${i}.1`)).res.status).toBe(410);
+    expect((await join(bare, "7.7.99.1")).res.status).toBe(429);
+    // a wrong value counts as no header
+    const wrong = nextIp();
+    for (let i = 0; i < 20; i++)
+      expect((await join(wrong, `7.8.${i}.1`, "x".repeat(32))).res.status).toBe(410);
+    expect((await join(wrong, "7.8.99.1", "x".repeat(31))).res.status).toBe(429);
+    // the right value: each forwarded address has its own bucket
+    const behind = nextIp();
+    for (let i = 0; i < 21; i++) {
+      expect((await join(behind, `7.9.${i}.1`, PROXY_SECRET)).res.status).toBe(410);
+    }
   });
 
   test("no CORS headers on a public route", async () => {

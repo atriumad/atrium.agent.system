@@ -36,6 +36,11 @@ export type AppDeps = {
   loyaltySecret?: string;
   /** Read the client address from the first hop of `X-Forwarded-For` (`TRUST_PROXY`). Off by default. */
   trustProxy?: boolean;
+  /**
+   * `LOYALTY_PROXY_SECRET`: with `trustProxy`, `X-Forwarded-For` counts only on requests that carry
+   * this value in `x-atrium-proxy` (the card app's proxy sets it). Unset: `trustProxy` alone decides.
+   */
+  loyaltyProxySecret?: string;
   /** `QR_CARD_URL`: the card app's public origin, where the printed join QR points. */
   qrCardUrl?: string;
 };
