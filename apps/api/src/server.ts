@@ -71,8 +71,21 @@ if (
   process.exit(1);
 }
 
+// The stamp card's routes need a secret of their own; without one they are not mounted.
+const loyaltySecret = process.env.LOYALTY_SECRET;
+const trustProxy = process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
+const qrCardUrl = process.env.QR_CARD_URL;
+if (!loyaltySecret) {
+  console.log(
+    JSON.stringify({ level: "warn", message: "LOYALTY_SECRET unset: loyalty routes are off" }),
+  );
+}
+
 const app = createApp({
   db,
+  ...(loyaltySecret ? { loyaltySecret } : {}),
+  ...(trustProxy ? { trustProxy } : {}),
+  ...(qrCardUrl ? { qrCardUrl } : {}),
   transport,
   ...(unsubscribeSecret ? { unsubscribeSecret } : {}),
   ...(resendWebhookSecret ? { resendWebhookSecret } : {}),

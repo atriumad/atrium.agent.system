@@ -12,6 +12,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { mountCases, type SessionDeps } from "./cases";
+import { mountLoyaltyPublic } from "./loyalty";
 import { mountOnboardingPublic } from "./onboarding";
 import { mountQrSurvey, mountSurvey } from "./survey";
 import { mountUnsubscribe } from "./unsubscribe";
@@ -31,6 +32,12 @@ export type AppDeps = {
   unsubscribeSecret?: string;
   /** The secret that signs Resend's webhooks. Without it the webhook route is not mounted. */
   resendWebhookSecret?: string;
+  /** `LOYALTY_SECRET`: signs join tokens and device hashes. Without it no loyalty route is mounted. */
+  loyaltySecret?: string;
+  /** Read the client address from the first hop of `X-Forwarded-For` (`TRUST_PROXY`). Off by default. */
+  trustProxy?: boolean;
+  /** `QR_CARD_URL`: the card app's public origin, where the printed join QR points. */
+  qrCardUrl?: string;
 };
 
 /** Cap on what an error response repeats back: a bad batch can have thousands of problems. */
@@ -127,6 +134,9 @@ export function createApp(deps: AppDeps) {
   });
 
   app.get("/health", (c) => c.json({ status: "ok" }));
+
+  // Public and session-less: mounted ahead of the connector-token check that guards the rest of /v1.
+  mountLoyaltyPublic(app, deps);
 
   app.use(
     "/v1/*",

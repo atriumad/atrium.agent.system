@@ -21,6 +21,7 @@ import { Hono } from "hono";
 import type { AppDeps } from "./app";
 import { mountInsights } from "./insights";
 import { mountLocations } from "./locations";
+import { mountLoyalty } from "./loyalty";
 import { mountNotifications } from "./notifications";
 import { mountOnboardingAdmin } from "./onboarding";
 import { mountSurveyAdmin } from "./surveys-admin";
@@ -171,6 +172,13 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
     qrSecret: session.surveySecret,
     hubUrl: (session.hubUrl ?? "http://localhost:3004").replace(/\/$/, ""),
   });
+
+  if (deps.loyaltySecret) {
+    mountLoyalty(api, deps, {
+      loyaltySecret: deps.loyaltySecret,
+      qrCardUrl: deps.qrCardUrl,
+    });
+  }
 
   app.route("/api", api);
 }
