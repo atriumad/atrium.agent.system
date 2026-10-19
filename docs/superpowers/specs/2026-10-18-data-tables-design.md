@@ -134,7 +134,6 @@ Where the build differs from the design above. The guide `apps/docs/docs/guides/
 - **Debounce.** The Responses search is sent 300 ms after the last key (immediately when emptied); it is trimmed and cut to 200 characters. Cases search stays in the browser, over the comment excerpt.
 - **Sentiments.** The contract's values are `positive`, `mixed` and `negative`. The "neutral" in the mockups means `mixed`.
 - **Full width.** The app frame no longer caps the content width; every page uses the full width.
-- **Responses search** matches the comment, the best part and what to improve (as designed); the sentiment sort ranks the stored value `neutral`, which the contract does not have, so `mixed` answers sort with the unread ones.
 
 ## Out of scope
 

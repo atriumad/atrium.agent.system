@@ -182,6 +182,18 @@ describe("listResponsesPage", () => {
     expect(mixed.rows[0]?.sentiment).toBe("mixed");
   });
 
+  test("sentiment sort ranks negative, mixed, positive, and keeps unread last both ways", async () => {
+    const f = await fresh();
+    await answer(f, f.chicago, ago(1), 3, { sentiment: "positive" });
+    await answer(f, f.chicago, ago(2), 3);
+    await answer(f, f.chicago, ago(3), 3, { sentiment: "mixed" });
+    await answer(f, f.chicago, ago(4), 3, { sentiment: "negative" });
+    const order = async (dir: "asc" | "desc") =>
+      (await run(f, { sort: "sentiment", dir })).rows.map((r) => r.sentiment);
+    expect(await order("asc")).toEqual(["negative", "mixed", "positive", null]);
+    expect(await order("desc")).toEqual(["positive", "mixed", "negative", null]);
+  });
+
   test("q matches literally: % and _ are not wildcards, injection text is inert", async () => {
     const f = await fresh();
     await answer(f, f.chicago, ago(1), 3, { comment: "Gave us 50% off" });

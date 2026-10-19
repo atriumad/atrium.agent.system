@@ -167,12 +167,29 @@ describe("GET /api/surveys/responses (table)", () => {
     expect(((await place.json()) as any).error).toBe("invalid_id");
   });
 
-  test("sentiment=mixed and a real topic are accepted", async () => {
-    for (const q of ["sentiment=mixed", "topic=price"]) {
-      const res = await get("owner-a", `?page=1&${q}`);
-      expect(res.status).toBe(200);
-      expect(((await res.json()) as any).total).toBe(0);
-    }
+  test("sentiment=mixed returns only the mixed answers, and a real topic is accepted", async () => {
+    const clientId = (
+      await admin.unsafe("select client_id from reputation.survey_responses where location_id = $1 limit 1", [
+        locA,
+      ])
+    )[0]?.client_id as string;
+    const read = (sentiment: string) =>
+      admin.unsafe(
+        `insert into reputation.survey_responses
+           (client_id, location_id, rating, created_at, sentiment, topics, read_at, concern, safety, read_model)
+         values ($1, $2, 3, $3, $4, '{}', $3, 'none', false, 'test-model')`,
+        [clientId, locA, new Date(NOW.getTime() - 90_000), sentiment],
+      );
+    await read("mixed");
+    await read("positive");
+    const res = await get("owner-a", "?page=1&sentiment=mixed");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    expect(body.total).toBe(1);
+    expect(body.rows.map((r: any) => r.sentiment)).toEqual(["mixed"]);
+    const topic = await get("owner-a", "?page=1&topic=price");
+    expect(topic.status).toBe(200);
+    expect(((await topic.json()) as any).total).toBe(0);
   });
 
   test("without page the legacy shape stays", async () => {

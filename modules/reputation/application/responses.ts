@@ -134,7 +134,7 @@ export async function listResponsesPage(
   const [totals] = await tx
     .select({
       total: sql<number>`count(*)::int`,
-      unread: sql<number>`(count(*) filter (where ${surveyResponses.sentiment} is null))::int`,
+      unread: sql<number>`(count(*) filter (where ${surveyResponses.readAt} is null))::int`,
     })
     .from(surveyResponses)
     .where(where);
@@ -167,14 +167,16 @@ export async function listResponsesPage(
       .map((p) => sql`${p.id}::uuid`),
     sql`, `,
   )}${sql.raw("]")}, ${surveyResponses.locationId}), 0)`;
-  const sentimentRank = sql`case ${surveyResponses.sentiment} when 'negative' then 1 when 'neutral' then 2 when 'positive' then 3 else 4 end`;
+  const sentimentRank = sql`case ${surveyResponses.sentiment} when 'negative' then 1 when 'mixed' then 2 when 'positive' then 3 else 4 end`;
+  // Unread answers (no reading) sit last in both directions; the rank orders the read ones.
+  const unreadLast = sql`(${surveyResponses.readAt} is null)`;
   const primary =
     query.sort === "rating"
       ? [direction(surveyResponses.rating)]
       : query.sort === "place"
         ? [direction(placeRank)]
         : query.sort === "sentiment"
-          ? [direction(sentimentRank)]
+          ? [asc(unreadLast), direction(sentimentRank)]
           : [];
   const order = [...primary, direction(surveyResponses.createdAt), desc(surveyResponses.id)];
 
