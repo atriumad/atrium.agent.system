@@ -111,6 +111,49 @@ const valid = {
       granted: false,
     },
   },
+  "loyalty.card.issued": {
+    ...ids,
+    type: "loyalty.card.issued",
+    version: 1,
+    data: {
+      cardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a01",
+      programId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a02",
+    },
+  },
+  "loyalty.stamp.added": {
+    ...ids,
+    type: "loyalty.stamp.added",
+    version: 1,
+    data: {
+      cardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a01",
+      stampsInCycle: 3,
+      stampsRequired: 8,
+    },
+  },
+  "loyalty.reward.earned": {
+    ...ids,
+    type: "loyalty.reward.earned",
+    version: 1,
+    data: {
+      cardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a01",
+      rewardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a03",
+    },
+  },
+  "loyalty.reward.redeemed": {
+    ...ids,
+    type: "loyalty.reward.redeemed",
+    version: 1,
+    data: {
+      cardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a01",
+      rewardId: "a1b2c3d4-0a6e-4c99-9d54-2c3d4e5f6a03",
+    },
+  },
+  "contact.captured": {
+    ...ids,
+    type: "contact.captured",
+    version: 1,
+    data: { guestId: "9d4f9c52-6a1e-4a87-8d6b-3c1c2f0a7b11", source: "loyalty_card" },
+  },
 } as const;
 
 describe("event contracts", () => {
@@ -146,6 +189,41 @@ describe("event contracts", () => {
       data: { guestId: valid["guest.identified"].data.guestId, email: "a@b.co" },
     };
     expect(() => parseEvent(withEmail)).toThrow();
+  });
+});
+
+describe("loyalty events", () => {
+  const loyalty = Object.values(valid).filter(
+    (e) => e.type.startsWith("loyalty.") || e.type === "contact.captured",
+  );
+
+  test("the five are registered", () => {
+    expect(loyalty.length).toBe(5);
+    for (const e of loyalty) expect(EVENT_TYPES).toContain(e.type as never);
+  });
+
+  test("each rejects an extra key and a missing id, and carries no personal data", () => {
+    for (const e of loyalty) {
+      expect(() => parseEvent({ ...e, data: { ...e.data, email: "a@b.co" } })).toThrow();
+      const [firstKey] = Object.keys(e.data);
+      const { [firstKey as keyof typeof e.data]: _drop, ...rest } = e.data as Record<
+        string,
+        unknown
+      >;
+      expect(() => parseEvent({ ...e, data: rest })).toThrow();
+      expect(findPersonalDataKey(e.data)).toBeNull();
+    }
+  });
+
+  test("stamp.added bounds and contact.captured source", () => {
+    const stamp = valid["loyalty.stamp.added"];
+    expect(() => parseEvent({ ...stamp, data: { ...stamp.data, stampsInCycle: -1 } })).toThrow();
+    expect(() => parseEvent({ ...stamp, data: { ...stamp.data, stampsRequired: 1 } })).toThrow();
+    expect(parseEvent({ ...stamp, data: { ...stamp.data, stampsInCycle: 0 } }).type).toBe(
+      "loyalty.stamp.added",
+    );
+    const cap = valid["contact.captured"];
+    expect(() => parseEvent({ ...cap, data: { ...cap.data, source: "pos" } })).toThrow();
   });
 });
 

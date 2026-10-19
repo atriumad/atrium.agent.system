@@ -110,6 +110,37 @@ export const ReviewLinkClickedV1 = defineEvent("review.link.clicked", 1, {
   responseId: z.string().uuid(),
 });
 
+/** A guest got a loyalty card. Ids only. */
+export const LoyaltyCardIssuedV1 = defineEvent("loyalty.card.issued", 1, {
+  cardId: z.string().uuid(),
+  programId: z.string().uuid(),
+});
+
+/** A stamp was added to a card. The counts are numbers, not personal data. */
+export const LoyaltyStampAddedV1 = defineEvent("loyalty.stamp.added", 1, {
+  cardId: z.string().uuid(),
+  stampsInCycle: z.number().int().min(0),
+  stampsRequired: z.number().int().min(2),
+});
+
+/** A card filled its cycle and earned a reward. */
+export const LoyaltyRewardEarnedV1 = defineEvent("loyalty.reward.earned", 1, {
+  cardId: z.string().uuid(),
+  rewardId: z.string().uuid(),
+});
+
+/** A reward was redeemed at the counter. */
+export const LoyaltyRewardRedeemedV1 = defineEvent("loyalty.reward.redeemed", 1, {
+  cardId: z.string().uuid(),
+  rewardId: z.string().uuid(),
+});
+
+/** A guest left a contact through a loyalty card. Ask Core for the address by `guestId`. */
+export const ContactCapturedV1 = defineEvent("contact.captured", 1, {
+  guestId: z.string().uuid(),
+  source: z.literal("loyalty_card"),
+});
+
 /** Every event the system knows. Add it here and to the catalog in the docs. */
 export const EVENT_SCHEMAS = [
   SignalsIngestedV1,
@@ -126,6 +157,11 @@ export const EVENT_SCHEMAS = [
   RecoveryCaseOpenedV1,
   RecoveryCaseResolvedV1,
   ReviewLinkClickedV1,
+  LoyaltyCardIssuedV1,
+  LoyaltyStampAddedV1,
+  LoyaltyRewardEarnedV1,
+  LoyaltyRewardRedeemedV1,
+  ContactCapturedV1,
 ] as const;
 
 export type AtriumEvent = z.infer<(typeof EVENT_SCHEMAS)[number]>;
