@@ -28,7 +28,9 @@ const CODE_LENGTH = 8;
 export function generateShortCode(random?: () => number): string {
   let code = "";
   for (let i = 0; i < CODE_LENGTH; i++) {
-    const index = random ? Math.floor(random() * ALPHABET.length) : randomInt(ALPHABET.length);
+    const index = random
+      ? Math.min(ALPHABET.length - 1, Math.floor(random() * ALPHABET.length))
+      : randomInt(ALPHABET.length);
     code += ALPHABET[index];
   }
   return code;
