@@ -74,6 +74,8 @@ export type CardPollerOptions = {
   fetchFn?: typeof fetch;
   schedule?: (fn: () => void, ms: number) => () => void;
   isVisible: () => boolean;
+  /** Clock in ms; injectable for tests. */
+  now?: () => number;
   onView: (view: CardView) => void;
   onStatus: (s: CardStatus) => void;
 };
@@ -86,6 +88,9 @@ const defaultSchedule = (fn: () => void, ms: number) => {
 /** Polls one card: at most one timer and one request at a time, the ETag kept in a closure. */
 export function createCardPoller(opts: CardPollerOptions) {
   const schedule = opts.schedule ?? defaultSchedule;
+  const now = opts.now ?? Date.now;
+  // No automatic fetch before this time: set after a 429 or an error, cleared by a good answer.
+  let notBefore = 0;
   let etag: string | null = null;
   let failures = 0;
   let cancelTimer: (() => void) | null = null;
@@ -145,10 +150,13 @@ export function createCardPoller(opts: CardPollerOptions) {
     }
     const delay = closed ? null : delayFor(opts.isVisible(), result, failures);
     if (delay === null) finished = true;
-    if (again) {
+    const waiting = result.kind === "rate_limited" || result.kind === "error";
+    notBefore = waiting && delay !== null ? now() + delay : 0;
+    if (again && now() >= notBefore) {
       again = false;
       void run();
     } else if (delay !== null) {
+      again = false;
       arm(delay);
     }
   }
@@ -158,6 +166,7 @@ export function createCardPoller(opts: CardPollerOptions) {
       if (!stopped) return;
       stopped = false;
       finished = false;
+      notBefore = 0;
       opts.onStatus("loading");
       void run();
     },
@@ -168,7 +177,8 @@ export function createCardPoller(opts: CardPollerOptions) {
     },
     visibilityChanged() {
       if (stopped || finished) return;
-      if (opts.isVisible()) void run();
+      // The armed timer fires at notBefore; foregrounding must not cut a Retry-After or backoff short.
+      if (opts.isVisible() && now() >= notBefore) void run();
     },
     refresh() {
       if (stopped) return;

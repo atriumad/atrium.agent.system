@@ -73,7 +73,7 @@ async function settle() {
   await new Promise((r) => setTimeout(r, 0));
 }
 
-function setup(queue: Answer[], visible = { value: true }) {
+function setup(queue: Answer[], visible = { value: true }, now?: () => number) {
   const f = makeFetch(queue);
   const s = makeSchedule();
   const views: CardView[] = [];
@@ -83,6 +83,7 @@ function setup(queue: Answer[], visible = { value: true }) {
     fetchFn: f.fn,
     schedule: s.schedule,
     isVisible: () => visible.value,
+    ...(now ? { now } : {}),
     onView: (v) => views.push(v),
     onStatus: (st) => statuses.push(st),
   });
@@ -250,4 +251,53 @@ test("refresh() during a request waits for it: one request in flight, one timer"
   expect(t.f.calls).toHaveLength(2);
   expect(t.views.map((v) => v.stampsInCycle)).toEqual([1, 2]);
   expect(t.s.pending()).toHaveLength(1);
+});
+
+const limited = () => new Response("{}", { status: 429, headers: { "Retry-After": "90" } });
+
+test("foregrounding during a Retry-After window does not fetch; after the window it does", async () => {
+  const clock = { t: 0 };
+  const visible = { value: false };
+  const t = setup([limited(), json(view(), '"a"')], visible, () => clock.t);
+  t.poller.start();
+  await settle();
+  expect(t.f.calls).toHaveLength(1);
+  visible.value = true;
+  clock.t = 10_000;
+  t.poller.visibilityChanged();
+  await settle();
+  expect(t.f.calls).toHaveLength(1);
+  expect(t.s.pending().map((x) => x.ms)).toEqual([90_000]);
+  clock.t = 90_000;
+  t.poller.visibilityChanged();
+  await settle();
+  expect(t.f.calls).toHaveLength(2);
+});
+
+test("foregrounding during an error backoff does not fetch", async () => {
+  const clock = { t: 0 };
+  const t = setup([new Error("offline"), json(view(), '"a"')], { value: true }, () => clock.t);
+  t.poller.start();
+  await settle();
+  clock.t = 1_000;
+  t.poller.visibilityChanged();
+  await settle();
+  expect(t.f.calls).toHaveLength(1);
+  expect(t.s.pending().map((x) => x.ms)).toEqual([10_000]);
+});
+
+test("a follow-up queued during a request does not fire early after a 429", async () => {
+  const clock = { t: 0 };
+  let release: (r: Response) => void = () => {};
+  const held = new Promise<Response>((r) => {
+    release = r;
+  });
+  const t = setup([held, json(view(), '"a"')], { value: true }, () => clock.t);
+  t.poller.start();
+  await settle();
+  t.poller.refresh();
+  release(limited());
+  await settle();
+  expect(t.f.calls).toHaveLength(1);
+  expect(t.s.pending().map((x) => x.ms)).toEqual([90_000]);
 });
