@@ -34,7 +34,7 @@ The Hub is where guests open survey links and QR codes. These variables tell eac
 
 | Variable | What it is | Default | Who reads it |
 | --- | --- | --- | --- |
-| `API_URL` | Where Manager, Platform and Hub proxy `/api` and their public routes to. Also where the Resend webhook must point (`<API_URL>/webhooks/resend`). | `http://localhost:3001` | Manager, Platform, Hub, seed |
+| `API_URL` | Where Manager, Platform, Hub and the card app (`/loyalty-api`) proxy `/api` and their public routes to. Also where the Resend webhook must point (`<API_URL>/webhooks/resend`). | `http://localhost:3001` | Manager, Platform, Hub, qr-card, seed |
 | `HUB_URL` | URL of the Hub, used to build survey and QR links. | `http://localhost:3004` | API |
 | `PLATFORM_URL` | URL of Platform, used in links to the owner's screen. | `http://localhost:3003` | API |
 | `PUBLIC_BASE_URL` | Public base URL used for links inside emails. **Required** by the agents service outside development and test. | `http://localhost:3001` | agents, seed |
@@ -71,7 +71,9 @@ Host's agents run in their own service ([ADR 0020](../adr/0020-agents-in-their-o
 | Variable | What it is | Default | Who reads it |
 | --- | --- | --- | --- |
 | `LOYALTY_SECRET` | Signs the printed join QR tokens and hashes the device cookie. A random string of 32 characters or more. Without it, or with a shorter one, the `/v1/loyalty` and `/api/loyalty` routes are not mounted. | none | API |
-| `TRUST_PROXY` | Set to `1` only when a proxy you control sets `X-Forwarded-For`; then the first hop is the client address. Otherwise the socket address is used. | not set | API |
+| `TRUST_PROXY` | Set to `1` when the card app (or a proxy you control) sits in front of the API. For the loyalty routes it is not enough alone: `X-Forwarded-For` and `X-Forwarded-Proto` are believed only with a valid `LOYALTY_PROXY_SECRET` too; otherwise the socket address is used. | not set | API |
+| `LOYALTY_PROXY_SECRET` | A random string of 32 characters or more, the same for the API and qr-card. qr-card sends it in `x-atrium-proxy`; the API trusts the forwarded headers on a loyalty route only when `TRUST_PROXY` is on and the header matches. Shorter or missing: the headers are ignored (fails closed). | none | API, qr-card |
+| `QR_CARD_PROXY_HOPS` | How many trusted proxies sit in front of qr-card in production. `0` means none: qr-card forwards no client address and every guest shares one set of limits. qr-card must be reachable only through the counted proxies. | `0` | qr-card |
 | `QR_CARD_URL` | Public origin of the card app; the printable join QR points to `<QR_CARD_URL>/j/<token>`. Also makes the device cookie `Secure` when it starts with `https://`. | `http://localhost:3006` in `.env.example` | API |
 
 See [Loyalty and the stamp card](./loyalty-and-qr-card) and [ADR 0022](../adr/0022-loyalty-card-device-bound).

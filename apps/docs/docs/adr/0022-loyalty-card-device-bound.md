@@ -33,7 +33,8 @@ Clients need a digital stamp card in the style of Rondafy: the guest scans a QR 
 - **The email opt-in is unverified.** Anyone who holds a card token can attach an address they know, and the consent is recorded for it. Double opt-in is delivery C.
 - **Shared networks.** A venue's NAT shares the 20 joins per IP per hour. The 200 new cards per program per hour can be used up by abuse of the poster QR; the spec accepted that.
 - **The device limit is anti-abuse, not integrity.** It is a rolling 24-hour count of issued cards per device and program, and concurrent joins may race past it.
-- **Client IP.** The code takes the first hop of `X-Forwarded-For` only when `TRUST_PROXY` is set. The card app reaches the API through a Next rewrite, so delivery B's proxy must overwrite `X-Forwarded-For`, and the hop semantics of `TRUST_PROXY` must be settled then. Until then the variable should stay unset behind the rewrite.
+- **Client IP.** The card app reaches the API only through a same-origin route handler at `/loyalty-api/*`, not a Next rewrite (a rewrite keeps the `X-Forwarded-For` the client wrote). The handler builds the upstream request from an allow-list, so it carries at most one `X-Forwarded-For`, the entry `QR_CARD_PROXY_HOPS` places from the right of the chain (none when that is 0, the default), and it caps request bodies at 8 KiB while streaming (`413`). qr-card must be reachable only through the counted proxies, and an entry that is not a bare IP (a port, for instance) fails closed. The API does not believe the header on its own word: for the loyalty routes it trusts `X-Forwarded-For` and `X-Forwarded-Proto` only when `TRUST_PROXY` is on, `LOYALTY_PROXY_SECRET` is 32 or more characters and the request carries it in `x-atrium-proxy`; otherwise it uses the socket address, and an untrusted `X-Forwarded-Proto` does not make the cookie `Secure`.
+- **Known follow-up.** `apps/api/src/onboarding.ts` trusts `X-Forwarded-For` ungated. It is older than the loyalty routes and outside them.
 - **IPv6 keying.** Rate limits key on the full address. A client with an IPv6 /64 can rotate through a whole prefix of addresses, so the per-IP limits do not hold against it; keying on the /64 is a follow-up.
 - **The poller must send `If-None-Match` itself.** The public routes answer `Cache-Control: no-store`, so the browser will not do conditional requests alone. Delivery B's card page keeps the last body and the `ETag` and sends `If-None-Match`.
 - **A void writes no event of its own for consumers.** Stamp consumers cannot net out voids; the Retention follow-up must handle it.
@@ -46,6 +47,15 @@ Clients need a digital stamp card in the style of Rondafy: the guest scans a QR 
 - A paused program, a suspended location or a closed card answers 200 with a state; an unknown token is 404. A holder of the token learns nothing new from "closed".
 - `crm.get_loyalty_card` exists in the module but is not registered in the agents service until delivery C gives the CRM agent a manifest. The worker does register the erasure consumer that detaches a card from an erased guest.
 - Web cards have no lock-screen notices. Said plainly in the docs.
+
+## Delivery B (2026-10-20)
+
+The card app (`apps/qr-card`, port 3006), the Platform and Manager screens and the proxy above are built.
+
+- **The card QR holds the short code (`XXXX-XXXX`), never the token.** A photo of the QR gives staff a lookup key and nothing that opens the card.
+- **The token lives in the `/c/<token>` path**, so a home-screen shortcut made from the card page carries it. The join page replaces itself with the card page and the browser remembers the token in its own storage.
+- **No web manifest.** A shortcut works; an installable app is not promised.
+- The card app answers `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store`, because a card URL is a credential.
 
 ## Discarded alternatives
 

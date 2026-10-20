@@ -64,6 +64,7 @@ The owner's Overview answers "how is my business doing, and what needs me?" with
 - **Where they come from:** opt-in sources (WiFi portal, QR survey, online order and reservation checkouts), each becoming a retention audience.
 - **Who they are:** the guestbook from the Toast CRM, with segments and lifecycle (new → regular → VIP, win-backs).
 - **What we're doing:** campaigns and always-on automations with results, **cohort retention** by month since first visit, and **channel performance**.
+- **The stamp card:** **Stamp a card** (find or scan a card, add a stamp, hand out the reward, void the last stamp), **Loyalty activity** (a summary band and the table of stamps, rewards and cards) and **Program & QR** (the stamps needed, reward, cooldown and accent, the join QR to print as a poster or table cards, and rotating it). The guest side is the card app on port 3006; see [Loyalty and the stamp card](../guides/loyalty-and-qr-card).
 
 ### Attribution
 

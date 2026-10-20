@@ -33,7 +33,8 @@ Los clientes necesitan una tarjeta de sellos digital al estilo de Rondafy: el gu
 - **El opt-in de email no está verificado.** Quien tenga un token de tarjeta puede asociar una dirección que conozca, y el consentimiento se registra para ella. El doble opt-in es la entrega C.
 - **Redes compartidas.** El NAT de un local comparte las 20 altas por IP por hora. Las 200 tarjetas nuevas por programa por hora las puede agotar un abuso del QR del póster; la especificación lo aceptó.
 - **El límite por dispositivo es antiabuso, no de integridad.** Es un conteo móvil de 24 horas de tarjetas emitidas por dispositivo y programa, y registros concurrentes pueden saltárselo.
-- **IP del cliente.** El código toma el primer salto de `X-Forwarded-For` solo cuando `TRUST_PROXY` está puesta. La app de la tarjeta llega a la API por un rewrite de Next, así que el proxy de la entrega B debe sobrescribir `X-Forwarded-For`, y la semántica de saltos de `TRUST_PROXY` debe definirse entonces. Hasta entonces la variable debe quedar sin poner detrás del rewrite.
+- **IP del cliente.** La app de la tarjeta llega a la API solo a través de un route handler del mismo origen en `/loyalty-api/*`, no de un rewrite de Next (un rewrite conserva el `X-Forwarded-For` que escribió el cliente). El handler construye la petición a la API desde una lista permitida, así que lleva como mucho un `X-Forwarded-For`, la entrada que está `QR_CARD_PROXY_HOPS` lugares desde la derecha de la cadena (ninguna cuando es 0, el valor por defecto), y limita los cuerpos a 8 KiB mientras llegan (`413`). qr-card debe ser alcanzable solo a través de los proxies contados, y una entrada que no sea una IP sola (con puerto, por ejemplo) falla cerrado. La API no cree la cabecera por su palabra: para las rutas de lealtad confía en `X-Forwarded-For` y `X-Forwarded-Proto` solo cuando `TRUST_PROXY` está activo, `LOYALTY_PROXY_SECRET` tiene 32 o más caracteres y la petición lo lleva en `x-atrium-proxy`; si no, usa la dirección del socket, y un `X-Forwarded-Proto` no confiable no hace `Secure` la cookie.
+- **Pendiente conocido.** `apps/api/src/onboarding.ts` confía en `X-Forwarded-For` sin compuerta. Es anterior a las rutas de lealtad y queda fuera de ellas.
 - **Clave IPv6.** Los límites se calculan sobre la dirección completa. Un cliente con un /64 de IPv6 puede rotar por todo un prefijo de direcciones, así que los límites por IP no lo contienen; calcular sobre el /64 es un pendiente.
 - **El poller debe enviar `If-None-Match` por su cuenta.** Las rutas públicas responden `Cache-Control: no-store`, así que el navegador no hará peticiones condicionales solo. La página de la tarjeta de la entrega B guarda el último cuerpo y el `ETag` y envía `If-None-Match`.
 - **Un void no escribe un evento propio para los consumidores.** Los consumidores de sellos no pueden descontar los voids; el pendiente de Retention debe resolverlo.
@@ -46,6 +47,15 @@ Los clientes necesitan una tarjeta de sellos digital al estilo de Rondafy: el gu
 - Un programa en pausa, un local suspendido o una tarjeta cerrada responde 200 con un estado; un token desconocido es 404. Quien tiene el token no aprende nada nuevo de "cerrada".
 - `crm.get_loyalty_card` existe en el módulo pero no está registrada en el servicio de agentes hasta que la entrega C dé un manifiesto al agente de CRM. El worker sí registra el consumidor de borrado que desvincula una tarjeta de un guest borrado.
 - Las tarjetas web no tienen avisos en la pantalla de bloqueo. Dicho con claridad en la documentación.
+
+## Entrega B (2026-10-20)
+
+La app de la tarjeta (`apps/qr-card`, puerto 3006), las pantallas de Platform y Manager y el proxy de arriba están construidos.
+
+- **El QR de la tarjeta contiene el código corto (`XXXX-XXXX`), nunca el token.** Una foto del QR da al personal una clave de búsqueda y nada que abra la tarjeta.
+- **El token vive en la ruta `/c/<token>`**, así que un acceso directo en la pantalla de inicio hecho desde la página de la tarjeta lo lleva consigo. La página de registro se reemplaza por la de la tarjeta y el navegador recuerda el token en su propio almacenamiento.
+- **Sin web manifest.** Un acceso directo funciona; no se promete una app instalable.
+- La app de la tarjeta responde `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` y `Cache-Control: no-store`, porque la URL de una tarjeta es una credencial.
 
 ## Alternativas descartadas
 

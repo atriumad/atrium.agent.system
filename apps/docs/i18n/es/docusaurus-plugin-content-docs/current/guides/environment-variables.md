@@ -34,7 +34,7 @@ El Hub es donde los huéspedes abren los enlaces de encuesta y los códigos QR. 
 
 | Variable | Qué es | Por defecto | Quién la lee |
 | --- | --- | --- | --- |
-| `API_URL` | Hacia dónde Manager, Platform y Hub redirigen `/api` y sus rutas públicas. También es donde debe apuntar el webhook de Resend (`<API_URL>/webhooks/resend`). | `http://localhost:3001` | Manager, Platform, Hub, seed |
+| `API_URL` | Hacia dónde Manager, Platform, Hub y la app de la tarjeta (`/loyalty-api`) redirigen `/api` y sus rutas públicas. También es donde debe apuntar el webhook de Resend (`<API_URL>/webhooks/resend`). | `http://localhost:3001` | Manager, Platform, Hub, qr-card, seed |
 | `HUB_URL` | URL del Hub, usada para construir los enlaces de encuesta y QR. | `http://localhost:3004` | API |
 | `PLATFORM_URL` | URL de Platform, usada en los enlaces a la pantalla del dueño. | `http://localhost:3003` | API |
 | `PUBLIC_BASE_URL` | URL pública base para los enlaces dentro de los emails. **Obligatoria** para el servicio de agentes fuera de development y test. | `http://localhost:3001` | agentes, seed |
@@ -71,7 +71,9 @@ Los agentes de Host corren en su propio servicio ([ADR 0020](../adr/0020-agents-
 | Variable | Qué es | Por defecto | Quién la lee |
 | --- | --- | --- | --- |
 | `LOYALTY_SECRET` | Firma los tokens del QR de registro impreso y hashea la cookie del dispositivo. Una cadena aleatoria de 32 caracteres o más. Sin ella, o con una más corta, las rutas `/v1/loyalty` y `/api/loyalty` no se montan. | ninguno | API |
-| `TRUST_PROXY` | Poner `1` solo cuando un proxy que controlas pone `X-Forwarded-For`; entonces el primer salto es la dirección del cliente. Si no, se usa la dirección del socket. | sin poner | API |
+| `TRUST_PROXY` | Poner `1` cuando la app de la tarjeta (o un proxy que controlas) está delante de la API. Para las rutas de lealtad no basta por sí sola: `X-Forwarded-For` y `X-Forwarded-Proto` se creen solo con un `LOYALTY_PROXY_SECRET` válido también; si no, se usa la dirección del socket. | sin poner | API |
+| `LOYALTY_PROXY_SECRET` | Una cadena aleatoria de 32 caracteres o más, la misma para la API y qr-card. qr-card la envía en `x-atrium-proxy`; la API confía en las cabeceras reenviadas de una ruta de lealtad solo cuando `TRUST_PROXY` está activo y la cabecera coincide. Más corta o ausente: las cabeceras se ignoran (falla cerrado). | ninguno | API, qr-card |
+| `QR_CARD_PROXY_HOPS` | Cuántos proxies de confianza hay delante de qr-card en producción. `0` significa ninguno: qr-card no reenvía dirección del cliente y todos los guests comparten un solo juego de límites. qr-card debe ser alcanzable solo a través de los proxies contados. | `0` | qr-card |
 | `QR_CARD_URL` | Origen público de la app de la tarjeta; el QR de registro imprimible apunta a `<QR_CARD_URL>/j/<token>`. También hace `Secure` la cookie del dispositivo cuando empieza con `https://`. | `http://localhost:3006` en `.env.example` | API |
 
 Ver [Lealtad y la tarjeta de sellos](./loyalty-and-qr-card) y el [ADR 0022](../adr/0022-loyalty-card-device-bound).

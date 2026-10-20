@@ -16,6 +16,7 @@
     "docs:dev": "bun run --filter @atrium/docs dev",
     "docs:build": "bun run --filter @atrium/docs build",
     "db:migrate": "bun scripts/migrate.ts",
+    "build:apps": "turbo run build --filter=@atrium/qr-card --filter=@atrium/platform --filter=@atrium/manager --filter=@atrium/hub",
     "ci": "bun run lint && bun run check:deps && bun run typecheck && bun run test",
     "seed": "bun apps/worker/scripts/seed.ts",
     "seed:history": "bun apps/worker/scripts/seed-history.ts",

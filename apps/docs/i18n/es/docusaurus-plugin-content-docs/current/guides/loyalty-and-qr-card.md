@@ -1,16 +1,12 @@
 ---
 sidebar_position: 3.8
 title: "Lealtad y la tarjeta de sellos"
-description: "Cómo un local configura y usa la tarjeta de sellos, los límites que aplican y lo que todavía no está."
+description: "Cómo un local configura y usa la tarjeta de sellos, cómo la app de la tarjeta llega a la API, los límites que aplican y lo que todavía no está."
 ---
 
 # Lealtad y la *tarjeta de sellos*
 
-La tarjeta de sellos es la parte de lealtad del [CRM](../modules/crm). El guest escanea un QR en el local y recibe una tarjeta en el navegador del teléfono sin dar ningún dato. El personal agrega un sello después de cada visita y entrega el premio cuando la tarjeta se llena. Todo lo que pasa queda en las tablas propias de Atrium, junto a los guests, consentimientos y encuestas que el sistema ya tiene.
-
-:::note
-Hoy están construidos la API y los datos; la página de la tarjeta del guest (`apps/qr-card`) y las pantallas de Platform y Manager son la entrega B y van marcadas **próximamente** abajo. Mientras tanto las rutas se pueden probar con `curl` y la semilla demo, ver [probarlo en local](#probarlo-en-local).
-:::
+La tarjeta de sellos es la parte de lealtad del [CRM](../modules/crm). El guest escanea un QR en el local y recibe una tarjeta en el navegador del teléfono (la app de la tarjeta, `apps/qr-card`, puerto 3006) sin dar ningún dato. El personal agrega un sello después de cada visita y entrega el premio cuando la tarjeta se llena. Todo lo que pasa queda en las tablas propias de Atrium, junto a los guests, consentimientos y encuestas que el sistema ya tiene.
 
 ## Qué es una tarjeta
 
@@ -18,6 +14,33 @@ Hoy están construidos la API y los datos; la página de la tarjeta del guest (`
 - **Una tarjeta web, no un pase de wallet.** Se abre en el navegador y se puede agregar a la pantalla de inicio. Los pases de Apple y Google Wallet son una entrega posterior y irán detrás del mismo registro de tarjeta. Una tarjeta web no tiene avisos en la pantalla de bloqueo.
 - **El progreso se deriva.** Los sellos de una tarjeta se cuentan desde su registro de eventos de solo agregar (`stamp`, `reward_earned`, `reward_redeemed`, `void`), nunca se guardan como un número corriente.
 - **El email es opcional.** Un guest puede agregar un email con consentimiento para enterarse de sus premios. Solo entonces Core crea o encuentra un guest, y el consentimiento queda registrado con la fuente `loyalty_card`. El email vive solo en las tablas de guests de Core.
+
+## Usarla
+
+### El guest
+
+1. El guest escanea el QR de registro impreso. Abre `<QR_CARD_URL>/j/<joinToken>`, que crea la tarjeta y se reemplaza por `/c/<token de la tarjeta>`, así que la página de registro no queda en el historial de Atrás.
+2. La tarjeta muestra el local, la cuadrícula de sellos con el acento del programa, el premio, el código corto (`XXXX-XXXX`) y un QR de ese código. **El QR contiene el código corto, nunca el token.** Una foto del QR no da acceso a la tarjeta misma.
+3. El token de la tarjeta vive en la ruta `/c/<token>`, así que un acceso directo en la pantalla de inicio hecho desde esa página abre la misma tarjeta. No hay web manifest. El navegador además recuerda la tarjeta en su propio almacenamiento y la reabre desde la página de inicio de la app.
+4. La página vuelve a preguntar a la API cada 5 segundos mientras está visible y cada 30 segundos oculta, con `If-None-Match`, así que una tarjeta sin cambios cuesta un `304`. Un `429` o un fallo hacen más lento el sondeo. Un sello nuevo aparece con un aviso para lectores de pantalla.
+5. Al final el guest puede agregar un email con la casilla de consentimiento marcada; es opcional y el formulario no vuelve a aparecer una vez hecho.
+
+La app de la tarjeta envía `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store` en sus páginas dinámicas y no admite ser enmarcada, porque la URL de una tarjeta es una credencial. No hace ninguna petición a terceros.
+
+### El personal
+
+En Platform, el dueño y el staff del cliente ven **Retention** con **Stamp a card**, **Loyalty activity** y **Program & QR**. En Manager la agencia ve **Loyalty** con **Activity** (solo lectura) y **Programs & QR**. Un cliente cuyo paquete bloquea Retention ve la página bloqueada en todas; la tarjeta pública sigue abriendo.
+
+1. **Stamp a card** (`/loyalty/stamp`, dueño y staff). Elige el local, escribe el código de la tarjeta o escanea el QR en el teléfono del guest. Luego **Add stamp**; cuando la tarjeta está llena, **Redeem reward**. El dueño también puede usar **Void last stamp**, con un motivo de hasta 200 caracteres.
+2. La pantalla crea una clave de idempotencia por acción. Un error de red, un 5xx o un 429 conservan la clave, así que **Try again** la reutiliza y nunca puede agregar un segundo sello. Un sello rechazado (por ejemplo por el enfriamiento) es definitivo y muestra la hora para reintentar.
+3. El escáner de cámara necesita HTTPS o `localhost` y un navegador con `BarcodeDetector` (Chrome en Android, por ejemplo). No se sube nada. Donde falta, escribir el código siempre funciona.
+
+### El dueño
+
+1. **Program & QR** (`/loyalty/program`). Define los sellos, el premio, el enfriamiento, el acento y si el programa está activo, por local, y guarda. Un programa en pausa deja de sellar; la tarjeta dice "This card is paused" (o su traducción según el idioma del navegador).
+2. **Rotate QR** invalida de una vez todos los QR de registro impresos; las tarjetas ya emitidas siguen funcionando.
+3. **Print poster** da una hoja A4 con el QR de registro. **Print table cards** da cuatro por hoja A4, cada una en una celda de 90 x 130 mm (dos de las tarjetas de 148 x 105 mm planeadas al principio no caben en el ancho imprimible de un A4). Las dos se abren sin el marco de la app, listas para el diálogo de impresión del navegador.
+4. **Activity** (`/loyalty/activity`) muestra la banda de resumen (tarjetas emitidas, tarjetas activas, sellos, premios ganados y canjeados, frente a la ventana anterior) y una tabla de sellos, premios y tarjetas, con filtros de rango, local y tipo.
 
 ## Configurar el programa
 
@@ -67,7 +90,7 @@ Un void cancela el último sello que no fue anulado y nunca borra nada. Un sello
 - `GET /api/insights/loyalty?range=7d|30d|90d&place=` devuelve las cifras de la banda: tarjetas emitidas, tarjetas activas, sellos, premios ganados y premios canjeados, con el cambio frente a la ventana anterior.
 - `GET /api/loyalty/activity` lista sellos, premios y tarjetas con paginación en el servidor, un filtro `kind` y el mismo rango y local.
 
-Las pantallas de Platform y Manager para esto (la pantalla de sellado con escáner de cámara, la configuración del programa, la tarjeta imprimible de registro y la página de Activity) llegan **próximamente** en la entrega B.
+Platform y Manager las muestran en la página Activity, ver [Usarla](#usarla).
 
 ## El lado del guest
 
@@ -82,6 +105,17 @@ Las rutas públicas no necesitan sesión, y el token de la tarjeta en la ruta es
 Errores de registro: `410 invalid` para un token malo, rotado o ajeno y `410 paused` para un programa en pausa, `409 device_limit` cuando el dispositivo ya tiene una tarjeta, y `429` con `Retry-After` al pasar un límite.
 
 Un programa en pausa, un local suspendido o una tarjeta cerrada responde 200 con `state: "paused"` o `"closed"`. Un token desconocido o mal formado es 404. Las cookies son `HttpOnly`, `SameSite=Lax`, `Path=/`, y `Secure` cuando la petición es https, cuando un proxy de confianza dice que lo fue, cuando `QR_CARD_URL` empieza con `https://`, o en producción.
+
+## Cómo la app de la tarjeta llega a la API
+
+El navegador nunca llama a la API directamente. La app de la tarjeta tiene un route handler del mismo origen en `/loyalty-api/*` que reenvía las tres rutas de la tarjeta (`POST /cards`, `GET /cards/<token>`, `POST /cards/<token>/email`) a `<API_URL>/v1/loyalty/...`, y nada más. Es un route handler y no un rewrite de Next porque un rewrite conserva el `X-Forwarded-For` que escribió el cliente.
+
+- **Reescribe las cabeceras en lugar de pasarlas.** La petición a la API se construye desde una lista permitida (`content-type`, `accept`, `accept-language`, `if-none-match` y la cookie del dispositivo), nunca se copia. Lleva como mucho un `X-Forwarded-For`, la dirección del cliente que el handler calculó por su cuenta; lo que el cliente envió se descarta. `X-Forwarded-Proto` solo se pasa cuando se cuenta un proxy de confianza.
+- **La dirección del cliente** es la entrada que está `QR_CARD_PROXY_HOPS` lugares desde la derecha del `X-Forwarded-For` que añadieron los proxies de delante. Con `QR_CARD_PROXY_HOPS=0` (el valor por defecto) el handler no envía dirección y la API cuenta el socket de la propia app de la tarjeta: todos los guests comparten los mismos límites. En producción pon el número de proxies que corres delante de qr-card. qr-card debe ser alcanzable solo a través de esos proxies, o un cliente podría escribir la entrada que se cuenta. Una entrada que no sea una dirección IP sola (por ejemplo una con puerto) se descarta, y la API vuelve al socket.
+- **El cuerpo tiene un tope de 8 KiB** mientras llega por streaming; uno mayor se responde `413` y el resto nunca se lee.
+- **La cookie del dispositivo** `atr_card_dev` pasa en ambos sentidos, y su `Path` se reescribe a `/loyalty-api` para que el navegador la envíe solo a esa ruta. Toda respuesta lleva `Cache-Control: no-store`; `ETag` y `Retry-After` pasan.
+- **La API decide si cree la dirección.** `TRUST_PROXY` por sí solo no basta. Para las rutas de lealtad la API confía en `X-Forwarded-For` y `X-Forwarded-Proto` solo cuando `TRUST_PROXY` está activo, `LOYALTY_PROXY_SECRET` tiene 32 caracteres o más y la petición lleva el mismo valor en la cabecera `x-atrium-proxy` (comparado en tiempo constante). El handler añade esa cabecera desde su propia copia del secreto. Si no, la API usa la dirección del socket e ignora `X-Forwarded-Proto` también para la cookie `Secure`: falla cerrado, y la API registra una advertencia al arrancar si `TRUST_PROXY` está activo sin un secreto utilizable.
+- **Pendiente conocido.** `apps/api/src/onboarding.ts` todavía confía en `X-Forwarded-For` sin esta compuerta. Es anterior a las rutas de lealtad y queda fuera de ellas.
 
 ## Los límites
 
@@ -105,17 +139,20 @@ Dos consecuencias a conocer antes de un lanzamiento: el WiFi compartido de un lo
 | Variable | Efecto |
 | --- | --- |
 | `LOYALTY_SECRET` | Firma los tokens de registro y hashea la cookie del dispositivo. Al menos 32 caracteres. Sin ella, o con una más corta, las rutas de lealtad no se montan. |
-| `TRUST_PROXY` | Poner `1` solo cuando un proxy que controlas pone `X-Forwarded-For`. Entonces el primer salto es la dirección del cliente; si no, lo es la dirección del socket. |
+| `TRUST_PROXY` | Poner `1` cuando la app de la tarjeta (o un proxy que controlas) está delante de la API. Por sí solo no cambia nada en las rutas de lealtad: también necesita `LOYALTY_PROXY_SECRET`. |
+| `LOYALTY_PROXY_SECRET` | 32 caracteres o más, el mismo valor para la API y qr-card. La API cree `X-Forwarded-For` en una ruta de lealtad solo con `TRUST_PROXY` y una cabecera `x-atrium-proxy` que coincida. |
+| `QR_CARD_PROXY_HOPS` | Lo lee qr-card. Cuántos proxies de confianza hay delante de él en producción. `0` por defecto. |
+| `API_URL` | También lo lee qr-card: a dónde reenvía `/loyalty-api`. Por defecto `http://localhost:3001`. |
 | `QR_CARD_URL` | Origen público de la app de la tarjeta, usado en la URL de registro imprimible. Por defecto en desarrollo: `http://localhost:3006`. |
 
 ## Probarlo en local
 
-`bun run seed:loyalty` (solo desarrollo) da a cada local demo un programa activo e imprime la URL de registro de cada uno. Primero levanta la base de datos y la API con la guía de [desarrollo local](./local-development).
+`bun run seed:loyalty` (solo desarrollo) da a cada local demo un programa activo e imprime la URL de registro de cada uno. Levanta la base de datos, la API y la app de la tarjeta con la guía de [desarrollo local](./local-development), abre una URL de registro impresa en una ventana del tamaño de un teléfono, entra a Platform como `demo-owner@demo.test` y sella la tarjeta desde **Retention**.
 
 ## Lo que todavía no está
 
-- La página de la tarjeta y las pantallas de Platform y Manager (entrega B).
 - Pases de wallet y avisos de wallet (entrega D).
 - Segmentos de guests, automatizaciones, campañas y el ciclo de vida (entrega C). El opt-in de email no está verificado: quien tenga un token de tarjeta puede asociar un email conocido, y un email de confirmación (doble opt-in) llega con la entrega C.
 - Un logo en la tarjeta (necesita almacenamiento de archivos), varias tarjetas por local, tiers.
+- Un web manifest para la tarjeta: un acceso directo en la pantalla de inicio funciona desde la URL `/c/<token>`, pero no es una app instalable.
 - La herramienta de agente `crm.get_loyalty_card` existe pero no está registrada en el servicio de agentes hasta que el agente de CRM tenga su manifiesto.
