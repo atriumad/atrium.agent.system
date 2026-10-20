@@ -6,6 +6,7 @@ import { Button, buttonStyles } from "../actions/button";
 import { ApiError, api } from "../api";
 import { Emphasis } from "../brand/emphasis";
 import { Banner } from "../feedback/banner";
+import { NotAvailable } from "../shell/not-available";
 import { type CardLocale, fill, POSTER_COPY } from "./copy";
 import { loyaltyFailure } from "./program-page";
 
@@ -30,7 +31,7 @@ type State =
 const MESSAGE: Record<Exclude<State["status"], "loading" | "ready">, string> = {
   signin: "Sign in to the Platform first.",
   locked: "Not in your plan yet.",
-  forbidden: "Not available for your role",
+  forbidden: "",
   missing: "This place has no loyalty program yet. Set it up under Program & QR.",
   error: "We could not load this sheet. Reload the page to try again.",
 };
@@ -121,7 +122,7 @@ export function LoyaltyPrintPage({ locationId, format, lang }: LoyaltyPrintPageP
 
   const other = (l: CardLocale) => `?${new URLSearchParams({ locationId, format, lang: l })}`;
   return (
-    <main className="min-h-dvh bg-cream-100 text-charcoal-900">
+    <main className="min-h-dvh print:min-h-0 bg-cream-100 text-charcoal-900">
       <style>{"@page { size: A4 portrait; margin: 12mm }"}</style>
       <div className="print:hidden flex flex-wrap items-center gap-2 border-b border-charcoal-800 px-6 py-3">
         <Button size="sm" onClick={() => window.print()}>
@@ -143,7 +144,12 @@ export function LoyaltyPrintPage({ locationId, format, lang }: LoyaltyPrintPageP
           Loading…
         </p>
       ) : null}
-      {state.status !== "loading" && state.status !== "ready" ? (
+      {state.status === "forbidden" ? (
+        <div className="m-6 max-w-md">
+          <NotAvailable />
+        </div>
+      ) : null}
+      {state.status !== "loading" && state.status !== "ready" && state.status !== "forbidden" ? (
         <div className="m-6 max-w-md">
           <Banner status="neutral">{MESSAGE[state.status]}</Banner>
         </div>
@@ -167,14 +173,14 @@ export function LoyaltyPrintPage({ locationId, format, lang }: LoyaltyPrintPageP
 function Poster({ sheet, url, lang }: { sheet: Sheet; url: string; lang: CardLocale }) {
   const copy = POSTER_COPY[lang];
   return (
-    <section className="mx-auto flex w-[186mm] min-h-[273mm] flex-col items-center justify-center gap-8 text-center">
+    <section className="mx-auto flex h-[270mm] w-[186mm] break-inside-avoid flex-col items-center justify-center gap-8 text-center">
       <h1 className="m-0 font-serif text-[64px] leading-[1.02] text-balance break-words">
         {sheet.venue}
       </h1>
       <p className="m-0 font-serif text-3xl text-balance">
         {fill(copy.title, { venue: sheet.venue })}
       </p>
-      <div className="bg-cream-100 p-[4mm]">
+      <div className="bg-cream-100 p-[3mm]">
         <QRCodeSVG
           value={url}
           size={340}
@@ -194,11 +200,11 @@ function Poster({ sheet, url, lang }: { sheet: Sheet; url: string; lang: CardLoc
 function Cards({ sheet, url, lang }: { sheet: Sheet; url: string; lang: CardLocale }) {
   const copy = POSTER_COPY[lang];
   return (
-    <section className="mx-auto grid w-[186mm] grid-cols-2 grid-rows-2">
+    <section className="mx-auto grid w-[180mm] grid-cols-2 grid-rows-2 break-inside-avoid">
       {[0, 1, 2, 3].map((n) => (
         <article
           key={n}
-          className="flex h-[136mm] w-[93mm] flex-col items-center justify-center gap-3 border border-dashed border-charcoal-800/60 px-[6mm] text-center break-inside-avoid"
+          className="flex h-[130mm] w-[90mm] flex-col items-center justify-center gap-3 border border-dashed border-charcoal-800/60 px-[6mm] text-center break-inside-avoid"
         >
           <h2 className="m-0 font-serif text-[28px] leading-[1.05] text-balance break-words">
             {sheet.venue}

@@ -240,6 +240,28 @@ describe("loyalty program page", () => {
     expect(await screen.findByText("Not in your plan yet.")).toBeTruthy();
   });
 
+  test("a parent re-render neither refetches the program nor resets a typed edit", async () => {
+    const calls = routed({
+      "GET /api/locations": PLACES,
+      [PROGRAM_GET]: { body: { program } },
+      [LINK_GET]: LINK,
+    });
+    const { user, rerender } = page();
+    const name = (await screen.findByDisplayValue("Coffee card")) as HTMLInputElement;
+    await user.clear(name);
+    await user.type(name, "Brunch card");
+    rerender(
+      <MeProvider me={{ ...owner }}>
+        <LoyaltyProgramPage />
+      </MeProvider>,
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Brunch card");
+    expect(calls.filter((c) => c.path === `/api/loyalty/program?locationId=${LOC}`)).toHaveLength(
+      1,
+    );
+  });
+
   test("with two places the selector writes ?place= and loads that place", async () => {
     const other = "11111111-2222-4333-8444-555555555555";
     const calls = routed({
@@ -309,6 +331,15 @@ describe("loyalty print page", () => {
     routed({ "GET /api/locations": { status: 401, body: { error: "unauthorized" } } });
     setup(<LoyaltyPrintPage locationId={LOC} format="poster" lang="en" />);
     expect(await screen.findByText("Sign in to the Platform first.")).toBeTruthy();
+  });
+
+  test("a forbidden answer shows the same title and body as on screen", async () => {
+    routed({ ...printRoutes, [PROGRAM_GET]: { status: 403, body: { error: "forbidden" } } });
+    setup(<LoyaltyPrintPage locationId={LOC} format="poster" lang="en" />);
+    expect(await screen.findByText("Not available for your role")).toBeTruthy();
+    expect(
+      screen.getByText("Ask the account owner or the Atrium team if you need this."),
+    ).toBeTruthy();
   });
 
   test("a locked answer says so, a null url warns", async () => {

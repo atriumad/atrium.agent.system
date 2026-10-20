@@ -116,6 +116,7 @@ export function LoyaltyProgramPage() {
       .catch((e) => setFailure(loyaltyFailure(e)));
   }, []);
   useEffect(loadPlaces, [loadPlaces]);
+  const onLocked = useCallback(() => setFailure("locked"), []);
 
   if (!me.canReadLoyalty) return <NotAvailable />;
   if (failure === "locked") return <ModulePage feature="retention" />;
@@ -160,7 +161,7 @@ export function LoyaltyProgramPage() {
           key={place.id}
           place={place}
           canManage={me.canManageLoyalty}
-          onLocked={() => setFailure("locked")}
+          onLocked={onLocked}
         />
       ) : null}
     </div>
