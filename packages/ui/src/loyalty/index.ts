@@ -4,4 +4,7 @@ export * from "./card-screen";
 export * from "./code";
 export * from "./copy";
 export * from "./email-opt-in";
+export * from "./join-qr-panel";
+export * from "./print-page";
+export * from "./program-page";
 export * from "./stamp-grid";

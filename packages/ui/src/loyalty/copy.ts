@@ -130,3 +130,19 @@ export function fill(template: string, vars: Record<string, string | number>): s
     name in vars ? String(vars[name]) : whole,
   );
 }
+
+export type PosterCopy = { title: string; scan: string; reward: string };
+
+/** The printed poster and table cards. The guest reads these, so they follow the sheet's language. */
+export const POSTER_COPY: Record<CardLocale, PosterCopy> = {
+  en: {
+    title: "Collect stamps at {venue}",
+    scan: "Scan with your phone camera. No app, no sign-up.",
+    reward: "{stamps} stamps: {reward}",
+  },
+  es: {
+    title: "Colecciona sellos en {venue}",
+    scan: "Escanea con la cámara del móvil. Sin app, sin registro.",
+    reward: "{stamps} sellos: {reward}",
+  },
+};
