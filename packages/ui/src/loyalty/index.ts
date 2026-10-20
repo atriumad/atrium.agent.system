@@ -1,4 +1,7 @@
 export * from "./accent";
+export * from "./activity-band";
+export * from "./activity-columns";
+export * from "./activity-page";
 export * from "./card-face";
 export * from "./card-screen";
 export * from "./code";
