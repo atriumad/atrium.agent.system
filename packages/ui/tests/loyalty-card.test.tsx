@@ -95,6 +95,47 @@ describe("LoyaltyCardScreen", () => {
     expect(screen.getByText("ABCD-EFGH")).toBeTruthy();
   });
 
+  test("offline on first load (no card yet) says no connection, not 'not found'", () => {
+    setup(<LoyaltyCardScreen {...base} status="offline" view={null} />);
+    expect(screen.getByText("No connection")).toBeTruthy();
+    expect(screen.getByText("We could not reach your card. We will keep trying.")).toBeTruthy();
+    expect(screen.queryByText("We could not find this card")).toBeNull();
+  });
+
+  test("only not_found with no card shows the not-found screen", () => {
+    setup(<LoyaltyCardScreen {...base} status="not_found" view={null} />);
+    expect(screen.getByText("We could not find this card")).toBeTruthy();
+  });
+
+  test("Spanish first-load offline", () => {
+    setup(<LoyaltyCardScreen {...base} copy={CARD_COPY.es} status="offline" view={null} />);
+    expect(screen.getByText("Sin conexión")).toBeTruthy();
+  });
+
+  test("the join error has its own copy, apart from offline and rate limit", () => {
+    for (const locale of ["en", "es"] as const) {
+      const c = CARD_COPY[locale];
+      expect(c.errorTitle.length).toBeGreaterThan(0);
+      expect(c.errorBody.length).toBeGreaterThan(0);
+      expect(c.errorTitle).not.toBe(c.offline);
+      expect(c.errorTitle).not.toBe(c.limitedTitle);
+      expect(c.errorBody).not.toBe(c.limitedBody);
+    }
+    expect(CARD_COPY.en.errorTitle).toBe("Something went wrong");
+    expect(CARD_COPY.en.errorBody).toBe(
+      "We could not get your card. Try scanning the QR again in a moment.",
+    );
+  });
+
+  test("the phone QR sits in a plain cream box with padding (a quiet zone) and encodes the short code", () => {
+    setup(<LoyaltyCardScreen {...base} />);
+    const svg = document.querySelector("svg[data-card-qr]") as SVGElement;
+    expect(svg.getAttribute("width")).toBe("120");
+    const box = svg.parentElement as HTMLElement;
+    expect(box.className).toContain("bg-cream-100");
+    expect(box.className).toContain("p-3");
+  });
+
   test("Spanish copy: 3 de 8 sellos", () => {
     setup(<LoyaltyCardScreen {...base} copy={CARD_COPY.es} />);
     expect(screen.getByRole("img", { name: "3 de 8 sellos" })).toBeTruthy();

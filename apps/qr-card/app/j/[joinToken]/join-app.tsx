@@ -32,7 +32,7 @@ export function JoinApp({ joinToken, locale }: { joinToken: string; locale: Card
     case "rate_limited":
       return <JoinStateScreen title={copy.limitedTitle} body={copy.limitedBody} />;
     case "error":
-      return <JoinStateScreen title={copy.offline} body={copy.limitedBody} />;
+      return <JoinStateScreen title={copy.errorTitle} body={copy.errorBody} />;
     default:
       return <JoinStateScreen title={copy.invalidTitle} body={copy.invalidBody} />;
   }

@@ -24,6 +24,10 @@ export type CardCopy = {
   limitedTitle: string;
   limitedBody: string;
   offline: string;
+  offlineTitle: string;
+  offlineBody: string;
+  errorTitle: string;
+  errorBody: string;
   joining: string;
   hint: string;
   hintDismiss: string;
@@ -66,6 +70,10 @@ export const CARD_COPY: Record<CardLocale, CardCopy> = {
     limitedTitle: "Too many tries",
     limitedBody: "Wait a few minutes and try again.",
     offline: "No connection. Showing your card as it was.",
+    offlineTitle: "No connection",
+    offlineBody: "We could not reach your card. We will keep trying.",
+    errorTitle: "Something went wrong",
+    errorBody: "We could not get your card. Try scanning the QR again in a moment.",
     joining: "Getting your card…",
     hint: "Add this page to your home screen to open your card in one tap.",
     hintDismiss: "Got it",
@@ -106,6 +114,10 @@ export const CARD_COPY: Record<CardLocale, CardCopy> = {
     limitedTitle: "Demasiados intentos",
     limitedBody: "Espera unos minutos y vuelve a intentarlo.",
     offline: "Sin conexión. Mostramos tu tarjeta como estaba.",
+    offlineTitle: "Sin conexión",
+    offlineBody: "No pudimos llegar a tu tarjeta. Seguiremos intentándolo.",
+    errorTitle: "Algo salió mal",
+    errorBody: "No pudimos conseguir tu tarjeta. Vuelve a escanear el QR en un momento.",
     joining: "Preparando tu tarjeta…",
     hint: "Añade esta página a tu pantalla de inicio para abrir tu tarjeta con un toque.",
     hintDismiss: "Entendido",

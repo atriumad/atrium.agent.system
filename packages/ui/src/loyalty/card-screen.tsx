@@ -71,6 +71,9 @@ export function LoyaltyCardScreen({
     if (status === "rate_limited") {
       return <JoinStateScreen title={copy.limitedTitle} body={copy.limitedBody} />;
     }
+    if (status === "offline") {
+      return <JoinStateScreen title={copy.offlineTitle} body={copy.offlineBody} />;
+    }
     return <JoinStateScreen title={copy.notFoundTitle} body={copy.notFoundBody} />;
   }
 
@@ -95,14 +98,18 @@ export function LoyaltyCardScreen({
           <p className="m-0 text-sm text-fg-muted">{copy.codeHint}</p>
         </div>
         {/* The code, never the card token: the token is a bearer secret. */}
-        <QRCodeSVG
-          data-card-qr=""
-          value={view.shortCode}
-          size={120}
-          fgColor="currentColor"
-          bgColor="transparent"
-          className="shrink-0"
-        />
+        <div
+          className="shrink-0 rounded-card bg-cream-100 p-3 text-charcoal-900"
+          data-card-qr-box=""
+        >
+          <QRCodeSVG
+            data-card-qr=""
+            value={view.shortCode}
+            size={120}
+            fgColor="currentColor"
+            bgColor="transparent"
+          />
+        </div>
       </section>
       {showHint ? (
         <div className="flex items-start gap-3 rounded-card border border-dashed border-charcoal-800 p-3 text-sm dark:border-cream-300">

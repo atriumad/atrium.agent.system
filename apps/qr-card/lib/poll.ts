@@ -1,15 +1,7 @@
-export type CardView = {
-  state: "active" | "paused" | "closed";
-  locationName: string;
-  programName: string;
-  rewardLabel: string;
-  accent: "lime" | "clay" | "charcoal" | "sage";
-  stampsRequired: number;
-  stampsInCycle: number;
-  rewardReady: boolean;
-  shortCode: string;
-  etag: string;
-};
+import type { LoyaltyCardView } from "@atrium/ui";
+
+/** The shape is defined once, in packages/ui; this is the name the card app uses. */
+export type CardView = LoyaltyCardView;
 
 export type PollResult =
   | { kind: "ok"; view: CardView; etag: string | null }

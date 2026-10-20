@@ -129,6 +129,31 @@ describe("createKeyRing", () => {
     expect(ring.keyFor("stamp", "p:ABCDEFGH")).toBe("k3");
     expect(ring.keyFor("redeem", "p:ABCDEFGH")).toBe("k2");
   });
+
+  test("the key is reused within the TTL and fresh after it", () => {
+    let i = 0;
+    let t = 1000;
+    const ring = createKeyRing(() => `k${++i}`, { ttlMs: 120_000, now: () => t });
+    expect(ring.keyFor("redeem", "c")).toBe("k1");
+    t += 119_999;
+    expect(ring.keyFor("redeem", "c")).toBe("k1");
+    t += 1;
+    expect(ring.keyFor("redeem", "c")).toBe("k2");
+    // The new key has its own clock.
+    t += 60_000;
+    expect(ring.keyFor("redeem", "c")).toBe("k2");
+  });
+
+  test("the default TTL is 2 minutes", () => {
+    let i = 0;
+    let t = 0;
+    const ring = createKeyRing(() => `k${++i}`, { now: () => t });
+    ring.keyFor("stamp", "c");
+    t = 119_000;
+    expect(ring.keyFor("stamp", "c")).toBe("k1");
+    t = 120_000;
+    expect(ring.keyFor("stamp", "c")).toBe("k2");
+  });
 });
 
 describe("loyalty stamp page", () => {
@@ -389,7 +414,82 @@ describe("loyalty stamp page", () => {
     await screen.findByText("Stamp added. 4 of 8.");
     const keys = calls.filter((c) => c.method === "POST").map((c) => c.body?.idempotencyKey);
     expect(keys).toHaveLength(2);
-    expect(keys[1]).toBe(keys[0]);
+    // The staff looked at the card again (Find card): that settles the in-doubt key.
+    expect(keys[1]).not.toBe(keys[0]);
+  });
+
+  test("a user-started lookup settles the in-doubt key; the automatic refresh settles nothing else", async () => {
+    let n = 0;
+    const calls = serve((c) => {
+      if (isPlaces(c)) return PLACES;
+      if (c.method === "POST") {
+        n += 1;
+        if (c.path.includes("redeem") && n === 1) return "network";
+        return {
+          body: {
+            cardId: "card-1",
+            stampsInCycle: 4,
+            stampsRequired: 8,
+            rewardEarned: false,
+            rewardReady: false,
+          },
+        };
+      }
+      return { body: { card: card({ rewardsPending: 1 }) } };
+    });
+    const { user } = mount();
+    await findCard(user);
+    const posts = () => calls.filter((c) => c.method === "POST");
+    const keyOf = (i: number) => posts()[i]?.body?.idempotencyKey;
+    await user.click(screen.getByRole("button", { name: "Redeem reward" }));
+    await screen.findByRole("button", { name: "Try again" });
+    // A stamp succeeds and the page refreshes the card by itself: the redeem key is untouched.
+    await user.click(screen.getByRole("button", { name: "Add stamp" }));
+    await screen.findByText("Stamp added. 4 of 8.");
+    await user.click(await screen.findByRole("button", { name: "Redeem reward" }));
+    await waitFor(() => expect(posts()).toHaveLength(3));
+    expect(keyOf(2)).toBe(keyOf(0));
+    // The staff press Find card again: the next redeem is a new action.
+    await user.click(screen.getByRole("button", { name: "Find card" }));
+    await user.click(await screen.findByRole("button", { name: "Redeem reward" }));
+    await waitFor(() => expect(posts()).toHaveLength(4));
+    expect(keyOf(3)).not.toBe(keyOf(0));
+  });
+
+  test("two lookups answered out of order: only the latest is shown", async () => {
+    const pending: Record<string, (r: Response) => void> = {};
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      const path = typeof input === "string" ? input : input.toString();
+      if (path === "/api/locations") {
+        return Promise.resolve(Response.json(PLACES.body));
+      }
+      const code = new URL(path, "http://x").searchParams.get("code") as string;
+      return new Promise<Response>((resolve) => {
+        pending[code] = resolve;
+      });
+    }) as typeof fetch;
+    const { user } = mount();
+    const field = await screen.findByLabelText("Card code");
+    await user.type(field, "abcdefgh");
+    const form = field.closest("form") as HTMLFormElement;
+    fireEvent.submit(form);
+    await user.clear(field);
+    await user.type(field, "jkmnpqrs");
+    fireEvent.submit(form);
+    await waitFor(() => expect(Object.keys(pending)).toHaveLength(2));
+    await act(async () => {
+      pending.JKMNPQRS?.(
+        Response.json({
+          card: card({ cardId: "card-b", shortCode: "JKMN-PQRS", rewardLabel: "B" }),
+        }),
+      );
+    });
+    await screen.findByText("B");
+    await act(async () => {
+      pending.ABCDEFGH?.(Response.json({ card: card({ cardId: "card-a" }) }));
+    });
+    expect(screen.getByText("JKMN-PQRS")).toBeTruthy();
+    expect(screen.queryByText("A free coffee")).toBeNull();
   });
 
   test("cooldown: the next stamp time is shown in local time, with the weekday when not today", async () => {

@@ -195,6 +195,8 @@ function StampDesk({
 }) {
   const me = useMe();
   const inflight = useRef(false);
+  // Lookups can finish out of order: only the latest one may change the screen.
+  const lookupSeq = useRef(0);
   const [text, setText] = useState("");
   const [card, setCard] = useState<StaffCard | null>(null);
   const [finding, setFinding] = useState(false);
@@ -240,13 +242,23 @@ function StampDesk({
         setError("Enter the 8-character code, like ABCD-EFGH.");
         return;
       }
+      const mine = ++lookupSeq.current;
+      // A lookup the staff started is a new look at the card: an in-doubt key from before is spent.
+      if (!afterAction) {
+        ring.settle("stamp", `${locationId}:${code}`);
+        ring.settle("redeem", `${locationId}:${code}`);
+      }
       setFinding(true);
       setError("");
       setRetry(null);
       try {
-        setCard(await api.loyaltyCard(locationId, code));
+        const found = await api.loyaltyCard(locationId, code);
+        if (mine !== lookupSeq.current) return;
+        if (!afterAction) ring.settle("void", found.cardId);
+        setCard(found);
         setStale(false);
       } catch (e) {
+        if (mine !== lookupSeq.current) return;
         const kind = loyaltyFailure(e);
         if (kind === "locked") return onLocked();
         if (afterAction) {
@@ -261,10 +273,10 @@ function StampDesk({
         setStale(false);
         setError(failureText(e, now()));
       } finally {
-        setFinding(false);
+        if (mine === lookupSeq.current) setFinding(false);
       }
     },
-    [locationId, onLocked, now],
+    [locationId, onLocked, now, ring],
   );
 
   onCodeRef.current = (raw) => {
