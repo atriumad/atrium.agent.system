@@ -287,6 +287,111 @@ describe("loyalty stamp page", () => {
     expect(keys[3]).not.toBe(keys[0]);
   });
 
+  test("a failed refresh after a successful action keeps the card and the success, and does not invite re-sending", async () => {
+    let lookups = 0;
+    const calls = serve((c) => {
+      if (isPlaces(c)) return PLACES;
+      if (c.method === "POST") {
+        return {
+          body: {
+            cardId: "card-1",
+            stampsInCycle: 4,
+            stampsRequired: 8,
+            rewardEarned: false,
+            rewardReady: false,
+          },
+        };
+      }
+      lookups += 1;
+      return lookups === 1 ? { body: { card: card({ rewardsPending: 1 }) } } : "network";
+    });
+    const { user } = mount({ me: owner });
+    await findCard(user);
+    await user.click(screen.getByRole("button", { name: "Add stamp" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toBe(
+        "Done, but the card could not be refreshed. Find it again to see the new count.",
+      ),
+    );
+    expect(screen.getByRole("status").textContent).toBe("Stamp added. 4 of 8.");
+    expect(screen.getByText("A free coffee")).toBeTruthy();
+    expect(screen.queryByText(/did not go through/)).toBeNull();
+    for (const name of ["Add stamp", "Redeem reward", "Void last stamp"]) {
+      expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
+    }
+    expect(calls.filter((c) => c.method === "POST")).toHaveLength(1);
+    // A fresh lookup that works brings the actions back.
+    lookups = 0;
+    await user.click(screen.getByRole("button", { name: "Find card" }));
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("button", { name: "Add stamp" }) as HTMLButtonElement).disabled,
+      ).toBe(false),
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  test("a stale Try again label does not survive a lookup of another card", async () => {
+    let fail = true;
+    serve((c) => {
+      if (isPlaces(c)) return PLACES;
+      if (c.method === "POST") return fail ? "network" : { body: {} };
+      return { body: { card: card() } };
+    });
+    const { user } = mount();
+    await findCard(user);
+    await user.click(screen.getByRole("button", { name: "Add stamp" }));
+    await screen.findByRole("button", { name: "Try again" });
+    fail = false;
+    const field = screen.getByLabelText("Card code");
+    await user.clear(field);
+    await user.type(field, "jjjjkkkk");
+    await user.click(screen.getByRole("button", { name: "Find card" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Try again" })).toBeNull());
+    expect(screen.getByRole("button", { name: "Add stamp" })).toBeTruthy();
+  });
+
+  test("switching place and back keeps the key of an in-doubt stamp", async () => {
+    const other = "11111111-2222-4333-8444-555555555555";
+    let attempts = 0;
+    const calls = serve((c) => {
+      if (isPlaces(c)) {
+        return { body: { locations: [place(LOC, "Casa Olivo"), place(other, "Bar Dos")] } };
+      }
+      if (c.method === "POST") {
+        attempts += 1;
+        return attempts === 1
+          ? "network"
+          : {
+              body: {
+                cardId: "card-1",
+                stampsInCycle: 4,
+                stampsRequired: 8,
+                rewardEarned: false,
+                rewardReady: false,
+              },
+            };
+      }
+      return { body: { card: card() } };
+    });
+    window.history.replaceState(null, "", `/?place=${LOC}`);
+    const { user } = mount();
+    await findCard(user);
+    await user.click(screen.getByRole("button", { name: "Add stamp" }));
+    await screen.findByRole("button", { name: "Try again" });
+    await user.click(screen.getByRole("combobox", { name: "Place" }));
+    await user.click(await screen.findByRole("option", { name: "Bar Dos" }));
+    await waitFor(() => expect(screen.queryByText("A free coffee")).toBeNull());
+    await user.click(screen.getByRole("combobox", { name: "Place" }));
+    await user.click(await screen.findByRole("option", { name: "Casa Olivo" }));
+    await findCard(user);
+    await user.click(screen.getByRole("button", { name: "Add stamp" }));
+    await screen.findByText("Stamp added. 4 of 8.");
+    const keys = calls.filter((c) => c.method === "POST").map((c) => c.body?.idempotencyKey);
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
   test("cooldown: the next stamp time is shown in local time, with the weekday when not today", async () => {
     const at = new Date(2026, 9, 19, 12, 0);
     const today = new Date(2026, 9, 19, 16, 40);

@@ -109,6 +109,8 @@ export function LoyaltyStampPage({
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [failure, setFailure] = useState<Failure>(null);
   const [placeId, setPlaceId] = useState<string | null>(null);
+  // Lives above the desk: remounting it on a place change must not mint a new key for an in-doubt action.
+  const ring = useMemo(() => createKeyRing(), []);
 
   const loadPlaces = useCallback(() => {
     setFailure(null);
@@ -168,6 +170,7 @@ export function LoyaltyStampPage({
         <StampDesk
           key={placeId}
           locationId={placeId}
+          ring={ring}
           scanner={scanner}
           now={now}
           onLocked={onLocked}
@@ -179,17 +182,18 @@ export function LoyaltyStampPage({
 
 function StampDesk({
   locationId,
+  ring,
   scanner,
   now,
   onLocked,
 }: {
   locationId: string;
+  ring: ReturnType<typeof createKeyRing>;
   scanner: CardScanner;
   now: () => Date;
   onLocked: () => void;
 }) {
   const me = useMe();
-  const ring = useMemo(() => createKeyRing(), []);
   const inflight = useRef(false);
   const [text, setText] = useState("");
   const [card, setCard] = useState<StaffCard | null>(null);
@@ -197,6 +201,8 @@ function StampDesk({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  // The action went through but the card could not be read again: the count on screen is old.
+  const [stale, setStale] = useState(false);
   const [retry, setRetry] = useState<KeyAction | null>(null);
   const [animate, setAnimate] = useState<number | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
@@ -228,7 +234,7 @@ function StampDesk({
   }, [scanOpen, video, scanner]);
 
   const lookup = useCallback(
-    async (raw: string) => {
+    async (raw: string, afterAction = false) => {
       const code = normalizeCardCode(raw);
       if (!code) {
         setError("Enter the 8-character code, like ABCD-EFGH.");
@@ -236,12 +242,23 @@ function StampDesk({
       }
       setFinding(true);
       setError("");
+      setRetry(null);
       try {
         setCard(await api.loyaltyCard(locationId, code));
+        setStale(false);
       } catch (e) {
-        setCard(null);
         const kind = loyaltyFailure(e);
         if (kind === "locked") return onLocked();
+        if (afterAction) {
+          // Keep the card and the success message; never read as a failed action.
+          setStale(true);
+          setError(
+            "Done, but the card could not be refreshed. Find it again to see the new count.",
+          );
+          return;
+        }
+        setCard(null);
+        setStale(false);
         setError(failureText(e, now()));
       } finally {
         setFinding(false);
@@ -286,7 +303,7 @@ function StampDesk({
       }
       if (action === "stamp") setAnimate((result as { stampsInCycle: number }).stampsInCycle - 1);
       else setAnimate(null);
-      await lookup(code);
+      await lookup(code, true);
     } catch (e) {
       if (decided(e)) ring.settle(action, cardKey);
       else setRetry(action);
@@ -433,13 +450,18 @@ function StampDesk({
               size="lg"
               className="w-full sm:w-auto"
               loading={busy}
-              disabled={card.state !== "active" || !me.canStampLoyalty}
+              disabled={stale || card.state !== "active" || !me.canStampLoyalty}
               onClick={() => void stamp()}
             >
               {retry === "stamp" ? "Try again" : "Add stamp"}
             </Button>
             {card.rewardsPending > 0 && me.canRedeemLoyalty ? (
-              <Button variant="outline" size="lg" disabled={busy} onClick={() => void redeem()}>
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={busy || stale}
+                onClick={() => void redeem()}
+              >
                 {retry === "redeem" ? "Try again" : "Redeem reward"}
               </Button>
             ) : null}
@@ -447,7 +469,7 @@ function StampDesk({
               <Button
                 variant="ghost"
                 size="lg"
-                disabled={busy}
+                disabled={busy || stale}
                 onClick={() => {
                   setError("");
                   setVoidOpen(true);
