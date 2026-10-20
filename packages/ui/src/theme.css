@@ -99,6 +99,19 @@
 
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
+  /* A new stamp on the loyalty card. Used behind motion-safe: only. */
+  --animate-stamp-in: stamp-in 300ms var(--ease-out) both;
+  @keyframes stamp-in {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
   /* The ramp of the system, 11 to 72. */
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1.2;
