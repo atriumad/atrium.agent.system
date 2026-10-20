@@ -71,21 +71,21 @@ const crmDeps = (deps: AppDeps, secret: string): CrmDeps => ({
 
 /**
  * Whether `X-Forwarded-For` and `X-Forwarded-Proto` may be believed: the deployment says a proxy it
- * controls sits in front (`TRUST_PROXY`) and, when `LOYALTY_PROXY_SECRET` is set, the request carries
- * it in `x-atrium-proxy`. The API is public for connectors, so without the secret anyone calling it
- * directly could pick their own address.
+ * controls sits in front (`TRUST_PROXY`) and the request carries `LOYALTY_PROXY_SECRET` (32+
+ * characters) in `x-atrium-proxy`. The API is public for connectors, so this fails closed: with no
+ * usable secret nothing is trusted and the socket's address counts.
  */
 function trustsForwarding(c: Context, trustProxy: boolean, proxySecret?: string): boolean {
   if (!trustProxy) return false;
-  if (!proxySecret) return true;
+  if (!proxySecret || proxySecret.length < 32) return false;
   const sent = Buffer.from(c.req.header("x-atrium-proxy") ?? "");
   const want = Buffer.from(proxySecret);
   return sent.length === want.length && timingSafeEqual(sent, want);
 }
 
 /**
- * The caller's address. The first hop of `X-Forwarded-For` only when the deployment says a proxy
- * it controls sits in front (`trustProxy`) and the hop is a real address; otherwise the socket's.
+ * The caller's address. The first hop of `X-Forwarded-For` only when `trustsForwarding` says the
+ * request came through our proxy and the hop is a real address; otherwise the socket's.
  * Anything else a client can write is ignored.
  */
 function clientIp(c: Context, trustProxy: boolean, proxySecret?: string): string {
@@ -121,7 +121,7 @@ function rateLimited(c: Context, retryAfter: number) {
 
 /**
  * The routes a customer's phone calls, with no session: it holds a card token, nothing else.
- * Same-origin through the card app's rewrite, so there are no CORS headers. The device is the
+ * Same-origin through the card app's proxy route, so there are no CORS headers. The device is the
  * httpOnly cookie this server set, hashed with the secret; a device id in a body is never read.
  * Nothing here returns a guest or an address.
  */
@@ -166,8 +166,8 @@ export function mountLoyaltyPublic(app: Hono<any>, deps: AppDeps) {
         sameSite: "Lax",
         secure: isHttps(c, trustProxy, deps.qrCardUrl, proxySecret),
         maxAge: DEVICE_COOKIE_SECONDS,
-        // The card app reaches this API through a rewrite on its own path, so a narrower path
-        // would never be sent back.
+        // The card app's proxy rewrites this cookie's Path to /loyalty-api on the way out,
+        // so the browser only sends it there. Set to "/" here for clients that call the API directly.
         path: "/",
       });
     }

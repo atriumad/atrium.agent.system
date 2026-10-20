@@ -34,11 +34,15 @@ export type AppDeps = {
   resendWebhookSecret?: string;
   /** `LOYALTY_SECRET`: signs join tokens and device hashes. Without it no loyalty route is mounted. */
   loyaltySecret?: string;
-  /** Read the client address from the first hop of `X-Forwarded-For` (`TRUST_PROXY`). Off by default. */
+  /**
+   * `TRUST_PROXY`: a proxy we run sits in front. Off by default. On its own it trusts nothing for
+   * the loyalty routes; it also needs `loyaltyProxySecret`.
+   */
   trustProxy?: boolean;
   /**
-   * `LOYALTY_PROXY_SECRET`: with `trustProxy`, `X-Forwarded-For` counts only on requests that carry
-   * this value in `x-atrium-proxy` (the card app's proxy sets it). Unset: `trustProxy` alone decides.
+   * `LOYALTY_PROXY_SECRET` (32+ characters): with `trustProxy`, `X-Forwarded-For` and
+   * `X-Forwarded-Proto` count only on requests that carry this value in `x-atrium-proxy` (the card
+   * app's proxy sets it). Unset or shorter: the loyalty routes use the socket's address.
    */
   loyaltyProxySecret?: string;
   /** `QR_CARD_URL`: the card app's public origin, where the printed join QR points. */

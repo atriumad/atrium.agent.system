@@ -200,6 +200,36 @@ describe("forwardLoyalty", () => {
     expect(fake.calls).toBe(0);
   });
 
+  test("the cap is enforced while streaming: a lying or absent Content-Length stops at the cap", async () => {
+    let pulled = 0;
+    const chunk = new Uint8Array(1024).fill(120);
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled++;
+        if (pulled > 1000) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    const req = new Request("http://card.test/loyalty-api/cards", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: stream,
+      duplex: "half",
+    } as RequestInit);
+    const res = await forwardLoyalty(req, ["cards"], env);
+    expect(res.status).toBe(413);
+    expect(pulled).toBeLessThan(50);
+    expect(fake.calls).toBe(0);
+    // a declared length over the cap is refused before the body is read at all
+    const declared = await forwardLoyalty(
+      post("/loyalty-api/cards", { "content-length": "9000" }, "{}"),
+      ["cards"],
+      env,
+    );
+    expect(declared.status).toBe(413);
+    expect(fake.calls).toBe(0);
+  });
+
   test("an API that does not answer is 502 unavailable", async () => {
     const down = (async () => {
       throw new Error("ECONNREFUSED");

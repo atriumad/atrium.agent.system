@@ -86,7 +86,7 @@ if (trustProxy && !loyaltyProxySecret) {
       level: "warn",
       message: "loyalty.proxy_secret_missing",
       detail:
-        "TRUST_PROXY is on without a LOYALTY_PROXY_SECRET of 32+ characters: anyone calling the API directly can choose the address the join limits count",
+        "TRUST_PROXY is on without a LOYALTY_PROXY_SECRET of 32+ characters: the loyalty routes ignore X-Forwarded-For and X-Forwarded-Proto and count the socket's address, so every guest shares one limit",
     }),
   );
 }

@@ -68,6 +68,14 @@ const gated = createApp({
   trustProxy: true,
   loyaltyProxySecret: PROXY_SECRET,
 });
+const tooShort = createApp({
+  db,
+  now: () => NOW,
+  session,
+  loyaltySecret: SECRET,
+  trustProxy: true,
+  loyaltyProxySecret: "s".repeat(8),
+});
 const off = createApp({ db, now: () => NOW, session });
 
 const cookies: Record<string, string> = {};
@@ -381,8 +389,12 @@ describe("the public flow, end to end", () => {
     expect(https.res.headers.get("set-cookie") ?? "").toContain("Secure");
     const behind = await pub("/v1/loyalty/cards", {
       ...joinBody(token),
-      target: proxied,
-      headers: { "content-type": "application/json", "x-forwarded-proto": "https" },
+      target: gated,
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-proto": "https",
+        "x-atrium-proxy": PROXY_SECRET,
+      },
     });
     expect(behind.res.headers.get("set-cookie") ?? "").toContain("Secure");
   });
@@ -544,8 +556,12 @@ describe("the public flow, end to end", () => {
       const r = await pub("/v1/loyalty/cards", {
         ...joinBody("nope"),
         ip: proxy,
-        target: proxied,
-        headers: { "content-type": "application/json", "x-forwarded-for": `${fwd}, 10.0.0.1` },
+        target: gated,
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": `${fwd}, 10.0.0.1`,
+          "x-atrium-proxy": PROXY_SECRET,
+        },
       });
       if (i < 20) expect(r.res.status).toBe(410);
       else expect(r.res.status).toBe(429);
@@ -553,8 +569,12 @@ describe("the public flow, end to end", () => {
     const other = await pub("/v1/loyalty/cards", {
       ...joinBody("nope"),
       ip: proxy,
-      target: proxied,
-      headers: { "content-type": "application/json", "x-forwarded-for": nextIp() },
+      target: gated,
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": nextIp(),
+        "x-atrium-proxy": PROXY_SECRET,
+      },
     });
     expect(other.res.status).toBe(410);
   });
@@ -585,6 +605,32 @@ describe("the public flow, end to end", () => {
     for (let i = 0; i < 21; i++) {
       expect((await join(behind, `7.9.${i}.1`, PROXY_SECRET)).res.status).toBe(410);
     }
+  });
+
+  test("TRUST_PROXY without a usable proxy secret fails closed: the socket's address counts", async () => {
+    for (const target of [proxied, tooShort]) {
+      const socket = nextIp();
+      const join = (i: number) =>
+        pub("/v1/loyalty/cards", {
+          ...joinBody("nope"),
+          ip: socket,
+          target,
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": `6.6.${i}.1`,
+            "x-atrium-proxy": "s".repeat(8),
+          },
+        });
+      for (let i = 0; i < 20; i++) expect((await join(i)).res.status).toBe(410);
+      expect((await join(99)).res.status).toBe(429);
+    }
+    const token = await joinTokenOf("owner-a", locA);
+    const behind = await pub("/v1/loyalty/cards", {
+      ...joinBody(token),
+      target: proxied,
+      headers: { "content-type": "application/json", "x-forwarded-proto": "https" },
+    });
+    expect(behind.res.headers.get("set-cookie") ?? "").not.toContain("Secure");
   });
 
   test("no CORS headers on a public route", async () => {

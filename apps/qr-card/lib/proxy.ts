@@ -11,6 +11,33 @@ const TOKEN = /^[A-Za-z0-9_-]{22}$/;
 const MAX_BODY = 8 * 1024;
 const COOKIE = "atr_card_dev";
 
+/** Read at most MAX_BODY bytes; null as soon as the body goes over, cancelling the rest. */
+async function readCapped(req: Request): Promise<Uint8Array<ArrayBuffer> | null> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY) return null;
+  if (!req.body) return new Uint8Array(0);
+  const reader = req.body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_BODY) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.byteLength;
+  }
+  return out;
+}
+
 const json = (status: number, body: object) =>
   Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
@@ -74,10 +101,11 @@ export async function forwardLoyalty(
   }
   if (env.proxySecret) headers.set("x-atrium-proxy", env.proxySecret);
 
-  let body: ArrayBuffer | undefined;
+  let body: Uint8Array<ArrayBuffer> | undefined;
   if (req.method === "POST") {
-    body = await req.arrayBuffer();
-    if (body.byteLength > MAX_BODY) return json(413, { error: "payload_too_large" });
+    const read = await readCapped(req);
+    if (!read) return json(413, { error: "payload_too_large" });
+    body = read;
   }
 
   let upstream: Response;
