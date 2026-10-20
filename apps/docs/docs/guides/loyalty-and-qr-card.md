@@ -25,13 +25,15 @@ The stamp card is the loyalty part of the [CRM](../modules/crm). The guest scans
 4. The page asks the API again every 5 seconds while it is visible and every 30 seconds when hidden, with `If-None-Match`, so an unchanged card costs a `304`. A `429` or a failure slows the polling down. A new stamp appears with an announcement for screen readers.
 5. At the end the guest can add an email with a ticked consent box; it is optional and the form does not come back once it is done.
 
-The card app sends `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store` on its dynamic pages, and refuses to be framed, because a card URL is a credential. It makes no third-party request.
+The card app sends `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, and refuses to be framed, because a card URL is a credential. It makes no third-party request. The card and join pages are rendered per request (the layout reads the request headers), so Next answers them with `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`, and the `/loyalty-api` handler answers `Cache-Control: no-store` on every response.
+
+**Known limitation: the card token is kept in the browser's `localStorage` only.** The design (spec §2) also names a cookie; it is not implemented. Safari clears script-written storage after about 7 days without interaction when the card was not added to the home screen. A guest who rescans the table QR after that gets a new card (the device limit is 24 hours) and the old stamps are orphaned. A server-set `httpOnly` cookie is the possible follow-up.
 
 ### The staff
 
-On Platform the client's owner and staff see **Retention** with **Stamp a card**, **Loyalty activity** and **Program & QR**. On Manager the agency sees **Loyalty** with **Activity** (read-only) and **Programs & QR**. A client whose package locks Retention sees the locked page on all of them; the public card still opens.
+On Platform the client's owner and staff see **Retention** with **Stamp a card**, **Loyalty activity** and **Program & QR**. On Manager the agency sees **Loyalty** with **Activity** (read-only) and **Programs & QR**. A client whose package locks Retention sees the locked page on the menu pages. The stamp screen also opens from a direct URL (`/loyalty/stamp`) and answers locked at its first lookup, so it shows the locked page then. The public card still opens.
 
-1. **Stamp a card** (`/loyalty/stamp`, owner and staff). Pick the place, then type the card's code or scan the QR on the guest's phone. Then **Add stamp**; when the card is full, **Redeem**. The owner can also **Void last stamp**, with a reason of up to 200 characters.
+1. **Stamp a card** (`/loyalty/stamp`, owner and staff). Pick the place, then type the card's code or scan the QR on the guest's phone. Then **Add stamp**; when the card is full, **Redeem reward**. The owner can also **Void last stamp**, with a reason of up to 200 characters.
 2. The screen makes one idempotency key per action. A network error, a 5xx or a 429 keeps the key, so **Try again** reuses it and can never add a second stamp. A refused stamp (for instance by the cooldown) is final and shows the time to retry.
 3. The camera scanner needs HTTPS or `localhost` and a browser with `BarcodeDetector` (Chrome on Android, for one). Nothing is uploaded. Where it is missing, typing the code always works.
 
@@ -75,7 +77,7 @@ Staff are the client's own roles: the owner and the staff. Stamping and redeemin
 | Hand out the reward | `POST /api/loyalty/redeem` | client owner, client staff |
 | Cancel the last stamp (a mistake) | `POST /api/loyalty/void` | `loyalty:manage` |
 
-A stamp or a redeem takes a required `locationId`, either the short `code` (8 characters, shown `XXXX-XXXX`) or the `cardToken` read from the card's QR, and an `idempotencyKey`. Sending the same key twice is one stamp. Rules a stamp must pass:
+A stamp or a redeem takes a required `locationId`, either the short `code` (8 characters, shown `XXXX-XXXX`) or the `cardToken` (the card's secret token, which the QR never holds), and an `idempotencyKey`. Sending the same key twice is one stamp. Rules a stamp must pass:
 
 - the program is active and the card is open;
 - the cooldown has passed: exactly the cooldown after the last stamp is allowed, one second earlier is refused with `409 refused` and the time to retry;
@@ -90,7 +92,7 @@ A void cancels the latest stamp that was not voided and never deletes anything. 
 - `GET /api/insights/loyalty?range=7d|30d|90d&place=` returns the band figures: cards issued, active cards, stamps, rewards earned and rewards redeemed, with change against the previous window.
 - `GET /api/loyalty/activity` lists stamps, rewards and cards with server-side paging, a `kind` filter and the same range and place.
 
-Platform and Manager show these on the Activity page, see [Use it](#use-it).
+The Activity page on Platform and Manager shows both, see [Use it](#use-it).
 
 ## The guest's side
 
@@ -104,7 +106,7 @@ The public routes need no session, and the card token in the path is the only se
 
 Join errors: `410 invalid` for a bad, rotated or foreign token and `410 paused` for a paused program, `409 device_limit` when the device already has a card, and `429` with `Retry-After` over a limit.
 
-A paused program, a suspended location or a closed card answers 200 with `state: "paused"` or `"closed"`. An unknown or malformed token is 404. Cookies are `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when the request is https, when a trusted proxy says it was, when `QR_CARD_URL` starts with `https://`, or in production.
+A paused program, a suspended location or a closed card answers 200 with `state: "paused"` or `"closed"`. An unknown or malformed token is 404. The device cookie is `HttpOnly`, `SameSite=Lax`, with the `Path` rewritten to `/loyalty-api` by the card app (see below), and `Secure` when the request is https, when a trusted proxy says it was, when `QR_CARD_URL` starts with `https://`, or in production.
 
 ## How the card app reaches the API
 
@@ -139,7 +141,7 @@ Two consequences to know before a launch: a venue's shared WiFi shares the 20 jo
 | Variable | Effect |
 | --- | --- |
 | `LOYALTY_SECRET` | Signs the join tokens and hashes the device cookie. At least 32 characters. Without it, or with a shorter one, the loyalty routes are not mounted. |
-| `TRUST_PROXY` | Set to `1` when the card app (or a proxy you control) sits in front of the API. On its own it changes nothing for the loyalty routes: it also needs `LOYALTY_PROXY_SECRET`. |
+| `TRUST_PROXY` | Set to `1` or `true` when the card app (or a proxy you control) sits in front of the API. On its own it changes nothing for the loyalty routes: it also needs `LOYALTY_PROXY_SECRET`. |
 | `LOYALTY_PROXY_SECRET` | 32 characters or more, the same value for the API and qr-card. The API believes `X-Forwarded-For` on a loyalty route only with `TRUST_PROXY` and a matching `x-atrium-proxy` header. |
 | `QR_CARD_PROXY_HOPS` | Read by qr-card. How many trusted proxies sit in front of it in production. `0` by default. |
 | `API_URL` | Read by qr-card as well: where `/loyalty-api` forwards to. Default `http://localhost:3001`. |

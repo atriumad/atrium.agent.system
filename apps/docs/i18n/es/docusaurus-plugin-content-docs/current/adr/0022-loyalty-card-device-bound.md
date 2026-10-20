@@ -55,7 +55,8 @@ La app de la tarjeta (`apps/qr-card`, puerto 3006), las pantallas de Platform y 
 - **El QR de la tarjeta contiene el código corto (`XXXX-XXXX`), nunca el token.** Una foto del QR da al personal una clave de búsqueda y nada que abra la tarjeta.
 - **El token vive en la ruta `/c/<token>`**, así que un acceso directo en la pantalla de inicio hecho desde la página de la tarjeta lo lleva consigo. La página de registro se reemplaza por la de la tarjeta y el navegador recuerda el token en su propio almacenamiento.
 - **Sin web manifest.** Un acceso directo funciona; no se promete una app instalable.
-- La app de la tarjeta responde `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` y `Cache-Control: no-store`, porque la URL de una tarjeta es una credencial.
+- La app de la tarjeta responde `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` y no admite ser enmarcada, porque la URL de una tarjeta es una credencial. Las páginas de la tarjeta y del registro se generan en cada petición, así que Next las responde con `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`; el handler `/loyalty-api` responde `no-store`.
+- **Limitación conocida: el token de la tarjeta se guarda solo en el `localStorage` del navegador.** La spec §2 nombra también una cookie; no está implementada. Safari borra el almacenamiento escrito por scripts tras unos 7 días sin interacción cuando la tarjeta no se añadió a la pantalla de inicio, así que un guest que vuelva a escanear el QR de la mesa después recibe una tarjeta nueva (el límite por dispositivo es de 24 horas) y los sellos antiguos quedan huérfanos. Una cookie `httpOnly` puesta por el servidor es el posible seguimiento.
 
 ## Alternativas descartadas
 

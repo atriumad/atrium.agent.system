@@ -55,7 +55,8 @@ The card app (`apps/qr-card`, port 3006), the Platform and Manager screens and t
 - **The card QR holds the short code (`XXXX-XXXX`), never the token.** A photo of the QR gives staff a lookup key and nothing that opens the card.
 - **The token lives in the `/c/<token>` path**, so a home-screen shortcut made from the card page carries it. The join page replaces itself with the card page and the browser remembers the token in its own storage.
 - **No web manifest.** A shortcut works; an installable app is not promised.
-- The card app answers `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store`, because a card URL is a credential.
+- The card app answers `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow` and refuses framing, because a card URL is a credential. The card and join pages are rendered per request, so Next answers them with `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`; the `/loyalty-api` handler answers `no-store`.
+- **Known limitation: the card token is kept in the browser's `localStorage` only.** Spec §2 also names a cookie; it is not implemented. Safari clears script-written storage after about 7 days without interaction when the card was not added to the home screen, so a guest who rescans the table QR after that gets a new card (the device limit is 24 hours) and the old stamps are orphaned. A server-set `httpOnly` cookie is the possible follow-up.
 
 ## Discarded alternatives
 

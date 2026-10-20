@@ -57,7 +57,7 @@ export LOYALTY_SECRET=dev-loyalty-secret-0123456789abcdef0123 LOYALTY_PROXY_SECR
 bun --env-file=.env.local run seed:loyalty    # prints each place's join URL
 ```
 
-Open a printed join URL on a phone-sized window: the card appears at `/c/<token>`. Then sign in to Platform as `demo-owner@demo.test`, open **Retention › Stamp a card**, type the card's code and add a stamp; the card shows it within 5 seconds. As a smoke test of the proxy, post `/loyalty-api/cards` 21 times to `localhost:3006` with a different `x-forwarded-for` each time: the first twenty answer `201` and the next `429`, because with `QR_CARD_PROXY_HOPS` unset the spoofed addresses never reach the API. The rate counters last an hour; clear `crm.rate_counters` to repeat it. See [Loyalty and the stamp card](./loyalty-and-qr-card).
+Open a printed join URL on a phone-sized window: the card appears at `/c/<token>`. Then sign in to Platform as `demo-owner@demo.test`, open **Retention › Stamp a card**, type the card's code and add a stamp; the card shows it within 5 seconds. As a smoke test of the proxy, post `/loyalty-api/cards` 21 times to `localhost:3006`, each with `-d '{"joinToken":"<printed token>"}'` (the join token the seed printed) and a different `x-forwarded-for` each time: the first twenty answer `201` and the next `429`, because with `QR_CARD_PROXY_HOPS` unset the spoofed addresses never reach the API. The rate counters last an hour; clear `crm.rate_counters` to repeat it. See [Loyalty and the stamp card](./loyalty-and-qr-card).
 
 ## Walk the main flow
 

@@ -25,11 +25,13 @@ La tarjeta de sellos es la parte de lealtad del [CRM](../modules/crm). El guest 
 4. La página vuelve a preguntar a la API cada 5 segundos mientras está visible y cada 30 segundos oculta, con `If-None-Match`, así que una tarjeta sin cambios cuesta un `304`. Un `429` o un fallo hacen más lento el sondeo. Un sello nuevo aparece con un aviso para lectores de pantalla.
 5. Al final el guest puede agregar un email con la casilla de consentimiento marcada; es opcional y el formulario no vuelve a aparecer una vez hecho.
 
-La app de la tarjeta envía `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store` en sus páginas dinámicas y no admite ser enmarcada, porque la URL de una tarjeta es una credencial. No hace ninguna petición a terceros.
+La app de la tarjeta envía `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow`, y no admite ser enmarcada, porque la URL de una tarjeta es una credencial. No hace ninguna petición a terceros. Las páginas de la tarjeta y del registro se generan en cada petición (el layout lee las cabeceras de la petición), así que Next las responde con `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`, y el handler `/loyalty-api` responde `Cache-Control: no-store` en cada respuesta.
+
+**Limitación conocida: el token de la tarjeta se guarda solo en el `localStorage` del navegador.** El diseño (spec §2) nombra también una cookie; no está implementada. Safari borra el almacenamiento escrito por scripts tras unos 7 días sin interacción cuando la tarjeta no se añadió a la pantalla de inicio. Un guest que vuelva a escanear el QR de la mesa después recibe una tarjeta nueva (el límite por dispositivo es de 24 horas) y los sellos antiguos quedan huérfanos. Una cookie `httpOnly` puesta por el servidor es el posible seguimiento.
 
 ### El personal
 
-En Platform, el dueño y el staff del cliente ven **Retention** con **Stamp a card**, **Loyalty activity** y **Program & QR**. En Manager la agencia ve **Loyalty** con **Activity** (solo lectura) y **Programs & QR**. Un cliente cuyo paquete bloquea Retention ve la página bloqueada en todas; la tarjeta pública sigue abriendo.
+En Platform, el dueño y el staff del cliente ven **Retention** con **Stamp a card**, **Loyalty activity** y **Program & QR**. En Manager la agencia ve **Loyalty** con **Activity** (solo lectura) y **Programs & QR**. Un cliente cuyo paquete bloquea Retention ve la página bloqueada en las páginas del menú. La pantalla de sellar también abre desde una URL directa (`/loyalty/stamp`) y responde bloqueado en su primera búsqueda, y entonces muestra la página bloqueada. La tarjeta pública sigue abriendo.
 
 1. **Stamp a card** (`/loyalty/stamp`, dueño y staff). Elige el local, escribe el código de la tarjeta o escanea el QR en el teléfono del guest. Luego **Add stamp**; cuando la tarjeta está llena, **Redeem reward**. El dueño también puede usar **Void last stamp**, con un motivo de hasta 200 caracteres.
 2. La pantalla crea una clave de idempotencia por acción. Un error de red, un 5xx o un 429 conservan la clave, así que **Try again** la reutiliza y nunca puede agregar un segundo sello. Un sello rechazado (por ejemplo por el enfriamiento) es definitivo y muestra la hora para reintentar.
@@ -75,7 +77,7 @@ El personal son los roles propios del cliente: el dueño y el staff. Sellar y ca
 | Entregar el premio | `POST /api/loyalty/redeem` | dueño del cliente, staff del cliente |
 | Cancelar el último sello (un error) | `POST /api/loyalty/void` | `loyalty:manage` |
 
-Un sello o un canje lleva un `locationId` obligatorio, el `code` corto (8 caracteres, mostrado `XXXX-XXXX`) o el `cardToken` leído del QR de la tarjeta, y una `idempotencyKey`. Enviar la misma clave dos veces es un solo sello. Reglas que un sello debe cumplir:
+Un sello o un canje lleva un `locationId` obligatorio, el `code` corto (8 caracteres, mostrado `XXXX-XXXX`) o el `cardToken` (el token secreto de la tarjeta, que el QR nunca contiene), y una `idempotencyKey`. Enviar la misma clave dos veces es un solo sello. Reglas que un sello debe cumplir:
 
 - el programa está activo y la tarjeta abierta;
 - pasó el enfriamiento: justo el enfriamiento después del último sello se permite, un segundo antes se rechaza con `409 refused` y la hora para reintentar;
@@ -90,7 +92,7 @@ Un void cancela el último sello que no fue anulado y nunca borra nada. Un sello
 - `GET /api/insights/loyalty?range=7d|30d|90d&place=` devuelve las cifras de la banda: tarjetas emitidas, tarjetas activas, sellos, premios ganados y premios canjeados, con el cambio frente a la ventana anterior.
 - `GET /api/loyalty/activity` lista sellos, premios y tarjetas con paginación en el servidor, un filtro `kind` y el mismo rango y local.
 
-Platform y Manager las muestran en la página Activity, ver [Usarla](#usarla).
+La página Activity de Platform y de Manager muestra ambas, ver [Usarla](#usarla).
 
 ## El lado del guest
 
@@ -104,7 +106,7 @@ Las rutas públicas no necesitan sesión, y el token de la tarjeta en la ruta es
 
 Errores de registro: `410 invalid` para un token malo, rotado o ajeno y `410 paused` para un programa en pausa, `409 device_limit` cuando el dispositivo ya tiene una tarjeta, y `429` con `Retry-After` al pasar un límite.
 
-Un programa en pausa, un local suspendido o una tarjeta cerrada responde 200 con `state: "paused"` o `"closed"`. Un token desconocido o mal formado es 404. Las cookies son `HttpOnly`, `SameSite=Lax`, `Path=/`, y `Secure` cuando la petición es https, cuando un proxy de confianza dice que lo fue, cuando `QR_CARD_URL` empieza con `https://`, o en producción.
+Un programa en pausa, un local suspendido o una tarjeta cerrada responde 200 con `state: "paused"` o `"closed"`. Un token desconocido o mal formado es 404. La cookie del dispositivo es `HttpOnly`, `SameSite=Lax`, con el `Path` reescrito a `/loyalty-api` por la app de la tarjeta (ver abajo), y `Secure` cuando la petición es https, cuando un proxy de confianza dice que lo fue, cuando `QR_CARD_URL` empieza con `https://`, o en producción.
 
 ## Cómo la app de la tarjeta llega a la API
 
@@ -139,7 +141,7 @@ Dos consecuencias a conocer antes de un lanzamiento: el WiFi compartido de un lo
 | Variable | Efecto |
 | --- | --- |
 | `LOYALTY_SECRET` | Firma los tokens de registro y hashea la cookie del dispositivo. Al menos 32 caracteres. Sin ella, o con una más corta, las rutas de lealtad no se montan. |
-| `TRUST_PROXY` | Poner `1` cuando la app de la tarjeta (o un proxy que controlas) está delante de la API. Por sí solo no cambia nada en las rutas de lealtad: también necesita `LOYALTY_PROXY_SECRET`. |
+| `TRUST_PROXY` | Poner `1` o `true` cuando la app de la tarjeta (o un proxy que controlas) está delante de la API. Por sí solo no cambia nada en las rutas de lealtad: también necesita `LOYALTY_PROXY_SECRET`. |
 | `LOYALTY_PROXY_SECRET` | 32 caracteres o más, el mismo valor para la API y qr-card. La API cree `X-Forwarded-For` en una ruta de lealtad solo con `TRUST_PROXY` y una cabecera `x-atrium-proxy` que coincida. |
 | `QR_CARD_PROXY_HOPS` | Lo lee qr-card. Cuántos proxies de confianza hay delante de él en producción. `0` por defecto. |
 | `API_URL` | También lo lee qr-card: a dónde reenvía `/loyalty-api`. Por defecto `http://localhost:3001`. |

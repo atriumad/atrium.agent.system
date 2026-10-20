@@ -57,7 +57,7 @@ export LOYALTY_SECRET=dev-loyalty-secret-0123456789abcdef0123 LOYALTY_PROXY_SECR
 bun --env-file=.env.local run seed:loyalty    # imprime la URL de registro de cada local
 ```
 
-Abre una URL de registro impresa en una ventana del tamaño de un teléfono: la tarjeta aparece en `/c/<token>`. Luego entra a Platform como `demo-owner@demo.test`, abre **Retention › Stamp a card**, escribe el código de la tarjeta y agrega un sello; la tarjeta lo muestra en 5 segundos. Como prueba de humo del proxy, haz `POST` a `/loyalty-api/cards` 21 veces en `localhost:3006` con un `x-forwarded-for` distinto cada vez: las primeras veinte responden `201` y la siguiente `429`, porque con `QR_CARD_PROXY_HOPS` sin poner las direcciones falsificadas nunca llegan a la API. Los contadores duran una hora; borra `crm.rate_counters` para repetirlo. Ver [Lealtad y la tarjeta de sellos](./loyalty-and-qr-card).
+Abre una URL de registro impresa en una ventana del tamaño de un teléfono: la tarjeta aparece en `/c/<token>`. Luego entra a Platform como `demo-owner@demo.test`, abre **Retention › Stamp a card**, escribe el código de la tarjeta y agrega un sello; la tarjeta lo muestra en 5 segundos. Como prueba de humo del proxy, haz `POST` a `/loyalty-api/cards` 21 veces en `localhost:3006`, cada una con `-d '{"joinToken":"<token impreso>"}'` (el token de registro que imprimió el seed) y un `x-forwarded-for` distinto cada vez: las primeras veinte responden `201` y la siguiente `429`, porque con `QR_CARD_PROXY_HOPS` sin poner las direcciones falsificadas nunca llegan a la API. Los contadores duran una hora; borra `crm.rate_counters` para repetirlo. Ver [Lealtad y la tarjeta de sellos](./loyalty-and-qr-card).
 
 ## Recorrer el flujo principal
 
