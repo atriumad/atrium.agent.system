@@ -17,6 +17,7 @@ import {
   LoyaltyForbiddenError,
   listActivity,
   looksLikeCardToken,
+  lookupCard,
   loyaltySummary,
   NoRewardError,
   NothingToVoidError,
@@ -41,6 +42,7 @@ const DEVICE_COOKIE_SECONDS = 60 * 60 * 24 * 365;
 const MAX_PUBLIC_BODY = 8 * 1024;
 const MAX_TOKEN_CHARS = 200;
 const MAX_EMAIL_CHARS = 320;
+const MAX_CODE_CHARS = 20;
 const RANGES: readonly string[] = ["7d", "30d", "90d"];
 const KINDS: readonly string[] = ["stamp", "reward_earned", "reward_redeemed", "void"];
 
@@ -309,6 +311,22 @@ export function mountLoyalty(api: Hono<Env>, deps: AppDeps, secrets: LoyaltySecr
       if (!locationId) return c.json({ error: "invalid_id" }, 422);
       const program = await withScope(deps.db, scope, (tx) => getProgram(tx, scope, locationId));
       return c.json({ program });
+    }),
+  );
+
+  api.get(
+    "/loyalty/card",
+    guarded("read", async (c, scope) => {
+      const locationId = locationOf(c.req.query("locationId"));
+      if (!locationId) return c.json({ error: "invalid_id" }, 422);
+      const code = c.req.query("code");
+      if (typeof code !== "string" || code.trim() === "" || code.length > MAX_CODE_CHARS) {
+        return c.json({ error: "invalid_request" }, 422);
+      }
+      const card = await withScope(deps.db, scope, (tx) =>
+        lookupCard(tx, scope, { locationId, code }),
+      );
+      return c.json({ card });
     }),
   );
 

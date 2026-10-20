@@ -5,8 +5,9 @@ export type {
   ActivityRow,
   LoyaltyCardProgress,
   LoyaltySummary,
+  StaffCard,
 } from "./application/activity";
-export { getLoyaltyCard, listActivity, loyaltySummary } from "./application/activity";
+export { getLoyaltyCard, listActivity, lookupCard, loyaltySummary } from "./application/activity";
 export type { CardView, IssueResult } from "./application/cards";
 export { getCardByToken, issueCard } from "./application/cards";
 export type { AttachEmailResult } from "./application/email";

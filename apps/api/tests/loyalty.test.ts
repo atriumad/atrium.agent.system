@@ -916,6 +916,59 @@ describe("activity and the band", () => {
   });
 });
 
+describe("the staff card lookup and /api/me", () => {
+  test("GET /api/loyalty/card: 200 for staff of the place, 404 for another place, 422 for a bad id, 403 feature_locked below Pillar 3", async () => {
+    const card = await newCard(await joinTokenOf("owner-a", locA));
+    const get = (who: string, loc: string, code: string) =>
+      call(who, "GET", `/api/loyalty/card?locationId=${loc}&code=${encodeURIComponent(code)}`);
+
+    const ok = await get("staff-a", locA, card.shortCode.toLowerCase());
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("cache-control")).toBe("no-store");
+    const body = (await ok.json()) as any;
+    expect(body.card).toMatchObject({
+      shortCode: card.shortCode,
+      locationId: locA,
+      accent: "lime",
+      recent: [],
+    });
+    expect(JSON.stringify(body)).not.toContain(card.token);
+
+    // another place of the same client, an unknown code and a client B session all look alike
+    const answers = [
+      await get("staff-a", locA2, card.shortCode),
+      await get("staff-a", locA, "AAAA-AAAA"),
+      await get("staff-a", locA, "!"),
+      await get("owner-b", locA, card.shortCode),
+    ];
+    for (const res of answers) {
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "not_found" });
+    }
+
+    expect((await get("staff-a", "nope", card.shortCode)).status).toBe(422);
+    const missing = await call("staff-a", "GET", `/api/loyalty/card?locationId=${locA}`);
+    expect(missing.status).toBe(422);
+    expect((await get("staff-a", locA, "A".repeat(21))).status).toBe(422);
+
+    const locked = await get("owner-c", locC, card.shortCode);
+    expect(locked.status).toBe(403);
+    expect(await locked.json()).toEqual({ error: "feature_locked", feature: "retention" });
+    expect((await app.request(`/api/loyalty/card?locationId=${locA}&code=x`)).status).toBe(401);
+  });
+
+  test("/api/me carries the four loyalty flags by role", async () => {
+    const flags = async (who: string) => {
+      const me = (await (await call(who, "GET", "/api/me")).json()) as Record<string, unknown>;
+      return [me.canReadLoyalty, me.canStampLoyalty, me.canRedeemLoyalty, me.canManageLoyalty];
+    };
+    // read, stamp, redeem, manage
+    expect(await flags("staff-a")).toEqual([true, true, true, false]);
+    expect(await flags("owner-a")).toEqual([true, true, true, true]);
+    expect(await flags("am")).toEqual([true, false, false, true]);
+  });
+});
+
 describe("the retention feature is locked", () => {
   test("every session route answers locked for a client on the Essential package", async () => {
     const cases: [string, string, unknown?][] = [

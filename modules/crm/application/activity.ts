@@ -18,7 +18,12 @@ import {
 import { formatShortCode, normalizeShortCode } from "../domain/tokens";
 import { listCardEvents } from "../infra/repository";
 import { loyaltyCards, loyaltyEvents, loyaltyPrograms, loyaltyRewards } from "../infra/schema";
-import { CardNotFoundError, InvalidStampInputError, LoyaltyForbiddenError } from "./shared";
+import {
+  type Accent,
+  CardNotFoundError,
+  InvalidStampInputError,
+  LoyaltyForbiddenError,
+} from "./shared";
 
 export type ActivityKind = "stamp" | "reward_earned" | "reward_redeemed" | "void";
 
@@ -288,5 +293,77 @@ export async function getLoyaltyCard(
     stampsInCycle,
     rewardReady,
     rewardsPending: pending?.n ?? 0,
+  };
+}
+
+const RECENT_EVENTS = 5;
+
+export type StaffCard = LoyaltyCardProgress & {
+  cardId: string;
+  accent: Accent;
+  /** The last events of this card, newest first. */
+  recent: ActivityRow[];
+};
+
+/**
+ * A card by its printed code at a place, for the staff who hold the counter. A malformed code, an
+ * unknown code and a place outside the scope are the same `CardNotFoundError`, so the caller learns
+ * nothing from the difference. No token, hash, device or guest is read.
+ */
+export async function lookupCard(
+  tx: Tx,
+  scope: Scope,
+  input: { locationId: string; code: string },
+): Promise<StaffCard> {
+  if (!can(scope.role, "loyalty", "read")) throw new LoyaltyForbiddenError("read");
+  if (!UUID.test(String(input.locationId)) || !locationVisible(scope, input.locationId)) {
+    throw new CardNotFoundError();
+  }
+  const progressOf = await getLoyaltyCard(
+    tx,
+    { locationId: input.locationId, shortCode: input.code },
+    null,
+  );
+  const code = normalizeShortCode(input.code);
+  const [found] = code
+    ? await tx
+        .select({ id: loyaltyCards.id, accent: loyaltyPrograms.accent })
+        .from(loyaltyCards)
+        .innerJoin(loyaltyPrograms, eq(loyaltyPrograms.id, loyaltyCards.programId))
+        .where(and(eq(loyaltyCards.locationId, input.locationId), eq(loyaltyCards.shortCode, code)))
+    : [];
+  if (!found) throw new CardNotFoundError();
+
+  const events = await tx
+    .select({
+      id: loyaltyEvents.id,
+      kind: loyaltyEvents.kind,
+      at: loyaltyEvents.createdAt,
+      locationId: loyaltyEvents.locationId,
+      actorId: loyaltyEvents.actorId,
+      note: loyaltyEvents.note,
+    })
+    .from(loyaltyEvents)
+    .where(eq(loyaltyEvents.cardId, found.id))
+    .orderBy(desc(loyaltyEvents.createdAt), desc(loyaltyEvents.seq))
+    .limit(RECENT_EVENTS);
+  const places = new Map((await listLocationLabels(tx)).map((l) => [l.id, l.locationName]));
+  const actorIds = [...new Set(events.flatMap((e) => (e.actorId ? [e.actorId] : [])))];
+  const names = await userDisplayNames(tx, actorIds);
+
+  return {
+    ...progressOf,
+    cardId: found.id,
+    accent: found.accent as Accent,
+    recent: events.map((e) => ({
+      id: e.id,
+      at: e.at.toISOString(),
+      kind: e.kind,
+      cardShortCode: progressOf.shortCode,
+      locationId: e.locationId,
+      locationName: places.get(e.locationId) ?? "",
+      actorName: e.actorId ? (names.get(e.actorId) ?? null) : null,
+      note: e.kind === "void" ? e.note : null,
+    })),
   };
 }

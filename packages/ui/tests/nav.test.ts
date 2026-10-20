@@ -134,6 +134,74 @@ describe("platform menu", () => {
   });
 });
 
+describe("loyalty entries", () => {
+  const ownerLoyalty = meOf({
+    kind: "client",
+    role: "client_owner",
+    canReadLoyalty: true,
+    canStampLoyalty: true,
+    canRedeemLoyalty: true,
+    canManageLoyalty: true,
+  });
+  const retention = (me: Parameters<typeof platformNav>[0], level: "full" | "locked") =>
+    platformNav(me, { ...levels, retention: level })
+      .flatMap((g) => g.items)
+      .find((i) => i.id === "retention");
+
+  test("an owner with retention open gets Retention with Stamp a card, Loyalty activity and Program & QR", () => {
+    const item = retention(ownerLoyalty, "full");
+    expect(item?.href).toBe("/loyalty/stamp");
+    expect(item?.locked).toBeFalsy();
+    expect(item?.children).toEqual([
+      { id: "loyalty-stamp", label: "Stamp a card", href: "/loyalty/stamp" },
+      { id: "loyalty-activity", label: "Loyalty activity", href: "/loyalty/activity" },
+      { id: "loyalty-program", label: "Program & QR", href: "/loyalty/program" },
+    ]);
+    const readOnly = retention(meOf({ kind: "client", canReadLoyalty: true }), "full");
+    expect(readOnly?.href).toBe("/loyalty/activity");
+    expect(readOnly?.children?.map((c) => c.id)).toEqual(["loyalty-activity", "loyalty-program"]);
+    // without the permission the module stays the plain teaser link
+    expect(retention(meOf({ kind: "client" }), "full")).toEqual({
+      id: "retention",
+      label: "Retention",
+      href: "/modules/retention",
+    });
+  });
+
+  test("retention locked keeps the locked Retention item and no loyalty children", () => {
+    const item = retention(ownerLoyalty, "locked");
+    expect(item).toEqual({
+      id: "retention",
+      label: "Retention",
+      href: "/modules/retention",
+      locked: true,
+    });
+  });
+
+  test("the account manager gets Loyalty with Activity and Programs & QR", () => {
+    const me = meOf({
+      kind: "assigned",
+      role: "account_manager",
+      canReadLoyalty: true,
+      canManageLoyalty: true,
+    });
+    const items = managerNav(me, { approvals: 0 }).flatMap((g) => g.items);
+    const ids = items.map((i) => i.id);
+    expect(ids.indexOf("loyalty")).toBe(ids.indexOf("reputation") + 1);
+    const loyalty = items.find((i) => i.id === "loyalty");
+    expect(loyalty).toMatchObject({ label: "Loyalty", href: "/loyalty/activity" });
+    expect(loyalty?.children).toEqual([
+      { id: "loyalty-activity", label: "Activity", href: "/loyalty/activity" },
+      { id: "loyalty-program", label: "Programs & QR", href: "/loyalty/program" },
+    ]);
+    expect(
+      managerNav(meOf({ kind: "assigned" }), { approvals: 0 }).flatMap((g) =>
+        g.items.map((i) => i.id),
+      ),
+    ).not.toContain("loyalty");
+  });
+});
+
 describe("the current item", () => {
   const groups = managerNav(adminMe, { approvals: 0 });
   test("is the longest matching route", () => {

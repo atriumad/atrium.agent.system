@@ -89,6 +89,10 @@ export function mountCases(app: Hono<any>, deps: AppDeps, session: SessionDeps) 
       canOperateSurveys: can(scope.role, "survey", "operate"),
       canManageSurveys: can(scope.role, "survey", "manage"),
       canRequestSurveys: can(scope.role, "survey", "request"),
+      canReadLoyalty: can(scope.role, "loyalty", "read"),
+      canStampLoyalty: can(scope.role, "loyalty", "stamp"),
+      canRedeemLoyalty: can(scope.role, "loyalty", "redeem"),
+      canManageLoyalty: can(scope.role, "loyalty", "manage"),
     });
   });
 
