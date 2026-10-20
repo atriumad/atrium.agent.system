@@ -99,6 +99,20 @@ test("Review Focus 2: a stored card that still answers opens without a POST", as
   expect(fake.posts).toBe(0);
 });
 
+test("a stored card that answers 5xx or 429 still opens, without a POST", async () => {
+  for (const res of [status(502), status(429, undefined, { "Retry-After": "9" })]) {
+    store.save(PID, "s".repeat(22));
+    const fake = makeFake([res]);
+    n += 1;
+    expect(await startJoin(`jq1.${PID}.${n}.sig`, { fetchFn: fake.fn, store })).toEqual({
+      kind: "card",
+      token: "s".repeat(22),
+    });
+    expect(fake.posts).toBe(0);
+    expect(store.load(PID)).toBe("s".repeat(22));
+  }
+});
+
 test("a stored card that is gone is forgotten and a new one is issued", async () => {
   store.save(PID, "s".repeat(22));
   const fake = makeFake([status(404), created("n".repeat(22))]);

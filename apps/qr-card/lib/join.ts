@@ -39,9 +39,9 @@ async function join(joinToken: string, { fetchFn = fetch, store }: Deps): Promis
   const stored = store.load(programId);
   if (stored) {
     const res = await fetchCard(stored, null, fetchFn);
-    if (res.kind === "ok" || res.kind === "not_modified") return { kind: "card", token: stored };
-    if (res.kind === "rate_limited") return { kind: "rate_limited", retryAfter: res.retryAfter };
-    if (res.kind === "error") return { kind: "error" };
+    // Only a 404 means the card is gone. Any other answer opens the card page, which has its own
+    // offline and rate-limited states and polls with backoff.
+    if (res.kind !== "not_found") return { kind: "card", token: stored };
     store.forget(programId);
   }
 
