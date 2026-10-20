@@ -42,7 +42,7 @@ export function StampGrid({ required, filled, accent, animateIndex, label }: Sta
             className={cx(
               "grid aspect-square place-content-center rounded-full border",
               isFilled
-                ? cx("border-charcoal-900 text-charcoal-900", style.fill)
+                ? cx("border-charcoal-900", style.fill, style.ink)
                 : "border-dashed border-charcoal-800/50 dark:border-cream-300/50",
               index === animateIndex && "motion-safe:animate-stamp-in",
             )}
