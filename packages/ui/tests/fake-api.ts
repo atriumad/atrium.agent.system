@@ -24,6 +24,10 @@ export function meOf(over: Partial<Me> = {}): Me {
     canOperateSurveys: false,
     canManageSurveys: false,
     canRequestSurveys: false,
+    canReadLoyalty: false,
+    canStampLoyalty: false,
+    canRedeemLoyalty: false,
+    canManageLoyalty: false,
     ...over,
   };
 }

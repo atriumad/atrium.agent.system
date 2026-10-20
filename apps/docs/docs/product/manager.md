@@ -18,6 +18,7 @@ The Manager is where Atrium runs its delivery. The same view can be seen **as** 
 | **Tasks** | The tasks database: stage nature, task type, status, responsible, standard and actual hours, due status |
 | **Content** | The content board across the pipeline, a ticket per piece with comments |
 | **Studio** | The posting calendar, ready to post, batch timelines for graphics and reels, daily pending, email |
+| **Loyalty** | The stamp card across clients: **Activity** (read-only rows and the summary band) and **Programs & QR** (set a program up, print its join QR, rotate it). Needs the Retention feature on the client; see [Loyalty and the stamp card](../guides/loyalty-and-qr-card) |
 | **Approvals** | Everything awaiting the client's OK, with how long it has waited |
 | **Client COG** | The Client Operational Guidelines |
 | **Packages** | The access matrix: who sees what |

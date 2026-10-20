@@ -33,6 +33,7 @@
       "dependencies": {
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
+        "@atrium/crm": "workspace:*",
         "@atrium/email": "workspace:*",
         "@atrium/reputation": "workspace:*",
         "@atrium/signals": "workspace:*",
@@ -114,12 +115,30 @@
         "tailwindcss": "^4.0.0",
       },
     },
+    "apps/qr-card": {
+      "name": "@atrium/qr-card",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/ui": "workspace:*",
+        "next": "^16.3.8",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "devDependencies": {
+        "@tailwindcss/postcss": "^4.0.0",
+        "@types/node": "^24.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "tailwindcss": "^4.0.0",
+      },
+    },
     "apps/worker": {
       "name": "@atrium/worker",
       "version": "0.0.0",
       "dependencies": {
         "@atrium/contracts": "workspace:*",
         "@atrium/core": "workspace:*",
+        "@atrium/crm": "workspace:*",
         "@atrium/reputation": "workspace:*",
         "@atrium/signals": "workspace:*",
       },
@@ -138,6 +157,17 @@
       },
       "devDependencies": {
         "drizzle-kit": "^0.31.11",
+      },
+    },
+    "modules/crm": {
+      "name": "@atrium/crm",
+      "version": "0.0.0",
+      "dependencies": {
+        "@atrium/contracts": "workspace:*",
+        "@atrium/core": "workspace:*",
+        "@atrium/policy": "workspace:*",
+        "drizzle-orm": "^0.45.3",
+        "zod": "^4.6.5",
       },
     },
     "modules/reputation": {
@@ -282,6 +312,8 @@
 
     "@atrium/core": ["@atrium/core@workspace:modules/core"],
 
+    "@atrium/crm": ["@atrium/crm@workspace:modules/crm"],
+
     "@atrium/docs": ["@atrium/docs@workspace:apps/docs"],
 
     "@atrium/email": ["@atrium/email@workspace:packages/email"],
@@ -293,6 +325,8 @@
     "@atrium/platform": ["@atrium/platform@workspace:apps/platform"],
 
     "@atrium/policy": ["@atrium/policy@workspace:packages/policy"],
+
+    "@atrium/qr-card": ["@atrium/qr-card@workspace:apps/qr-card"],
 
     "@atrium/reputation": ["@atrium/reputation@workspace:modules/reputation"],
 

@@ -29,6 +29,9 @@ export const PERMISSIONS = {
   // links and the send delay. manage: the Google review link and rotating the QR. request: ask
   // the agency for help.
   survey: ["read", "forms", "operate", "manage", "request"],
+  // loyalty (the stamp card). read: the program, cards and rewards. stamp and redeem: at the
+  // counter, client roles only. manage: the program's rules and card design.
+  loyalty: ["read", "stamp", "redeem", "manage"],
 } as const;
 export type Resource = keyof typeof PERMISSIONS;
 export type Action<R extends Resource> = (typeof PERMISSIONS)[R][number];
@@ -43,6 +46,7 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     task: ["read", "fire", "work"],
     content: ["read", "approve"],
     survey: ["read", "forms", "operate", "manage"],
+    loyalty: ["read", "manage"],
   },
   account_manager: {
     portfolio: ["read"],
@@ -51,6 +55,7 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     task: ["read", "fire", "work"],
     content: ["read", "approve"],
     survey: ["read", "forms", "operate", "manage"],
+    loyalty: ["read", "manage"],
   },
   agency_staff: {
     portfolio: ["read"],
@@ -59,18 +64,21 @@ export const PERMISSION_MATRIX: Record<Role, Grants> = {
     task: ["read", "work"],
     content: ["read"],
     survey: ["read", "forms"],
+    loyalty: ["read"],
   },
   client_owner: {
     client: ["read"],
     location: ["read", "request"],
     content: ["read", "approve"],
     survey: ["read", "forms", "operate", "request"],
+    loyalty: ["read", "stamp", "redeem", "manage"],
   },
   client_staff: {
     client: ["read"],
     location: ["read"],
     content: ["read"],
     survey: ["read"],
+    loyalty: ["read", "stamp", "redeem"],
   },
 };
 

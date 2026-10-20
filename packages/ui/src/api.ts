@@ -1,4 +1,5 @@
 /** The browser's side of the case routes. Same origin: each app proxies `/api` to the API. */
+import type { LoyaltyAccent } from "./loyalty/accent";
 
 export type Me = {
   userId: string;
@@ -13,6 +14,10 @@ export type Me = {
   canOperateSurveys: boolean;
   canManageSurveys: boolean;
   canRequestSurveys: boolean;
+  canReadLoyalty: boolean;
+  canStampLoyalty: boolean;
+  canRedeemLoyalty: boolean;
+  canManageLoyalty: boolean;
 };
 
 export type SurveyResponse = {
@@ -368,10 +373,93 @@ export type AgencyOverview = AgencyInsights & {
   queueCounts: { cases: number; approvals: number; accounts: number; places: number };
 };
 
+export type LoyaltyProgram = {
+  id: string;
+  locationId: string;
+  name: string;
+  stampsRequired: number;
+  rewardLabel: string;
+  cooldownMinutes: number;
+  active: boolean;
+  accent: LoyaltyAccent;
+  joinQrVersion: number;
+};
+
+export type LoyaltyProgramInput = {
+  name: string;
+  stampsRequired: number;
+  rewardLabel: string;
+  cooldownMinutes: number;
+  active: boolean;
+  accent: LoyaltyAccent;
+};
+
+export type LoyaltyKind = "stamp" | "reward_earned" | "reward_redeemed" | "void";
+
+export type LoyaltyActivityRow = {
+  id: string;
+  at: string;
+  kind: string;
+  cardShortCode: string;
+  locationId: string;
+  locationName: string;
+  actorName: string | null;
+  /** The reason of a void. Null for every other kind. */
+  note: string | null;
+};
+
+export type StaffCard = {
+  cardId: string;
+  shortCode: string;
+  locationId: string;
+  locationName: string;
+  programName: string;
+  rewardLabel: string;
+  state: "active" | "paused" | "closed";
+  accent: LoyaltyAccent;
+  stampsRequired: number;
+  stampsInCycle: number;
+  rewardReady: boolean;
+  rewardsPending: number;
+  /** The last 5 events, newest first. */
+  recent: LoyaltyActivityRow[];
+};
+
+export type LoyaltyStampResult = {
+  cardId: string;
+  stampsInCycle: number;
+  stampsRequired: number;
+  rewardEarned: boolean;
+  rewardReady: boolean;
+};
+
+export type LoyaltyActivityQuery = {
+  range: RangeKey;
+  place?: string;
+  kind?: LoyaltyKind;
+  page: number;
+  pageSize: number;
+};
+
+export type LoyaltyActivityPage = {
+  rows: LoyaltyActivityRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type LoyaltyTile = { value: number; change: number | null; small: boolean };
+export type LoyaltySummary = Record<
+  "cardsIssued" | "activeCards" | "stamps" | "rewardsEarned" | "rewardsRedeemed",
+  LoyaltyTile
+>;
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
+    /** The rest of the error body, e.g. `reason` and `retryAt` of a refused stamp. */
+    readonly detail: Record<string, unknown> = {},
   ) {
     super(code);
   }
@@ -383,7 +471,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "content-type": "application/json", ...init?.headers },
   });
   const body = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new ApiError(res.status, body.error ?? "error");
+  if (!res.ok) throw new ApiError(res.status, body.error ?? "error", body);
   return body as T;
 }
 
@@ -421,6 +509,51 @@ export const api = {
     put("safety", query.safety);
     return call<ResponsesPage>(`/api/surveys/responses?${params}`);
   },
+  loyaltyProgram: (locationId: string) =>
+    call<{ program: LoyaltyProgram | null }>(
+      `/api/loyalty/program?${new URLSearchParams({ locationId })}`,
+    ).then((r) => r.program),
+  saveLoyaltyProgram: (locationId: string, input: LoyaltyProgramInput) =>
+    call<{ program: LoyaltyProgram }>("/api/loyalty/program", {
+      method: "PUT",
+      body: JSON.stringify({ locationId, ...input }),
+    }).then((r) => r.program),
+  loyaltyJoinLink: (locationId: string) =>
+    call<{ url: string | null; token: string }>(
+      `/api/loyalty/program/join-link?${new URLSearchParams({ locationId })}`,
+    ),
+  rotateLoyaltyQr: (locationId: string) =>
+    call<{ program: LoyaltyProgram }>("/api/loyalty/program/rotate-qr", {
+      method: "POST",
+      body: JSON.stringify({ locationId }),
+    }).then((r) => r.program),
+  loyaltyCard: (locationId: string, code: string) =>
+    call<{ card: StaffCard }>(
+      `/api/loyalty/card?${new URLSearchParams({ locationId, code })}`,
+    ).then((r) => r.card),
+  loyaltyStamp: (body: { locationId: string; code: string; idempotencyKey: string }) =>
+    call<LoyaltyStampResult>("/api/loyalty/stamps", { method: "POST", body: JSON.stringify(body) }),
+  loyaltyRedeem: (body: { locationId: string; code: string; idempotencyKey: string }) =>
+    call<{ cardId: string; rewardId: string }>("/api/loyalty/redeem", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  loyaltyVoid: (body: { cardId: string; reason: string; idempotencyKey: string }) =>
+    call<LoyaltyStampResult>("/api/loyalty/void", { method: "POST", body: JSON.stringify(body) }),
+  loyaltyActivity: (q: LoyaltyActivityQuery) =>
+    call<LoyaltyActivityPage>(
+      `/api/loyalty/activity?${new URLSearchParams({
+        range: q.range,
+        ...(q.place ? { place: q.place } : {}),
+        ...(q.kind ? { kind: q.kind } : {}),
+        page: String(q.page),
+        pageSize: String(q.pageSize),
+      })}`,
+    ),
+  loyaltyBand: (range: RangeKey, place?: string) =>
+    call<LoyaltySummary>(
+      `/api/insights/loyalty?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,
+    ),
   insightsOwner: (range: RangeKey, place?: string) =>
     call<OwnerInsights>(
       `/api/insights/owner?${new URLSearchParams({ range, ...(place ? { place } : {}) })}`,

@@ -41,11 +41,23 @@ bun --env-file=.env.local run --filter @atrium/worker dev
 bun --env-file=.env.local run --filter @atrium/manager dev    # :3002
 bun --env-file=.env.local run --filter @atrium/platform dev   # :3003
 bun --env-file=.env.local run --filter @atrium/hub dev        # :3004
+bun --env-file=.env.local run --filter @atrium/qr-card dev    # :3006
 ```
 
 Compruébalas: `curl localhost:3001/api/auth/ok` responde `200` y las tres pantallas responden en sus puertos. El worker registra `worker.started` con sus consumidores y tareas. El worker necesita `AGENTS_URL` y `AGENTS_SERVICE_TOKEN`; levanta primero el servicio de agentes. `AGENTS_SERVICE_TOKEN` es cualquier cadena aleatoria de 32 caracteres o más, y el servicio de agentes se niega a arrancar con una más corta. El servicio de agentes también lee `PUBLIC_BASE_URL` (y opcionalmente `ADMIN_BASE_URL`), que el worker ya no lee; fuera de desarrollo y pruebas no arranca sin `PUBLIC_BASE_URL`. Si `HOST_LLM_API_KEY` y un modelo para Sentiment (`HOST_MODEL_SENTIMENT` o `HOST_MODEL_DEFAULT`) están vacíos, Sentiment responde `rejected`; los casos se abren igual por la calificación.
 
 Variables de email. `RESEND_API_KEY` y `EMAIL_FROM` construyen el transporte de Resend; `RESEND_WEBHOOK_SECRET` (cualquier valor `whsec_` sirve en local) verifica el webhook de Resend en la API; `SURVEY_SECRET` (una cadena aleatoria larga, con `BETTER_AUTH_SECRET` como respaldo) firma los enlaces de baja, y la API y el servicio de agentes deben compartirlo. Sin la clave de Resend y con `NODE_ENV=development`, el correo se registra en la bandeja de salida y no se envía. Fuera de desarrollo y pruebas, la API y el servicio de agentes se niegan a arrancar sin las variables de Resend. El webhook no puede llegar a una máquina local, así que para probarlo envía un fixture firmado a `POST /webhooks/resend` de la API local.
+
+## Probar la tarjeta de sellos
+
+La app de la tarjeta tiene su propio puerto, 3006, y habla con la API por `/loyalty-api`. Levanta la API con `LOYALTY_SECRET` y `LOYALTY_PROXY_SECRET` (cada una de 32 caracteres o más) y `TRUST_PROXY=1`, y qr-card con el mismo `LOYALTY_PROXY_SECRET`:
+
+```bash
+export LOYALTY_SECRET=dev-loyalty-secret-0123456789abcdef0123 LOYALTY_PROXY_SECRET=dev-proxy-secret-0123456789abcdef01234 TRUST_PROXY=1
+bun --env-file=.env.local run seed:loyalty    # imprime la URL de registro de cada local
+```
+
+Abre una URL de registro impresa en una ventana del tamaño de un teléfono: la tarjeta aparece en `/c/<token>`. Luego entra a Platform como `demo-owner@demo.test`, abre **Retention › Stamp a card**, escribe el código de la tarjeta y agrega un sello; la tarjeta lo muestra en 5 segundos. Como prueba de humo del proxy, haz `POST` a `/loyalty-api/cards` 21 veces en `localhost:3006`, cada una con `-d '{"joinToken":"<token impreso>"}'` (el token de registro que imprimió el seed) y un `x-forwarded-for` distinto cada vez: las primeras veinte responden `201` y la siguiente `429`, porque con `QR_CARD_PROXY_HOPS` sin poner las direcciones falsificadas nunca llegan a la API. Los contadores duran una hora; borra `crm.rate_counters` para repetirlo. Ver [Lealtad y la tarjeta de sellos](./loyalty-and-qr-card).
 
 ## Recorrer el flujo principal
 

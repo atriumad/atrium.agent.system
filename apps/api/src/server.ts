@@ -6,6 +6,7 @@ import {
   transportFromEnv,
 } from "@atrium/core";
 import { createApp } from "./app";
+import { MIN_LOYALTY_SECRET_CHARS, usableLoyaltySecret } from "./loyalty";
 import { sendSetPasswordEmail } from "./setup-email";
 
 const { db, close } = createDatabase();
@@ -71,8 +72,41 @@ if (
   process.exit(1);
 }
 
+// The stamp card's routes need a secret of their own; without one they are not mounted.
+const loyaltySecretRaw = process.env.LOYALTY_SECRET;
+const loyaltySecret = usableLoyaltySecret(loyaltySecretRaw);
+const trustProxy = process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
+const qrCardUrl = process.env.QR_CARD_URL;
+const loyaltyProxySecretRaw = process.env.LOYALTY_PROXY_SECRET;
+const loyaltyProxySecret =
+  loyaltyProxySecretRaw && loyaltyProxySecretRaw.length >= 32 ? loyaltyProxySecretRaw : undefined;
+if (trustProxy && !loyaltyProxySecret) {
+  console.log(
+    JSON.stringify({
+      level: "warn",
+      message: "loyalty.proxy_secret_missing",
+      detail:
+        "TRUST_PROXY is on without a LOYALTY_PROXY_SECRET of 32+ characters: the loyalty routes ignore X-Forwarded-For and X-Forwarded-Proto and count the socket's address, so every guest shares one limit",
+    }),
+  );
+}
+if (!loyaltySecret) {
+  console.log(
+    JSON.stringify({
+      level: "warn",
+      message: loyaltySecretRaw
+        ? `LOYALTY_SECRET is shorter than ${MIN_LOYALTY_SECRET_CHARS} characters: loyalty routes are off`
+        : "LOYALTY_SECRET unset: loyalty routes are off",
+    }),
+  );
+}
+
 const app = createApp({
   db,
+  ...(loyaltySecret ? { loyaltySecret } : {}),
+  ...(trustProxy ? { trustProxy } : {}),
+  ...(loyaltyProxySecret ? { loyaltyProxySecret } : {}),
+  ...(qrCardUrl ? { qrCardUrl } : {}),
   transport,
   ...(unsubscribeSecret ? { unsubscribeSecret } : {}),
   ...(resendWebhookSecret ? { resendWebhookSecret } : {}),

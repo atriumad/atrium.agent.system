@@ -17,6 +17,7 @@ The flow was driven end to end against a local build (API, worker, Platform, Man
 | Surface | Port locally | Who | What they do |
 | --- | --- | --- | --- |
 | **Hub** | 3004 | The guest, no account | Opens a survey link or a QR, answers, and optionally asks for contact. Also the public "request access" form |
+| **Card** | 3006 | The guest, no account | Joins a venue's stamp card from a printed QR and watches the stamps arrive. See [Loyalty and the stamp card](../guides/loyalty-and-qr-card) |
 | **Platform** | 3003 | The client: owner and staff | Sees the guest feedback of their own places, shares the QR, asks the Atrium team for help |
 | **Manager** | 3002 | The agency: account manager and team | Works the recovery cases, configures forms and QR per place, approves accounts and places, answers help requests |
 | **API** | 3001 | The three surfaces and the connectors | One API for all; every screen is a client of it |

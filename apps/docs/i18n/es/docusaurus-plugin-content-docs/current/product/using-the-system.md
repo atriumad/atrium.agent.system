@@ -17,6 +17,7 @@ El flujo se manejó de punta a punta contra un build local (API, worker, Platfor
 | Superficie | Puerto local | Quién | Qué hace |
 | --- | --- | --- | --- |
 | **Hub** | 3004 | El guest, sin cuenta | Abre un enlace de encuesta o un QR, responde y, si quiere, pide contacto. También es el formulario público de "solicitar acceso" |
+| **Tarjeta** | 3006 | El guest, sin cuenta | Se une a la tarjeta de sellos de un local desde un QR impreso y ve llegar los sellos. Ver [Lealtad y la tarjeta de sellos](../guides/loyalty-and-qr-card) |
 | **Platform** | 3003 | El client: dueño y personal | Ve el feedback de sus propios lugares, comparte el QR y le pide ayuda al equipo de Atrium |
 | **Manager** | 3002 | La agencia: account manager y equipo | Trabaja los casos de recuperación, configura formularios y QR por lugar, aprueba cuentas y lugares y responde las solicitudes de ayuda |
 | **API** | 3001 | Las tres superficies y los conectores | Una sola API para todos; cada pantalla es cliente de ella |

@@ -64,6 +64,7 @@ El Overview del dueño responde "¿cómo va mi negocio y qué me necesita?" con 
 - **De dónde vienen:** orígenes del opt-in (portal WiFi, encuesta por QR, checkouts de pedidos y reservas online), cada uno convertido en una audiencia de retención.
 - **Quiénes son:** el guestbook del CRM de Toast, con segmentos y ciclo de vida (nuevo → regular → VIP, win-backs).
 - **Lo que hacemos:** campañas y automatizaciones always-on con resultados, **cohort retention** por mes desde la primera visita y **channel performance.**
+- **La tarjeta de sellos:** **Stamp a card** (buscar o escanear una tarjeta, agregar un sello, entregar el premio, anular el último sello), **Loyalty activity** (una banda de resumen y la tabla de sellos, premios y tarjetas) y **Program & QR** (los sellos necesarios, el premio, el enfriamiento y el acento, el QR de registro para imprimir como póster o tarjetas de mesa, y rotarlo). El lado del guest es la app de la tarjeta en el puerto 3006; ver [Lealtad y la tarjeta de sellos](../guides/loyalty-and-qr-card).
 
 ### Attribution
 

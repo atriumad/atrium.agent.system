@@ -31,5 +31,6 @@ Cada decisión técnica importante queda escrita en un ADR corto: contexto, deci
 | [0019](./0019-llm-provider-behind-a-port) | El modelo de lenguaje vive detrás de un puerto | Aceptada |
 | [0020](./0020-agents-in-their-own-service) | Los agentes viven en su propio servicio | Aceptada |
 | [0021](./0021-resend-email-no-sms) | Resend para el correo, sin SMS | Aceptada |
+| [0022](./0022-loyalty-card-device-bound) | La tarjeta de lealtad es anónima y ligada a un dispositivo | Aceptada |
 
 Para escribir uno nuevo, ver [Cómo escribir un ADR](../guides/write-an-adr).

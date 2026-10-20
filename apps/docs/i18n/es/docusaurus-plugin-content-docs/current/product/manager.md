@@ -18,6 +18,7 @@ El Manager es donde Atrium corre su entrega. La misma vista puede verse **como**
 | **Tasks** | La base de tareas: naturaleza de la etapa, tipo de tarea, estado, responsable, horas estándar y reales, estado de vencimiento |
 | **Content** | El tablero de contenido a lo largo del pipeline, un ticket por pieza con comentarios |
 | **Studio** | El calendario de publicaciones, ready to post, líneas de tiempo de lotes de gráficos y reels, pendientes del día, email |
+| **Loyalty** | La tarjeta de sellos entre clients: **Activity** (filas de solo lectura y la banda de resumen) y **Programs & QR** (configurar un programa, imprimir su QR de registro, rotarlo). Requiere la función Retention en el client; ver [Lealtad y la tarjeta de sellos](../guides/loyalty-and-qr-card) |
 | **Approvals** | Todo lo que espera el OK del client, con cuánto lleva esperando |
 | **Client COG** | Las Client Operational Guidelines |
 | **Packages** | La matriz de acceso: quién ve qué |

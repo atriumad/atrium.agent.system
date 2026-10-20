@@ -1,0 +1,16 @@
+{
+  "name": "@atrium/crm",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@atrium/contracts": "workspace:*",
+    "@atrium/core": "workspace:*",
+    "@atrium/policy": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "zod": "^4.6.5"
+  }
+}

@@ -20,6 +20,7 @@ export const CONSENT_SOURCES = [
   "email_unsubscribe",
   "email_bounce",
   "email_complaint",
+  "loyalty_card",
 ] as const;
 export type ConsentSource = (typeof CONSENT_SOURCES)[number];
 

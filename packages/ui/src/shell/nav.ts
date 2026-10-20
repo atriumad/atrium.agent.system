@@ -1,4 +1,12 @@
-import { Building2, LayoutDashboard, LifeBuoy, MapPin, ShieldCheck, Star } from "lucide-react";
+import {
+  Building2,
+  LayoutDashboard,
+  LifeBuoy,
+  MapPin,
+  ShieldCheck,
+  Stamp,
+  Star,
+} from "lucide-react";
 import { createElement } from "react";
 import type { Me } from "../api";
 import { Icon } from "../icon";
@@ -61,6 +69,20 @@ export function managerNav(me: Me, counts: { approvals: number }): SideNavGroup[
       icon: icon(Star),
       children: reputation,
     },
+    ...(me.canReadLoyalty
+      ? [
+          {
+            id: "loyalty",
+            label: "Loyalty",
+            href: "/loyalty/activity",
+            icon: icon(Stamp),
+            children: [
+              { id: "loyalty-activity", label: "Activity", href: "/loyalty/activity" },
+              { id: "loyalty-program", label: "Programs & QR", href: "/loyalty/program" },
+            ],
+          },
+        ]
+      : []),
     ...(me.canManageLocations
       ? [
           {
@@ -119,12 +141,28 @@ export function platformNav(me: Me, access: Access): SideNavGroup[] {
     { items: main },
     {
       title: "Modules",
-      items: MODULES.map((m) => ({
-        id: m.feature,
-        label: m.label,
-        href: `/modules/${m.feature}`,
-        ...(access[m.feature] === "locked" ? { locked: true } : {}),
-      })),
+      items: MODULES.map((m): SideNavItem => {
+        if (m.feature === "retention" && access.retention !== "locked" && me.canReadLoyalty) {
+          return {
+            id: "retention",
+            label: m.label,
+            href: me.canStampLoyalty ? "/loyalty/stamp" : "/loyalty/activity",
+            children: [
+              ...(me.canStampLoyalty
+                ? [{ id: "loyalty-stamp", label: "Stamp a card", href: "/loyalty/stamp" }]
+                : []),
+              { id: "loyalty-activity", label: "Loyalty activity", href: "/loyalty/activity" },
+              { id: "loyalty-program", label: "Program & QR", href: "/loyalty/program" },
+            ],
+          };
+        }
+        return {
+          id: m.feature,
+          label: m.label,
+          href: `/modules/${m.feature}`,
+          ...(access[m.feature] === "locked" ? { locked: true } : {}),
+        };
+      }),
     },
   ];
 }

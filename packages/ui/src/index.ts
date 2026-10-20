@@ -22,6 +22,7 @@ export * from "./forms";
 export { HelpThreads } from "./help-thread";
 export * from "./icon";
 export * from "./layout";
+export * from "./loyalty";
 export * from "./navigation";
 export { PlacesPage, PlacesPanel } from "./places-panel";
 export { RequestAccessForm } from "./request-access";
