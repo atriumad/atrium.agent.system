@@ -210,13 +210,15 @@ function Cards({ sheet, url, lang }: { sheet: Sheet; url: string; lang: CardLoca
             {sheet.venue}
           </h2>
           <p className="m-0 text-sm text-balance">{fill(copy.title, { venue: sheet.venue })}</p>
-          <QRCodeSVG
-            value={url}
-            size={170}
-            style={{ width: "45mm", height: "45mm" }}
-            marginSize={0}
-            title="Join QR"
-          />
+          <div className="bg-cream-100 p-[3mm]">
+            <QRCodeSVG
+              value={url}
+              size={170}
+              style={{ width: "45mm", height: "45mm" }}
+              marginSize={0}
+              title="Join QR"
+            />
+          </div>
           <p className="m-0 text-xs text-balance">{copy.scan}</p>
           <p className="m-0 text-sm text-balance">
             <RewardLine template={copy.reward} stamps={sheet.stamps} reward={sheet.reward} />

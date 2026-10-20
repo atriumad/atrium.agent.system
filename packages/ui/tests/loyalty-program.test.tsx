@@ -327,6 +327,24 @@ describe("loyalty print page", () => {
     expect(POSTER_COPY.es.title).toBe("Colecciona sellos en {venue}");
   });
 
+  test("every QR sits in a 3mm padded plain box (quiet zone), on the poster and the cards", async () => {
+    routed(printRoutes);
+    for (const format of ["poster", "cards"] as const) {
+      const view = setup(<LoyaltyPrintPage locationId={LOC} format={format} lang="en" />);
+      await waitFor(() =>
+        expect(document.querySelectorAll("svg[role='img']").length).toBe(
+          format === "poster" ? 1 : 4,
+        ),
+      );
+      for (const svg of document.querySelectorAll("svg[role='img']")) {
+        const box = svg.parentElement;
+        expect(box?.className).toContain("p-[3mm]");
+        expect(box?.className).toContain("bg-cream-100");
+      }
+      view.unmount();
+    }
+  });
+
   test("a 401 asks to sign in to the Platform first", async () => {
     routed({ "GET /api/locations": { status: 401, body: { error: "unauthorized" } } });
     setup(<LoyaltyPrintPage locationId={LOC} format="poster" lang="en" />);
