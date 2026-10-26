@@ -1,0 +1,110 @@
+name: Deploy
+# Reusable: deploy-staging.yml and deploy-prod.yml call it. Order: migrate, Railway, Vercel, smoke.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "GitHub Environment: staging or production"
+        required: true
+        type: string
+      ref:
+        description: "Commit to deploy"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Apply migrations as the owner role
+        run: bun run db:migrate
+        env:
+          DATABASE_ADMIN_URL: ${{ secrets.DATABASE_ADMIN_URL }}
+          ATRIUM_APP_PASSWORD: ${{ secrets.ATRIUM_APP_PASSWORD }}
+
+  railway:
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        # agents first: the worker calls it, and the API does not depend on either.
+        service: [agents, api, worker]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - run: npm install --global @railway/cli@4
+      - name: Deploy ${{ matrix.service }}
+        # RAILWAY_TOKEN is a project token: it is scoped to one project and one environment.
+        run: railway up --ci --service "${{ matrix.service }}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  vercel:
+    needs: railway
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { app: platform, project: VERCEL_PROJECT_PLATFORM }
+          - { app: manager, project: VERCEL_PROJECT_MANAGER }
+          - { app: hub, project: VERCEL_PROJECT_HUB }
+          - { app: qr-card, project: VERCEL_PROJECT_QR_CARD }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun add --global vercel@latest
+      - name: Deploy ${{ matrix.app }}
+        # Run from the repo root: each project's Root Directory (apps/<app>) is set in Vercel.
+        # Each environment has its own project per app, so every deploy is a production deploy of
+        # that project. Project ids come from the environment's variables.
+        run: |
+          set -euo pipefail
+          export VERCEL_PROJECT_ID="${{ vars[matrix.project] }}"
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel build --prod --token "$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+
+  smoke:
+    needs: vercel
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Health checks
+        run: |
+          set -euo pipefail
+          check() {
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$1" || true)
+              if [ "$code" = "200" ]; then echo "ok  $1"; return 0; fi
+              sleep 10
+            done
+            echo "FAIL $1 (last status $code)"; return 1
+          }
+          check "${{ vars.API_URL }}/health"
+          check "${{ vars.PLATFORM_URL }}"
+          check "${{ vars.MANAGER_URL }}"
+          check "${{ vars.HUB_URL }}"
+          check "${{ vars.QR_CARD_URL }}"

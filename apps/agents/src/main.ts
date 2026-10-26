@@ -74,7 +74,7 @@ const app = createAgentsService({
 });
 
 const server = Bun.serve({
-  port: Number(process.env.AGENTS_PORT ?? 3005),
+  port: Number(process.env.AGENTS_PORT ?? process.env.PORT ?? 3005),
   fetch: app.fetch,
   // Bun's default idle limit is 10 s. What bounds a long task is the 20 s budget of ask.send_due,
   // under the client's 30 s default timeout; 255 s (the maximum) is only the idle limit.

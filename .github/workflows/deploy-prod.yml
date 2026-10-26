@@ -1,0 +1,21 @@
+name: Deploy production
+# Manual. The `production` GitHub Environment requires a reviewer before any job runs.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit SHA already deployed to staging"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      ref: ${{ inputs.ref }}
+    secrets: inherit
